@@ -4928,15 +4928,14 @@ function warnBar(html){
 }
 function checkLink(payload){
   if(!API){
-    warnBar('<b>الموقع غير متصل بجدول النادي — لا شيء يُحفَظ.</b>'+
-      '<span>افتح الرابط مرّة واحدة وفي آخره '+
-      '<code dir="ltr">?api=رابط-Apps-Script</code> ليرتبط الجهاز بالجدول.</span>');
+    warnBar('<b>لم يكتمل إعداد حسابك — لا شيء يُحفَظ.</b>'+
+      '<span>راجع الإدارة لربط بريدك بملفّ مستخدم. '+
+      '</span>');
     return; }
   const b=(payload&&+payload.build)||0;
   if(b<NEED_BUILD){
-    warnBar('<b>نشر Apps Script قديم ('+(b||'بلا رقم')+') — بعض البيانات لن تُحفظ.</b>'+
-      '<span>افتح جدول النادي ← الإضافات ← Apps Script، الصق النسخة الجديدة، '+
-      'شغّل <code dir="ltr">setup()</code>، ثم نشر ← إدارة عمليات النشر ← تعديل ← إصدار جديد.</span>');
+    warnBar('<b>نسخة الموقع قديمة — حدّث الصفحة.</b>'+
+      '<span>لو استمرّت الرسالة فامسح كاش المتصفّح ثم أعد الفتح.</span>');
     return; }
   warnBar('');
 }

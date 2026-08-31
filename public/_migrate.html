@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FMAC — هجرة البيانات</title>
+<style>
+:root{--brand:#e8555c;--ok:#22c07f;--warn:#ffc233;--bad:#ff4d59;--blue:#5b8def}
+body{background:#08090c;color:#e9ecf1;font:14px/1.7 Tajawal,'Segoe UI',system-ui,sans-serif;
+  padding:24px;max-width:860px;margin:0 auto;direction:rtl}
+h1{font-size:20px;margin:0 0 4px}
+p.sub{color:#9aa3b0;font-size:13px;margin:0 0 20px}
+.card{background:#0f1115;border:1px solid #23272f;border-radius:16px;padding:18px;margin:14px 0}
+button{background:var(--brand);color:#fff;border:0;border-radius:12px;padding:11px 20px;
+  font:700 14px inherit;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+button.ghost{background:#191d24;color:#e9ecf1;border:1px solid #2a2f38}
+input[type=file]{font:13px inherit;color:#c7cdd6}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+th,td{text-align:right;padding:6px 8px;border-bottom:1px solid #1c2028}
+th{color:#9aa3b0;font-weight:600}
+td.n{font-variant-numeric:tabular-nums;direction:ltr;text-align:left}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+#log{font:12px/1.6 ui-monospace,monospace;max-height:320px;overflow:auto;white-space:pre-wrap}
+.bar{height:6px;background:#191d24;border-radius:99px;overflow:hidden;margin:12px 0}
+.bar i{display:block;height:100%;background:var(--brand);width:0;transition:width .2s}
+</style></head><body>
+
+<h1>هجرة البيانات إلى Firestore</h1>
+<p class="sub">يُشغَّل مرّة واحدة. يتطلّب حساب إدارة.</p>
+
+<div class="card" id="authCard">جارٍ التحقّق من الدخول…</div>
+
+<div class="card" id="step1" hidden>
+  <b>١ — ملف التصدير</b>
+  <p class="sub" style="margin:6px 0 12px">
+    شغّل <code>exportAll()</code> من <code>apps-script/EXPORT-ONCE.gs</code> ثم ارفع
+    <code>FMAC-export.json</code> هنا.</p>
+  <input type="file" id="file" accept=".json,application/json">
+</div>
+
+<div class="card" id="step2" hidden>
+  <b>٢ — معاينة (بلا كتابة)</b>
+  <div id="preview"></div>
+  <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
+    <button id="go">اكتب إلى Firestore</button>
+    <button class="ghost" id="again">ملف آخر</button>
+  </div>
+  <p class="sub" style="margin:10px 0 0">
+    الكتابة تدمج (<code>merge</code>) — إعادة التشغيل بنفس الملف آمنة ولا تُكرّر.</p>
+</div>
+
+<div class="card" id="step3" hidden>
+  <b>٣ — التنفيذ</b>
+  <div class="bar"><i id="barfill"></i></div>
+  <div id="log"></div>
+</div>
+
+<script type="module">
+import { ready, PROFILE, db } from './js/fmac-auth.js';
+import { planWrites } from './js/fmac-migrate.js';
+import { doc, writeBatch, collection } from './vendor/firebase-firestore.js';
+
+const $ = (id) => document.getElementById(id);
+const log = (msg, cls) => {
+  const d = document.createElement('div');
+  if (cls) d.className = cls;
+  d.textContent = msg;
+  $('log').appendChild(d);
+  $('log').scrollTop = $('log').scrollHeight;
+};
+
+const me = await ready();
+if (!me.admin) {
+  $('authCard').innerHTML = '<span class="bad">هذا الحساب ليس حساب إدارة. ' +
+    'الهجرة تتطلّب صلاحية إدارة.</span>';
+} else {
+  $('authCard').innerHTML = 'الدخول: <b>' + (me.name || me.email) + '</b> · إدارة ✓';
+  $('step1').hidden = false;
+}
+
+let JOBS = null;
+
+$('file').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  let data;
+  try {
+    data = JSON.parse(await f.text());
+  } catch (err) {
+    $('preview').innerHTML = '<span class="bad">تعذّرت قراءة الملف: ' + err.message + '</span>';
+    $('step2').hidden = false;
+    return;
+  }
+  JOBS = planWrites(data);
+
+  let total = 0, rows = '';
+  for (const j of JOBS) {
+    total += j.docs.length;
+    const flag = j.missing ? '<span class="warn">تبويب غير موجود</span>'
+      : j.docs.length === 0 ? '<span class="warn">فارغ</span>' : '<span class="ok">جاهز</span>';
+    rows += '<tr><td>' + j.tab + '</td><td><code>' + j.col + '</code></td>' +
+      '<td class="n">' + j.docs.length + '</td>' +
+      '<td class="n">' + (j.skipped || 0) + '</td>' +
+      '<td class="n">' + (j.dupes || 0) + '</td>' +
+      '<td>' + flag + '</td></tr>';
+  }
+  $('preview').innerHTML =
+    '<p>صُدِّر في: <b>' + (data.exportedAt || '—') + '</b></p>' +
+    '<table><tr><th>التبويب</th><th>المجموعة</th><th>وثائق</th>' +
+    '<th>متخطّى</th><th>مكرّر</th><th>الحالة</th></tr>' + rows +
+    '</table><p style="margin-top:12px">الإجمالي: <b>' + total + '</b> وثيقة</p>';
+  $('step2').hidden = false;
+});
+
+$('again').addEventListener('click', () => {
+  $('step2').hidden = true; $('step3').hidden = true;
+  $('file').value = ''; $('log').innerHTML = ''; JOBS = null;
+});
+
+$('go').addEventListener('click', async () => {
+  if (!JOBS) return;
+  $('go').disabled = true;
+  $('step3').hidden = false;
+  $('log').innerHTML = '';
+
+  const total = JOBS.reduce((a, j) => a + j.docs.length, 0);
+  let written = 0, failed = 0;
+  const CHUNK = 400;                       // حدّ Firestore 500 لكل دفعة
+
+  for (const j of JOBS) {
+    if (!j.docs.length) continue;
+    log('▸ ' + j.tab + ' → ' + j.col + '  (' + j.docs.length + ')');
+    for (let i = 0; i < j.docs.length; i += CHUNK) {
+      const slice = j.docs.slice(i, i + CHUNK);
+      const batch = writeBatch(db);
+      for (const d of slice) {
+        const refDoc = d.id
+          ? doc(db, j.col, d.id)
+          : doc(collection(db, j.col));
+        batch.set(refDoc, d.data, { merge: true });
+      }
+      try {
+        await batch.commit();
+        written += slice.length;
+        log('   ✓ ' + slice.length + ' وثيقة', 'ok');
+      } catch (err) {
+        failed += slice.length;
+        log('   ✗ فشل: ' + (err && err.message), 'bad');
+      }
+      $('barfill').style.width = Math.round((written + failed) / total * 100) + '%';
+    }
+  }
+
+  log('');
+  log('انتهى — كُتب ' + written + ' من ' + total +
+      (failed ? ('، وفشل ' + failed) : ''), failed ? 'bad' : 'ok');
+  if (!failed) log('افتح الموقع الآن: /index.html', 'ok');
+  $('go').disabled = false;
+});
+</script></body></html>

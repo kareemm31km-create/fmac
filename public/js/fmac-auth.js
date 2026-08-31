@@ -59,6 +59,10 @@ const MSG = {
   'auth/invalid-credential':   'البريد أو كلمة المرور غير صحيحة.',
   'auth/too-many-requests':    'محاولات كثيرة. انتظر قليلاً ثم أعد المحاولة.',
   'auth/network-request-failed':'تعذّر الاتصال بالشبكة.',
+  'auth/configuration-not-found':
+    'المصادقة غير مفعَّلة في مشروع Firebase. فعّل Email/Password من لوحة التحكم ← Authentication.',
+  'auth/operation-not-allowed':
+    'الدخول بالبريد وكلمة المرور غير مفعَّل. فعّله من لوحة Firebase ← Authentication ← Sign-in method.',
   'no-profile':                'الحساب موجود لكن بلا ملفّ في المستخدمين. راجع الإدارة.',
 };
 const say = (code) => MSG[code] || 'تعذّر الدخول. حاول مرّة أخرى.';

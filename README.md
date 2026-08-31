@@ -4,27 +4,29 @@
 التدريبية الأسبوعية، نتائج البطولات والمواسم، الزيارات الميدانية، كالندر مشاركات الموسم،
 والتقارير. واجهة عربية RTL مع تحويل كامل للإنجليزية.
 
-> التوثيق الأصلي في [`docs/FMAC-PROJECT.md`](docs/FMAC-PROJECT.md).
-> **انتبه:** القسمان 3 و10 فيه يصفان معمارية Apps Script + Google Sheet، وقد استُبدلت
-> بـFirebase. البقيّة (الصفحات · التصميم · الترجمة · الأخطاء المصلَحة) ما زالت سارية.
+**المعمارية: Firebase + GitHub + Vercel.** جدول جوجل وApps Script خرجا من الخدمة.
+
+> [`docs/FMAC-PROJECT.md`](docs/FMAC-PROJECT.md) هو مرجع المشروع.
+> القسمان **3** و**10** فيه يصفان معمارية Apps Script المهجورة — البقيّة سارية:
+> الصفحات · نظام التصميم · الترجمة · الأخطاء المصلَحة · القيود.
 
 ---
 
 ## المعمارية
 
 ```
-index.html (الواجهة كما هي، بلا تعديل منطقي)
+public/index.html  ─ الواجهة كما هي، بلا تعديل منطقي
       │   __fmacApi(API, …)          ← 31 نداءً، كانت fetch(API, …)
       ▼
 public/js/fmac-firebase.js           ← تحاكي عقد Apps Script فوق Firestore
+public/js/fmac-payload.js            ← نقل أمين لدوال الاشتقاق
 public/js/fmac-auth.js               ← الدخول بالبريد وكلمة المرور
       ▼
 Firebase — Auth · Firestore · Storage
 ```
 
-طبقة النقل تُحاكي عقد الـHTTP القديم بالضبط: نداء `GET` يرجع حمولة `init` بمفاتيحها
-الثمانية والعشرين، و`POST` يوزّع على الإجراءات الخمسة والعشرين. لذلك **لم تتغيّر
-أي سطر من منطق الواجهة** (~14,000 سطر).
+طبقة النقل تُحاكي العقد القديم بالضبط: `GET` يرجع حمولة `init` بمفاتيحها الثمانية
+والعشرين، و`POST` يوزّع على الإجراءات. لذلك **لم يتغيّر منطق الواجهة** (~14,000 سطر).
 
 ---
 
@@ -32,16 +34,20 @@ Firebase — Auth · Firestore · Storage
 
 | المسار | الدور |
 |---|---|
-| `public/` | الموقع كما يُنشر — **مجلد الإخراج على Vercel** |
 | `public/index.html` | الواجهة كاملةً (~1.8 ميجا) |
-| `public/js/fmac-config.js` | إعداد Firebase + خريطة المجموعات |
+| `public/js/fmac-config.js` | إعداد Firebase · خريطة 25 مجموعة · `BUILD` |
 | `public/js/fmac-auth.js` | المصادقة وشاشة الدخول |
-| `public/js/fmac-firebase.js` | طبقة النقل (حمولة init + الإجراءات) |
+| `public/js/fmac-payload.js` | `archive` · `history` · `audit` · `autoStage` · `planItems` … |
+| `public/js/fmac-firebase.js` | طبقة النقل والإجراءات |
+| `public/js/fmac-accounts.js` | إنشاء الحسابات (نسخة تطبيق ثانوية) |
+| `public/js/fmac-migrate.js` | خرائط أعمدة الجدول ← وثائق Firestore |
 | `public/vendor/firebase-*.js` | حزم Firebase مستضافة ذاتياً (القيد §3) |
-| `public/_selftest.html` | فحص ذاتي: تحليل الملفات · تحميل الوحدات · الربط |
-| `firestore.rules` · `storage.rules` | قواعد الأمان — **الحارس الوحيد للصلاحيات** |
-| `apps-script/FMAC-Apps-Script.gs` | السكربت القديم — مرجع للهجرة فقط |
-| `scripts/dev-server.mjs` | خادم تطوير ساكن بلا اعتماديات |
+| `public/_accounts.html` | إدارة الحسابات — للإدارة |
+| `public/_migrate.html` | هجرة البيانات — مرّة واحدة |
+| `public/_selftest.html` · `_payloadtest.html` | فحوص ذاتية (25 + 65) |
+| `firestore.rules` · `storage.rules` | **الحارس الوحيد للصلاحيات** |
+| `apps-script/EXPORT-ONCE.gs` | تصدير الجدول قبل الهجرة |
+| `apps-script/FMAC-Apps-Script.gs` | السكربت القديم — مرجع فقط، لا يُنشر |
 
 ---
 
@@ -51,9 +57,26 @@ Firebase — Auth · Firestore · Storage
 npm run dev
 ```
 
-`http://127.0.0.1:3000/` — لا يحتاج `npm install`، الخادم بلا اعتماديات.
+`http://127.0.0.1:3000/` — بلا `npm install`، الخادم بلا اعتماديات.
 
-للفحص الذاتي بعد التشغيل: `http://127.0.0.1:3000/_selftest.html`
+**بلا Node؟** يوجد خادم PowerShell مكافئ لا يحتاج أي تثبيت:
+
+```bash
+npm run dev:ps
+```
+
+أو مباشرةً: `powershell -ExecutionPolicy Bypass -File scripts\dev-server.ps1`
+
+### الفحوص
+
+| الرابط | يفحص |
+|---|---|
+| `/_selftest.html` | تحميل الوحدات · لا طلبات خارجية · ربط `index.html` |
+| `/_payloadtest.html` | 65 حالة على بناء الحمولة وخرائط الهجرة |
+
+```bash
+npm run check    # NEED_BUILD = BUILD · لا نداء fetch(API مباشر · لا أثر لـApps Script
+```
 
 ---
 
@@ -65,44 +88,34 @@ npm run dev
 if (url.origin !== location.origin) return;
 ```
 
-لذلك تُحمَّل الحزم من `public/vendor/` بمسار نسبي: عامل الخدمة يخزّنها، والقيد يبقى قائماً.
-رُوجعت الحزم لإزالة الاستيراد المطلق من gstatic.
+لذلك تُحمَّل الحزم من `public/vendor/` بمسار نسبي، بعد إعادة كتابة الاستيراد المطلق
+من gstatic إلى `./firebase-app.js`.
 
 > **حدّ العمل بلا شبكة:** الاستضافة الذاتية تلغي طلب *ملفات* الحزمة فقط. مناداة
-> Firestore وAuth تبقى عبر الشبكة — والعمل دون اتصال يعتمد على الكاش المحلّي الدائم
-> (`persistentLocalCache`) المفعَّل في `fmac-auth.js`، أي قراءة ما سبق تحميله لا كتابة جديدة.
+> Firestore وAuth تبقى عبر الشبكة؛ والعمل دون اتصال يعتمد على الكاش المحلّي الدائم
+> (`persistentLocalCache`) — أي قراءة ما سبق تحميله، لا كتابة جديدة.
 
 ---
 
-## النشر
+## الصلاحيات
 
-### أ — Firebase (مرّة واحدة)
+بزوال Apps Script صارت **قواعد الأمان هي الحارس الوحيد** لما كان يفعله `user.admin`:
 
-1. فعّل **Authentication ← Email/Password** من لوحة Firebase.
-2. فعّل **Firestore** و**Storage**.
-3. انشر قواعد الأمان:
+- `users/{uid}` — كلٌّ يقرأ ملفّه، والإدارة تقرأ وتكتب الجميع.
+- عشر مجموعات يكتبها المدرب: `subs` `cancels` `attendance` `replies` `segments`
+  `deviations` `acts` `sessions` `stages` `versions`.
+- ما عداها للإدارة وحدها.
 
-```bash
-npx firebase deploy --only firestore:rules,storage
-```
-
-4. أنشئ أوّل حساب إدارة من لوحة Authentication، ثم أضف وثيقة في `users`
-   معرّفها **نفس الـuid**، وفيها `admin: true` و`name`.
-
-> بلا وثيقة `users/{uid}` لن يدخل المستخدم — الشاشة تعرض «الحساب موجود لكن بلا ملفّ».
-
-### ب — Vercel
-
-بلا خطوة بناء: Framework **Other**، Build Command فارغ، Output Directory `public`
-(مضبوط في `vercel.json`). اربط المستودع من لوحة Vercel أو `npx vercel --prod`.
+> المطابقة العامة `match /{col}/{doc}` تستثني `users` صراحةً — بدونها كانت ستمنح
+> أي مدرب قراءة كل ملفّات المستخدمين، لأن Firestore يمنح الوصول إن سمحت أي قاعدة.
 
 ---
 
-## المتبقّي
+## المتبقّي المعروف
 
-- **هجرة البيانات** من جدول جوجل إلى Firestore (سكربت لم يُكتب بعد).
 - **مزايا المساعد** (`ask` · `airev` · `aiweek` · `aistatus`) كانت تنادي واجهة خارجية
   من داخل Apps Script. لا يمكن نقلها للمتصفّح دون كشف المفتاح ⇒ تحتاج Cloud Function.
-  الطبقة ترجع لها `ai_needs_function` صراحةً بدل الفشل الصامت.
-- **إنشاء حسابات المدربين** من داخل الموقع (تحتاج نسخة تطبيق ثانوية أو Cloud Function).
-- **روابط الدعوة** (`inviteLink()`) صارت بلا معنى بعد الانتقال للبريد وكلمة المرور.
+  الطبقة ترجع `ai_needs_function` صراحةً بدل الفشل الصامت.
+- **حذف حساب Auth** لا يتمّ من المتصفّح؛ `_accounts.html` يحذف الملفّ فيُمنع الدخول،
+  وحذف الحساب نفسه من لوحة Firebase.
+- **النقاط 16 · 17 · 18 · 20** من قائمة العشرين في وثيقة المشروع لم تُنفَّذ بعد.

@@ -243,7 +243,7 @@ export function archive(R, user, nowLabel) {
   }
 
   const users = {};
-  for (const u of R.users) if (!u.admin) users[S(u.k)] = S(u.name);
+  for (const u of R.users) if (!u.admin) users[S(u.code) || S(u.k)] = S(u.name);
 
   for (const k of Object.keys(cnt)) {
     const a = k.split('|'), w = a[0], id = a[1], c = cnt[k];
@@ -429,12 +429,12 @@ export const subsList = (rows) => rows.filter((r) => S(r.code)).map((r) => ({
 }));
 
 export const userList = (rows) => rows.filter((r) => S(r.k) && !r.admin).map((r) => ({
-  code: S(r.k), name: S(r.name), sport: S(r.sport), branch: S(r.branch),
+  code: S(r.code) || S(r.k), name: S(r.name), sport: S(r.sport), branch: S(r.branch),
   phone: S(r.phone), photo: S(r.photo),
 }));
 
 export const allUsers = (rows) => rows.filter((r) => S(r.k)).map((r) => ({
-  code: S(r.k), name: S(r.name), role: S(r.role) || 'مدرب', admin: !!r.admin,
+  code: S(r.code) || S(r.k), name: S(r.name), role: S(r.role) || 'مدرب', admin: !!r.admin,
   sport: S(r.sport), branch: S(r.branch), phone: S(r.phone), note: S(r.note),
   photo: S(r.photo), email: S(r.email),
 }));

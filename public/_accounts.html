@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FMAC — الحسابات</title>
+<style>
+:root{--brand:#e8555c;--ok:#22c07f;--warn:#ffc233;--bad:#ff4d59;--blue:#5b8def;
+  --surface:#0f1115;--soft:#191d24;--line:#23272f;--steel:#9aa3b0}
+*{box-sizing:border-box}
+body{background:#08090c;color:#e9ecf1;font:14px/1.7 Tajawal,'Segoe UI',system-ui,sans-serif;
+  padding:24px;max-width:1000px;margin:0 auto;direction:rtl}
+h1{font-size:20px;margin:0 0 4px}
+p.sub{color:var(--steel);font-size:13px;margin:0 0 20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+  padding:18px;margin:14px 0}
+label{display:block;font-size:12.5px;color:#c7cdd6;margin:12px 0 5px}
+input,select{width:100%;background:var(--soft);color:#e9ecf1;border:1px solid #2a2f38;
+  border-radius:10px;padding:9px 11px;font:14px inherit}
+input:focus,select:focus{outline:none;border-color:var(--brand)}
+input[type=email],input[type=password]{direction:ltr;text-align:left}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+button{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px 18px;
+  font:700 14px inherit;cursor:pointer}
+button.ghost{background:var(--soft);color:#e9ecf1;border:1px solid #2a2f38;
+  padding:6px 12px;font-weight:400;font-size:12.5px}
+button:disabled{opacity:.5;cursor:default}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:right;padding:8px;border-bottom:1px solid #1c2028;vertical-align:middle}
+th{color:var(--steel);font-weight:600;font-size:12px}
+.tag{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--soft);
+  border:1px solid #2a2f38}
+.tag.adm{background:rgba(232,85,92,.15);border-color:var(--brand);color:#ff9096}
+.tag.leg{background:rgba(255,194,51,.12);border-color:var(--warn);color:var(--warn)}
+.msg{margin-top:12px;font-size:13px;min-height:20px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+code{background:var(--soft);padding:1px 5px;border-radius:5px;font-size:12px}
+</style></head><body>
+
+<h1>الحسابات</h1>
+<p class="sub">إنشاء حسابات الدخول وربطها بملفّات المدربين — للإدارة وحدها.</p>
+
+<div class="card" id="authCard">جارٍ التحقّق…</div>
+
+<div id="app" hidden>
+  <div class="card">
+    <b>حساب جديد</b>
+    <div class="grid">
+      <div><label for="email">البريد الإلكتروني</label>
+        <input id="email" type="email" autocomplete="off"></div>
+      <div><label for="pass">كلمة المرور المبدئية</label>
+        <input id="pass" type="password" autocomplete="new-password"></div>
+      <div><label for="name">الاسم</label><input id="name" type="text"></div>
+      <div><label for="legacy">ربط بملفّ مهاجَر (اختياري)</label>
+        <select id="legacy"><option value="">— حساب جديد تماماً —</option></select></div>
+      <div><label for="sport">اللعبة</label><input id="sport" type="text"></div>
+      <div><label for="branch">الفرع</label><input id="branch" type="text"></div>
+      <div><label for="phone">الموبايل</label><input id="phone" type="text"></div>
+      <div><label for="role">الصلاحية</label>
+        <select id="role"><option value="مدرب">مدرب</option>
+        <option value="إدارة">إدارة</option></select></div>
+    </div>
+    <div style="margin-top:18px"><button id="create">إنشاء الحساب</button></div>
+    <div class="msg" id="msg"></div>
+    <p class="sub" style="margin:10px 0 0">
+      الربط ينقل بيانات الملفّ القديم ويُبقي كوده، فتظلّ خططه مرتبطةً به.</p>
+  </div>
+
+  <div class="card">
+    <b>المستخدمون</b>
+    <div id="list" style="margin-top:10px">…</div>
+  </div>
+</div>
+
+<script type="module">
+import { ready, PROFILE } from './js/fmac-auth.js';
+import { listUsers, legacyOnly, createAccount, revoke, resetPassword }
+  from './js/fmac-accounts.js';
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+const me = await ready();
+if (!me.admin) {
+  $('authCard').innerHTML =
+    '<span class="bad">هذا الحساب ليس حساب إدارة.</span>';
+} else {
+  $('authCard').innerHTML = 'الدخول: <b>' + esc(me.name || me.email) + '</b> · إدارة ✓';
+  $('app').hidden = false;
+  await refresh();
+}
+
+async function refresh() {
+  let users = [];
+  try { users = await listUsers(); }
+  catch (e) {
+    $('list').innerHTML = '<span class="bad">تعذّرت القراءة: ' + esc(e.message) + '</span>';
+    return;
+  }
+
+  const leg = legacyOnly(users);
+  $('legacy').innerHTML = '<option value="">— حساب جديد تماماً —</option>' +
+    leg.map((u) => '<option value="' + esc(u.uid) + '">' +
+      esc(u.name || u.uid) + ' · ' + esc(u.uid) + '</option>').join('');
+
+  if (!users.length) {
+    $('list').innerHTML = '<span class="warn">لا مستخدمين بعد.</span>';
+    return;
+  }
+
+  $('list').innerHTML = '<table><tr><th>الاسم</th><th>البريد</th><th>الكود</th>' +
+    '<th>اللعبة</th><th>الفرع</th><th>الحالة</th><th></th></tr>' +
+    users.map((u) => {
+      const linked = !!u.email;
+      return '<tr><td>' + esc(u.name || '—') + '</td>' +
+        '<td style="direction:ltr;text-align:left">' + esc(u.email || '—') + '</td>' +
+        '<td><code>' + esc(u.code || u.uid) + '</code></td>' +
+        '<td>' + esc(u.sport || '—') + '</td>' +
+        '<td>' + esc(u.branch || '—') + '</td>' +
+        '<td>' + (u.admin ? '<span class="tag adm">إدارة</span> ' : '') +
+          (linked ? '<span class="tag">مرتبط</span>'
+                  : '<span class="tag leg">مهاجَر — بلا حساب</span>') + '</td>' +
+        '<td style="white-space:nowrap">' +
+          (linked ? '<button class="ghost" data-reset="' + esc(u.email) +
+                    '">إعادة تعيين</button> ' : '') +
+          '<button class="ghost" data-revoke="' + esc(u.uid) + '">حذف الملفّ</button>' +
+        '</td></tr>';
+    }).join('') + '</table>';
+
+  $('list').querySelectorAll('[data-revoke]').forEach((b) => {
+    b.addEventListener('click', async () => {
+      if (!confirm('حذف ملفّ هذا المستخدم؟ سيُمنع دخوله.')) return;
+      const r = await revoke(b.getAttribute('data-revoke'));
+      if (!r.ok) alert(r.error); else await refresh();
+    });
+  });
+  $('list').querySelectorAll('[data-reset]').forEach((b) => {
+    b.addEventListener('click', async () => {
+      try {
+        await resetPassword(b.getAttribute('data-reset'));
+        alert('أُرسلت رسالة إعادة التعيين.');
+      } catch (e) { alert('تعذّر الإرسال: ' + e.message); }
+    });
+  });
+}
+
+$('create').addEventListener('click', async () => {
+  const msg = $('msg');
+  msg.className = 'msg';
+  msg.textContent = 'جارٍ الإنشاء…';
+  $('create').disabled = true;
+  const r = await createAccount({
+    email: $('email').value, password: $('pass').value, name: $('name').value,
+    sport: $('sport').value, branch: $('branch').value, phone: $('phone').value,
+    role: $('role').value, admin: $('role').value === 'إدارة',
+    legacyCode: $('legacy').value,
+  });
+  $('create').disabled = false;
+  if (!r.ok) { msg.className = 'msg bad'; msg.textContent = r.error; return; }
+  msg.className = 'msg ok';
+  msg.textContent = 'تمّ إنشاء الحساب. الكود: ' + r.profile.code;
+  ['email', 'pass', 'name', 'sport', 'branch', 'phone'].forEach((id) => { $(id).value = ''; });
+  $('legacy').value = '';
+  await refresh();
+});
+</script></body></html>

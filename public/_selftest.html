@@ -26,6 +26,9 @@ const mods = [
   './js/fmac-config.js',
   './js/fmac-auth.js',
   './js/fmac-firebase.js',
+  './js/fmac-payload.js',
+  './js/fmac-migrate.js',
+  './js/fmac-accounts.js',
 ];
 const NS = {};
 for (const m of mods) {
@@ -81,15 +84,26 @@ for (const [label, good] of checks) { if (good) ok(label); else bad(label); }
 
 /* ── 5. خادم التطوير (نسخة Node) ── */
 head('[5] scripts/dev-server.mjs');
-try {
-  const t = await (await fetch('./_devserver.txt')).text();
-  const NL = String.fromCharCode(10);
-  const src = t.split(NL).filter((l) => !l.trim().startsWith('import ')).join(NL)
-               .split('import.meta.url').join("'file:///x.mjs'");
-  new Function(src);
-  ok('يُحلَّل بلا أخطاء (' + t.length + ' bytes)');
-} catch (e) {
-  bad('dev-server.mjs — ' + e.name + ': ' + H(e.message));
+{
+  let t = null;
+  try {
+    const r = await fetch('./_devserver.txt');
+    if (r.ok) t = await r.text();
+  } catch (e) { /* اختياري */ }
+  if (!t || t.indexOf('createServer') < 0) {
+    out.push('<div class="warn">SKIP  انسخ scripts/dev-server.mjs إلى ' +
+      'public/_devserver.txt لتفعيل هذا الفحص</div>');
+  } else {
+    try {
+      const NL = String.fromCharCode(10);
+      const src = t.split(NL).filter((l) => !l.trim().startsWith('import ')).join(NL)
+                   .split('import.meta.url').join("'file:///x.mjs'");
+      new Function(src);
+      ok('يُحلَّل بلا أخطاء (' + t.length + ' bytes)');
+    } catch (e) {
+      bad('dev-server.mjs — ' + e.name + ': ' + H(e.message));
+    }
+  }
 }
 
 document.getElementById('out').innerHTML = out.join('');
