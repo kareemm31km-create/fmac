@@ -1,0 +1,33 @@
+{
+ "name": "سجل تنفيذ الخطط التدريبية — نادي الفجيرة للفنون القتالية",
+ "short_name": "FMAC",
+ "description": "متابعة تنفيذ الخطط التدريبية الأسبوعية",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "portrait-primary",
+ "background_color": "#07090c",
+ "theme_color": "#07090c",
+ "lang": "ar",
+ "dir": "rtl",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}
