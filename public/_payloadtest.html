@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>FMAC payload test</title>
+<style>body{background:#08090c;color:#e9ecf1;font:13.5px/1.75 ui-monospace,monospace;padding:20px}
+.ok{color:#22c07f}.bad{color:#ff4d59}h2{font-size:14px;margin:18px 0 6px;color:#5b8def}
+#sum{margin:16px 0;padding:12px 14px;border-radius:12px;background:#0f1115;border:1px solid #23272f;font-size:15px}</style>
+</head><body>
+<h1 style="font-size:17px">FMAC — فحص بناء الحمولة</h1>
+<div id="sum">running…</div><div id="out"></div>
+<script type="module">
+import * as P from './js/fmac-payload.js';
+
+const out = []; let pass = 0, fail = 0;
+const head = (t) => out.push('<h2>' + t + '</h2>');
+const eq = (label, got, want) => {
+  const g = JSON.stringify(got), w = JSON.stringify(want);
+  if (g === w) { pass++; out.push('<div class="ok">PASS  ' + label + '  = ' + g + '</div>'); }
+  else { fail++; out.push('<div class="bad">FAIL  ' + label + '<br>   got:  ' + g + '<br>   want: ' + w + '</div>'); }
+};
+const truthy = (label, v) => {
+  if (v) { pass++; out.push('<div class="ok">PASS  ' + label + '</div>'); }
+  else { fail++; out.push('<div class="bad">FAIL  ' + label + '</div>'); }
+};
+
+const W = 'الأسبوع 4 — أغسطس 2026';   // الأسبوع الجاري
+const V = 'الأسبوع 3 — أغسطس 2026';   // أسبوع سابق ⇒ أرشيف
+
+/* ── بيانات اختبار ── */
+const item = (n, dayNo, txt) => ({
+  k: 'it' + n, planId: 'p1', week: V, sport: 'الجودو', name: 'الجودو',
+  category: 'أساسي', branch: 'الفجيرة', coach: 'c1',
+  dayNo, day: dayNo === 1 ? 'الأحد' : 'الاثنين', date: '', goal: 'هدف',
+  intensity: '0.6', volume: '95', section: 'الجزء الرئيسي', dur: '60 min', item: txt,
+});
+const tick = (n, dayIdx, s) => ({
+  k: V + '|p1|' + dayIdx + '|sec|i' + n, week: V, planId: 'p1',
+  sport: 'الجودو', day: dayIdx === 0 ? 'الأحد' : 'الاثنين',
+  s, n: '', by: 'كريم', at: '2026-08-20T10:00:00Z',
+});
+
+const R = {
+  plans: [{ k: 'p1', sport: 'الجودو', name: 'الجودو', branch: 'الفجيرة',
+            coach: 'c1', players: 10, category: 'أساسي', items: 4, slot: 1 }],
+  items: [item(1, 1, 'تمرين أ'), item(2, 1, 'تمرين ب'),
+          item(3, 2, 'تمرين ج'), item(4, 2, 'تمرين د')],
+  ticks: [tick(1, 0, 'نُفِّذ'), tick(2, 0, 'جزئياً'), tick(3, 1, 'لم يُنفَّذ'),
+          { k: W + '|p1|0|sec|i9', week: W, planId: 'p1', s: 'نُفِّذ', n: 'ملاحظة',
+            by: 'كريم', at: '2026-08-27T10:00:00Z', day: 'الأحد', sport: 'الجودو' }],
+  cancels: [], weeks: [], versions: [], stages: [{ k: 'st1', planId: 'p1', week: V,
+    stage: 'معتمدة', note: '', by: 'كريم', at: '2026-08-19T09:00:00Z' }],
+  users: [{ k: 'c1', name: 'مدرب الجودو', admin: false, sport: 'الجودو',
+            branch: 'الفجيرة', phone: '', photo: '' },
+          { k: 'a1', name: 'كريم زاهر', admin: true, role: 'إدارة' }],
+  subs: [{ k: 'sb1', at: '2026-08-18T08:00:00Z', code: 'c1', name: 'مدرب الجودو',
+           sport: 'الجودو', branch: 'الفجيرة', category: 'أساسي', week: V,
+           players: 10, file: 'plan.xlsx', url: '', note: '' }],
+  notes: [], replies: [], segs: [], devs: [], sess: [], acts: [], audit: [],
+  results: [{ k: 'r1', sport: 'الجودو', season: '2025-2026', name: 'بطولة الدولة',
+              gold: 2, silver: 1, bronze: 0, scope: 'محلي', date: '', place: '' }],
+  shields: [{ k: 'sh1', sport: 'الجودو', season: '2025-2026', kind: 'درع الدوري',
+              rank: 1, points: 100, rival: 'نادي آخر', rivalPoints: 80 }],
+  camps: [{ k: 'cm1', sport: 'الجودو', season: '2025-2026', name: 'معسكر',
+            date: '', place: '', kind: 'داخلي', scope: 'نادي', players: 8 }],
+  national: [{ k: 'n1', sport: 'الجودو', season: '2025-2026', name: 'لاعب',
+               cat: 'ناشئين', note: '', by: '', at: '' }],
+  agenda: [], visits: [], calendar: [],
+};
+
+/* ── 1. الإعدادات: المستهدفات متداخلة، والصفر يصير null ── */
+head('[1] buildSettings — المستهدفات');
+const st = P.buildSettings({ week: W, dates: '20 – 25 أغسطس 2026',
+  targets: { plan: 90, exec: 0, intensity: 70 } });
+eq('targets.plan', st.targets.plan, 90);
+eq('targets.exec (صفر ⇒ null)', st.targets.exec, null);
+eq('targets.volume (غائب ⇒ null)', st.targets.volume, null);
+eq('club افتراضي', st.club, 'نادي الفجيرة للفنون القتالية');
+
+/* ── 2. بنود الخطط: إعادة تركيب الأيام والأقسام ── */
+head('[2] planItems — تركيب الأيام');
+const p2 = P.planItems(R.items, V);
+eq('عدد الخطط', p2.length, 1);
+eq('عدد الأيام', p2[0].days.length, 2);
+eq('بنود اليوم الأول', p2[0].days[0].sections[0].items.length, 2);
+eq('اسم القسم', p2[0].days[0].sections[0].name, 'الجزء الرئيسي');
+eq('لا خطط لأسبوع آخر', P.planItems(R.items, W).length, 0);
+
+/* ── 3. readTicks: الترشيح بالأسبوع ── */
+head('[3] readTicks — الترشيح');
+eq('رصد الأسبوع السابق', Object.keys(P.readTicks(R.ticks, V)).length, 3);
+eq('رصد الأسبوع الجاري', Object.keys(P.readTicks(R.ticks, W)).length, 1);
+eq('شكل القيمة', P.readTicks(R.ticks, W)[W + '|p1|0|sec|i9'], { s: 'نُفِّذ', n: 'ملاحظة' });
+
+/* ── 4. الأرشيف: 1 + 0.5 + 0 من أصل 4 بنود = 38% ── */
+head('[4] archive — الحساب');
+const admin = { code: 'a1', admin: true };
+const arc = P.archive(R, admin, W);
+eq('عدد الأسابيع', arc.length, 1);
+eq('الأسبوع', arc[0].week, V);
+eq('المجموع', arc[0].total, 4);
+eq('المنفَّذ (جزئي = نصف)', arc[0].done, 1.5);
+eq('النسبة', arc[0].pct, 38);
+eq('عدد الأيام', arc[0].days, 2);
+eq('اسم المدرب مُترجَم من الكود', arc[0].plans[0].coach, 'مدرب الجودو');
+eq('الأسبوع الجاري ليس أرشيفاً', arc.filter((x) => x.week === W).length, 0);
+
+/* ── 5. الأرشيف مع إلغاء يوم: يخرج من البسط والمقام ── */
+head('[5] archive — إلغاء يوم');
+const R2 = Object.assign({}, R, {
+  cancels: [{ k: V + '|p1|1', planId: 'p1', sport: 'الجودو', dayName: 'الاثنين',
+              reason: 'إجازة', by: 'كريم', at: '2026-08-21T00:00:00Z' }],
+});
+const arc2 = P.archive(R2, admin, W);
+eq('المقام بعد الإلغاء (يوم 2 خرج)', arc2[0].total, 2);
+eq('المنفَّذ بعد الإلغاء', arc2[0].done, 1.5);
+eq('عدد الملغى', arc2[0].cancelled, 1);
+
+/* ── 6. المدرب يرى خططه وحده ── */
+head('[6] archive — عزل المدرب');
+eq('مدرب آخر لا يرى شيئاً',
+   P.archive(R, { code: 'zz', admin: false }, W).length, 0);
+eq('صاحب الخطة يراها',
+   P.archive(R, { code: 'c1', admin: false }, W).length, 1);
+
+/* ── 7. history ── */
+head('[7] history — المنحنى');
+const h = P.history(R);
+const hv = h.filter((x) => x.week === V)[0];
+truthy('الأسبوع السابق موجود', !!hv);
+eq('النتيجة', hv && hv.score, 38);
+eq('عدد البنود', hv && hv.items, 4);
+eq('نسبة اللعبة', hv && hv.sports['الجودو'], 38);
+
+/* ── 8. autoStage ── */
+head('[8] autoStage');
+const days = { 0: 1, 1: 1 };
+eq('لا رصد ⇒ معتمدة',
+   P.autoStage('معتمدة', V, 'p1', days, {}, {}, false, {}, {}), 'معتمدة');
+eq('رصد جزئي ⇒ جاري التنفيذ',
+   P.autoStage('معتمدة', V, 'p1', days, {}, { [V + '|p1|0']: 1 }, false,
+     { [V + '|p1|0']: 1 }, { [V + '|p1|0']: 2 }), 'جاري التنفيذ');
+eq('كل الأيام مكتملة ⇒ مكتملة',
+   P.autoStage('معتمدة', V, 'p1', days, {}, { [V + '|p1|0']: 1, [V + '|p1|1']: 1 },
+     false, { [V + '|p1|0']: 2, [V + '|p1|1']: 2 },
+     { [V + '|p1|0']: 2, [V + '|p1|1']: 2 }), 'مكتملة');
+eq('أسبوع مغلق ⇒ مغلقة',
+   P.autoStage('معتمدة', V, 'p1', days, {}, {}, true, {}, {}), 'مغلقة');
+eq('قرار يدوي لا يُلمس',
+   P.autoStage('تحتاج تعديل', V, 'p1', days, {}, {}, true, {}, {}), 'تحتاج تعديل');
+
+/* ── 9. التعشيش لعبة ← موسم ── */
+head('[9] results / shields / camps / national');
+eq('نتائج: ذهب', P.results(R.results)['الجودو']['2025-2026'].championships[0].gold, 2);
+const sh = P.shields(R.shields)['الجودو']['2025-2026'].shields[0];
+eq('دروع: صفّان', sh.table.length, 2);
+eq('دروع: النادي أولاً', sh.table[0].club, 'نادي الفجيرة للفنون القتالية');
+eq('معسكرات', P.camps(R.camps)['الجودو']['2025-2026'].camps[0].players, 8);
+eq('المنتخب', P.national(R.national)['الجودو']['2025-2026'].players[0].cat, 'ناشئين');
+
+/* ── 10. قوائم المستخدمين ── */
+head('[10] userList / allUsers');
+eq('userList يستبعد الإدارة', P.userList(R.users).length, 1);
+eq('allUsers يشمل الجميع', P.allUsers(R.users).length, 2);
+eq('الكود من معرّف الوثيقة', P.userList(R.users)[0].code, 'c1');
+
+/* ── 11. سجل التدقيق ── */
+head('[11] audit');
+const au = P.audit(R);
+truthy('يوجد سطر رفع', au.some((x) => x.kind === 'رفع'));
+truthy('يوجد سطر اعتماد', au.some((x) => x.kind === 'اعتماد'));
+truthy('يوجد سطر رصد', au.some((x) => x.kind === 'رصد'));
+truthy('مرتَّب تنازلياً', au.length < 2 || au[0].at >= au[au.length - 1].at);
+truthy('اسم الخطة لا كودها', au.some((x) => x.txt.indexOf('الجودو') >= 0));
+
+/* ── 12. weekNo — الترتيب الزمني ── */
+head('[12] weekNo');
+truthy('أغسطس بعد يوليو',
+  P.weekNo('الأسبوع 1 — أغسطس 2026') > P.weekNo('الأسبوع 4 — يوليو 2026'));
+truthy('2026 بعد 2025',
+  P.weekNo('الأسبوع 1 — يناير 2026') > P.weekNo('الأسبوع 4 — ديسمبر 2025'));
+
+document.getElementById('out').innerHTML = out.join('');
+document.getElementById('sum').innerHTML = (fail === 0)
+  ? '<span class="ok">كل الفحوص نجحت — ' + pass + '/' + (pass + fail) + '</span>'
+  : '<span class="bad">' + fail + ' فشل</span> · <span class="ok">' + pass + ' نجاح</span>';
+</script></body></html>

@@ -1,91 +1,100 @@
 <!doctype html>
 <html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>FMAC self test</title>
-<style>body{background:#08090c;color:#e9ecf1;font:14px/1.7 monospace;padding:20px}
-.ok{color:#22c07f}.bad{color:#ff4d59}.warn{color:#ffc233}h2{font-size:15px;margin:18px 0 6px;color:#5b8def}</style>
+<style>body{background:#08090c;color:#e9ecf1;font:13.5px/1.75 ui-monospace,monospace;padding:20px}
+.ok{color:#22c07f}.bad{color:#ff4d59}.warn{color:#ffc233}
+h2{font-size:14px;margin:20px 0 6px;color:#5b8def;font-weight:700}
+#sum{margin:16px 0;padding:12px 14px;border-radius:12px;background:#0f1115;border:1px solid #23272f;font-size:15px}</style>
 </head><body>
 <h1 style="font-size:17px">FMAC — فحص ذاتي</h1>
-<div id="out">running…</div>
+<div id="sum">running…</div>
+<div id="out"></div>
 <script type="module">
 const out = [];
-const put = (cls, msg) => out.push('<div class="' + cls + '">' + msg + '</div>');
+let pass = 0, fail = 0;
 const H = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const head = (t) => out.push('<h2>' + t + '</h2>');
+const ok  = (m) => { pass++; out.push('<div class="ok">PASS  ' + m + '</div>'); };
+const bad = (m) => { fail++; out.push('<div class="bad">FAIL  ' + m + '</div>'); };
 
-/* ── 1. فحص التحليل: كل ملف يُقرأ ويُمرَّر على محرّك JS ── */
-put('', '<h2>[1] فحص التحليل (parse)</h2>');
-const files = [
-  './js/fmac-config.js',
-  './js/fmac-auth.js',
-  './js/fmac-firebase.js',
-  '../scripts/dev-server.mjs',
-];
-for (const f of files) {
-  let txt = null;
-  try {
-    const r = await fetch(f);
-    if (!r.ok) { put('bad', 'FAIL ' + f + ' — HTTP ' + r.status); continue; }
-    txt = await r.text();
-  } catch (e) { put('bad', 'FAIL ' + f + ' — ' + H(e.message)); continue; }
-
-  const NL = String.fromCharCode(10);
-  let src = txt.split(NL)
-    .filter((l) => !l.trim().startsWith('import ') && !l.trim().startsWith('export '))
-    .join(NL);
-  src = src.split('import.meta.url').join("'file:///x.mjs'");
-  src = src.split('export const').join('const');
-  src = src.split('export function').join('function');
-  src = src.split('export async function').join('async function');
-  src = src.split('export let').join('let');
-  src = src.split('export default').join('void ');
-  try {
-    new Function(src);
-    put('ok', 'PASS  ' + f + '  (' + txt.length + ' bytes)');
-  } catch (e) {
-    put('bad', 'FAIL  ' + f + ' — ' + e.name + ': ' + H(e.message));
-  }
-}
-
-/* ── 2. تحميل الوحدات فعلياً (يكشف أخطاء الاستيراد والمسارات) ── */
-put('', '<h2>[2] تحميل الوحدات (module graph)</h2>');
+/* ── 1. تحميل كل وحدة فعلياً — الاستيراد الحقيقي يكشف خطأ التحليل والمسار ── */
+head('[1] تحميل الوحدات (import حقيقي)');
 const mods = [
   './vendor/firebase-app.js',
   './vendor/firebase-auth.js',
   './vendor/firebase-firestore.js',
   './vendor/firebase-storage.js',
   './js/fmac-config.js',
+  './js/fmac-auth.js',
+  './js/fmac-firebase.js',
 ];
+const NS = {};
 for (const m of mods) {
   try {
     const ns = await import(m);
-    put('ok', 'PASS  ' + m + '  (exports: ' + Object.keys(ns).length + ')');
+    NS[m] = ns;
+    ok(m + '   (exports: ' + Object.keys(ns).length + ')');
   } catch (e) {
-    put('bad', 'FAIL  ' + m + ' — ' + e.name + ': ' + H(e.message));
+    bad(m + ' — ' + e.name + ': ' + H(e.message));
   }
 }
 
-/* ── 3. لا طلبات خارجية داخل حزم Firebase ── */
-put('', '<h2>[3] لا طلبات خارجية (القيد §3)</h2>');
+/* ── 2. الطبقة موجودة وتتصرّف كما يتوقّع index.html ── */
+head('[2] عقد طبقة النقل');
+const api = window.__fmacApi;
+if (typeof api === 'function') ok('window.__fmacApi معرَّفة');
+else bad('window.__fmacApi غير معرَّفة');
+
+const shim = NS['./js/fmac-firebase.js'];
+if (shim && typeof shim.__fmacApi === 'function') ok('التصدير __fmacApi موجود');
+else bad('التصدير __fmacApi مفقود');
+
+const cfg = NS['./js/fmac-config.js'];
+if (cfg && cfg.COL && Object.keys(cfg.COL).length >= 24)
+  ok('خريطة المجموعات: ' + Object.keys(cfg.COL).length + ' مجموعة');
+else bad('خريطة المجموعات ناقصة');
+
+const authNs = NS['./js/fmac-auth.js'];
+if (authNs && authNs.auth && authNs.db && authNs.storage) ok('Auth + Firestore + Storage مهيّأة');
+else bad('تهيئة Firebase ناقصة');
+
+/* ── 3. لا طلبات خارجية (القيد §3) ── */
+head('[3] لا طلبات خارجية');
 for (const m of mods.slice(0, 4)) {
   const t = await (await fetch(m)).text();
-  const hits = t.split('https://www.gstatic.com/firebasejs').length - 1;
   const imports = (t.match(/from"https:/g) || []).length;
-  put(imports === 0 ? 'ok' : 'bad',
-    (imports === 0 ? 'PASS  ' : 'FAIL  ') + m +
-    ' — absolute imports: ' + imports + ', gstatic strings: ' + hits);
+  if (imports === 0) ok(m + ' — لا استيراد مطلق');
+  else bad(m + ' — استيراد مطلق: ' + imports);
 }
 
-/* ── 4. تحقّق من ربط index.html ── */
-put('', '<h2>[4] ربط index.html</h2>');
+/* ── 4. ربط index.html ── */
+head('[4] ربط index.html');
 const idx = await (await fetch('./index.html')).text();
-const nFetch = (idx.match(/fetch\(API/g) || []).length;
-const nShim = (idx.match(/__fmacApi\(API/g) || []).length;
-const hasMod = idx.indexOf('js/fmac-firebase.js') >= 0;
-const hasBridge = idx.indexOf('__fmacResolve') >= 0;
-const sentinel = idx.indexOf("var API = 'firebase'") >= 0;
-put(nFetch === 0 ? 'ok' : 'bad', (nFetch === 0 ? 'PASS' : 'FAIL') + '  fetch(API sites remaining: ' + nFetch);
-put(nShim === 31 ? 'ok' : 'warn', (nShim === 31 ? 'PASS' : 'WARN') + '  __fmacApi(API sites: ' + nShim + ' (expected 31)');
-put(hasMod ? 'ok' : 'bad', (hasMod ? 'PASS' : 'FAIL') + '  module tag present');
-put(hasBridge ? 'ok' : 'bad', (hasBridge ? 'PASS' : 'FAIL') + '  bridge proxy present');
-put(sentinel ? 'ok' : 'bad', (sentinel ? 'PASS' : 'FAIL') + '  API sentinel set');
+const checks = [
+  ['fetch(API لم يبقَ منها شيء', (idx.match(/fetch\(API/g) || []).length === 0],
+  ['__fmacApi(API في 31 موضعاً', (idx.match(/__fmacApi\(API/g) || []).length === 31],
+  ['وسم الوحدة موجود', idx.indexOf('js/fmac-firebase.js') >= 0],
+  ['الوسيط موجود', idx.indexOf('__fmacResolve') >= 0],
+  ['قيمة API الحارسة', idx.indexOf("var API = 'firebase'") >= 0],
+  ['لا أثر لعنوان Apps Script', idx.indexOf('script.google.com') < 0],
+];
+for (const [label, good] of checks) { if (good) ok(label); else bad(label); }
+
+/* ── 5. خادم التطوير (نسخة Node) ── */
+head('[5] scripts/dev-server.mjs');
+try {
+  const t = await (await fetch('./_devserver.txt')).text();
+  const NL = String.fromCharCode(10);
+  const src = t.split(NL).filter((l) => !l.trim().startsWith('import ')).join(NL)
+               .split('import.meta.url').join("'file:///x.mjs'");
+  new Function(src);
+  ok('يُحلَّل بلا أخطاء (' + t.length + ' bytes)');
+} catch (e) {
+  bad('dev-server.mjs — ' + e.name + ': ' + H(e.message));
+}
 
 document.getElementById('out').innerHTML = out.join('');
+const el = document.getElementById('sum');
+el.innerHTML = (fail === 0)
+  ? '<span class="ok">كل الفحوص نجحت — ' + pass + '/' + (pass + fail) + '</span>'
+  : '<span class="bad">' + fail + ' فشل</span> · <span class="ok">' + pass + ' نجاح</span>';
 </script></body></html>

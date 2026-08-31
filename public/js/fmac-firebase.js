@@ -6,11 +6,12 @@ import {
 import { ref, uploadBytes, getDownloadURL } from '../vendor/firebase-storage.js';
 import { db, storage, PROFILE, ready } from './fmac-auth.js';
 import { COL, BUILD } from './fmac-config.js';
+import * as P from './fmac-payload.js';
 
-const S = (v) => (v === null || v === undefined) ? '' : String(v);
+const S = P.S;
+const NUM = (v) => Number(v) || 0;
 const nowISO = () => new Date().toISOString();
 
-/* ── قراءة مجموعة كاملة ───────────────────────────────────────── */
 async function readCol(name) {
   const snap = await getDocs(collection(db, name));
   const out = [];
@@ -18,117 +19,139 @@ async function readCol(name) {
   return out;
 }
 
-/* خريطة بالمفتاح — مقابل mapOf_ في السكربت */
-const toMap = (rows) => {
+/* خريطة بالمفتاح مع مُشكِّل — مقابل mapOf_ */
+const mapOf = (rows, fn) => {
   const o = {};
-  for (const r of rows) {
-    const copy = Object.assign({}, r);
-    delete copy.k;
-    o[r.k] = copy;
-  }
+  for (const r of rows) { if (S(r.k)) o[S(r.k)] = fn(r); }
   return o;
 };
 
-/* ── تجميع حمولة init ─────────────────────────────────────────── */
-const CACHE = { at: 0, data: null };
-
+/* ── حمولة init ───────────────────────────────────────────── */
 async function initPayload() {
   const me = PROFILE;
   if (!me) return { ok: false, error: 'bad_code' };
 
-  const names = [
-    COL.settings, COL.plans, COL.users, COL.subs, COL.cancels, COL.ticks,
-    COL.items, COL.attend, COL.replies, COL.stages, COL.versions, COL.segs,
-    COL.devs, COL.sess, COL.notes, COL.weeks, COL.results, COL.shields,
-    COL.camps, COL.national, COL.agenda, COL.visits, COL.calendar,
-    COL.acts, COL.audit,
-  ];
-  const got = await Promise.all(names.map((n) => readCol(n).catch(() => [])));
+  const map = {
+    settings: COL.settings, plans: COL.plans, users: COL.users, subs: COL.subs,
+    cancels: COL.cancels, ticks: COL.ticks, items: COL.items, attend: COL.attend,
+    replies: COL.replies, stages: COL.stages, versions: COL.versions,
+    segs: COL.segs, devs: COL.devs, sess: COL.sess, notes: COL.notes,
+    weeks: COL.weeks, results: COL.results, shields: COL.shields,
+    camps: COL.camps, national: COL.national, agenda: COL.agenda,
+    visits: COL.visits, calendar: COL.calendar, acts: COL.acts, audit: COL.audit,
+  };
+  const keys = Object.keys(map);
+  const got = await Promise.all(keys.map((k) => readCol(map[k]).catch(() => [])));
   const R = {};
-  names.forEach((n, i) => { R[n] = got[i]; });
+  keys.forEach((k, i) => { R[k] = got[i]; });
 
-  /* الإعدادات وثيقة واحدة */
-  const cfgDoc = R[COL.settings].find((d) => d.k === 'config') || {};
-  const settings = Object.assign({
-    week: '', dates: '', season: '', branch: '',
-  }, cfgDoc);
-  delete settings.k;
+  const settings = P.buildSettings(R.settings.find((d) => d.k === 'config'));
+  const week = P.weekNow(settings).label;
 
-  /* المدرب يرى خططه وحده — مقابل السطر 494 في السكربت */
-  const myCode = S(me.code || me.uid);
-  let plans = R[COL.plans];
-  if (!me.admin) plans = plans.filter((p) => S(p.coach) === myCode);
+  const user = {
+    code: S(me.code || me.uid), name: S(me.name), admin: !!me.admin,
+    sport: S(me.sport), branch: S(me.branch), phone: S(me.phone),
+    photo: S(me.photo), email: S(me.email), uid: S(me.uid),
+  };
 
-  const week = S(settings.week);
-  const withCode = (u) => Object.assign({}, u, { code: u.k });
-
-  const payload = {
+  return {
     ok: true,
-    user: me,
-    settings: settings,
-    plans: toMap(plans),
-    users: R[COL.users].filter((u) => !u.admin).map(withCode),
-    subs: R[COL.subs],
-    cancels: R[COL.cancels],
-    ticks: toMap(R[COL.ticks].filter((t) => !week || S(t.week) === week)),
-    plans2: R[COL.items],
-    attend: R[COL.attend],
-    replies: R[COL.replies],
-    stages: toMap(R[COL.stages]),
-    versions: R[COL.versions],
-    segs: toMap(R[COL.segs]),
-    devs: R[COL.devs],
-    sess: toMap(R[COL.sess]),
-    notes: R[COL.notes],
-    weeks: toMap(R[COL.weeks]),
-    acts: toMap(R[COL.acts]),
-    audit: me.admin ? R[COL.audit] : [],
-    archive: R[COL.subs].filter((s) => me.admin || S(s.by) === myCode),
-    results: R[COL.results],
-    shields: R[COL.shields],
-    camps: R[COL.camps],
-    national: R[COL.national],
-    staff: me.admin ? R[COL.users].map(withCode) : [],
-    agenda: R[COL.agenda],
-    visits: R[COL.visits],
-    calendar: R[COL.calendar],
-    history: R[COL.weeks],
+    user,
+    settings,
+    plans: P.planMap(R.plans),          // غير مُرشَّحة — كما في doGet
+    users: P.userList(R.users),
+    subs: P.subsList(R.subs),
+    cancels: P.cancelList(R.cancels),
+    ticks: P.readTicks(R.ticks, week),
+    plans2: P.planItems(R.items, week),
+    attend: P.attendList(R.attend),
+    replies: P.replyList(R.replies),
+    stages: mapOf(R.stages, (r) => ({
+      stage: S(r.stage), note: S(r.note), by: S(r.by), at: S(r.at) })),
+    versions: R.versions.filter((r) => S(r.k)).map((r) => ({
+      k: S(r.k), plan: S(r.planId), week: S(r.week), n: NUM(r.n) || 1,
+      at: S(r.at), by: S(r.by), file: S(r.file), url: S(r.url),
+      days: NUM(r.days), items: NUM(r.items), shape: S(r.shape) })),
+    segs: mapOf(R.segs, (r) => ({
+      planned: NUM(r.planned), actual: NUM(r.actual), by: S(r.by), at: S(r.at) })),
+    devs: R.devs.filter((r) => S(r.k)).map((r) => ({
+      plan: S(r.planId), week: S(r.week), day: NUM(r.day), section: S(r.section),
+      item: S(r.item), kind: S(r.kind), actual: S(r.actual),
+      by: S(r.by), at: S(r.at) })),
+    sess: mapOf(R.sess, (r) => ({
+      planned: NUM(r.planned), intensity: NUM(r.intensity), goal: S(r.goal),
+      exec: NUM(r.exec), tPlan: NUM(r.tPlan), tAct: NUM(r.tAct),
+      by: S(r.by), at: S(r.at), goalKind: S(r.goalKind) })),
+    notes: R.notes.filter((r) => S(r.k)).map((r) => ({
+      k: S(r.k), plan: S(r.planId), week: S(r.week), day: S(r.day),
+      dayName: S(r.dayName), text: S(r.text), state: S(r.state),
+      by: S(r.by), at: S(r.at) })),
+    weeks: mapOf(R.weeks, (r) => ({
+      state: S(r.state), note: S(r.note), by: S(r.by), at: S(r.at) })),
+    acts: mapOf(R.acts, (r) => ({ state: S(r.state), by: S(r.by), at: S(r.at) })),
+    audit: user.admin ? P.audit(R) : [],
+    archive: P.archive(R, user, week),
+    results: P.results(R.results),
+    shields: P.shields(R.shields),
+    camps: P.camps(R.camps),
+    national: P.national(R.national),
+    staff: user.admin ? P.allUsers(R.users) : [],
+    agenda: P.agendaList(R.agenda),
+    visits: P.visitsList(R.visits),
+    calendar: P.calendarList(R.calendar),
+    history: P.history(R),
     build: BUILD,
     ai: { on: false, model: '' },   // مزايا المساعد تحتاج Cloud Function
   };
-
-  CACHE.at = Date.now();
-  CACHE.data = payload;
-  return payload;
 }
 
-/* ── صلاحيات ──────────────────────────────────────────────────── */
+/* ── بنود أسبوع بعينه — مقابل weekData_ ───────────────────── */
+async function weekData(body) {
+  const wk = S(body.week);
+  if (!wk) return { ok: false, error: 'no_week' };
+  const me = PROFILE || {};
+  const [items, cancels, attend, ticks] = await Promise.all([
+    readCol(COL.items), readCol(COL.cancels),
+    readCol(COL.attend), readCol(COL.ticks),
+  ]);
+  let plans = P.planItems(items, wk);
+  if (!me.admin) plans = plans.filter((p) => S(p.coach) === S(me.code || me.uid));
+  const canc = {}, att = {};
+  for (const r of cancels) {
+    const k = S(r.k);
+    if (k && k.split('|')[0] === wk) {
+      canc[k] = { reason: S(r.reason), by: S(r.by), at: S(r.at) };
+    }
+  }
+  for (const r of attend) {
+    const k = S(r.k);
+    if (k && k.split('|')[0] === wk) {
+      att[k] = { planned: NUM(r.planned), actual: NUM(r.actual) };
+    }
+  }
+  return { ok: true, week: wk, plans, cancels: canc, attend: att,
+    ticks: P.readTicks(ticks, wk) };
+}
+
+/* ── صلاحيات ──────────────────────────────────────────────── */
 const deny = { ok: false, error: 'not_admin' };
 const adminOnly = () => (PROFILE && PROFILE.admin) ? null : deny;
 
-/* كتابة صفّ — معرّف الوثيقة هو المفتاح k */
 async function put(col, key, data) {
   const id = S(key) || doc(collection(db, col)).id;
   const body = Object.assign({}, data, {
-    by: S(PROFILE && (PROFILE.code || PROFILE.uid)),
+    by: S(PROFILE && (PROFILE.name || PROFILE.code || PROFILE.uid)),
     at: nowISO(),
   });
-  delete body.action;
-  delete body.u;
-  delete body.k;
-  delete body.file;
+  delete body.action; delete body.u; delete body.k; delete body.file;
   await setDoc(doc(db, col, id), body, { merge: true });
-  CACHE.data = null;
-  return { ok: true, k: id };
+  return { ok: true, k: id, at: body.at };
 }
-
 async function drop(col, key) {
   await deleteDoc(doc(db, col, S(key)));
-  CACHE.data = null;
   return { ok: true };
 }
 
-/* رفع ملف إلى Storage — يقابل media_/upload_ */
 async function putFile(b64, name, folder) {
   if (!b64) return '';
   const comma = b64.indexOf(',');
@@ -142,28 +165,24 @@ async function putFile(b64, name, folder) {
   return await getDownloadURL(r);
 }
 
-/* ── موزّع الإجراءات — يقابل doPost ──────────────────────────── */
+/* ── موزّع الإجراءات — يقابل doPost ──────────────────────── */
 const ADMIN = ['result', 'shield', 'targets', 'camp', 'natl', 'natlDrop',
   'user', 'userDrop', 'agenda', 'visit', 'cal', 'calDrop', 'closeweek', 'note'];
 
 async function dispatch(body) {
   const a = S(body.action);
-
-  if (ADMIN.indexOf(a) >= 0) {
-    const d = adminOnly();
-    if (d) return d;
-  }
+  if (ADMIN.indexOf(a) >= 0) { const d = adminOnly(); if (d) return d; }
 
   switch (a) {
     case 'upload': {
       const url = body.file ? await putFile(body.file, body.name, 'media') : S(body.url);
-      const row = Object.assign({}, body, { url: url });
+      const row = Object.assign({}, body, { url });
       await put(COL.versions, body.k, row);
       return put(COL.subs, body.k, row);
     }
     case 'media': {
       const url = await putFile(body.file, body.name, 'media');
-      return put(COL.subs, body.k, Object.assign({}, body, { url: url }));
+      return put(COL.subs, body.k, Object.assign({}, body, { url }));
     }
     case 'cancel': return put(COL.cancels, body.k, body);
     case 'attendance': return put(COL.attend, body.k, body);
@@ -177,26 +196,43 @@ async function dispatch(body) {
     case 'closeweek': return put(COL.weeks, body.k || body.week, body);
     case 'result': return put(COL.results, body.k, body);
     case 'shield': return put(COL.shields, body.k, body);
-    case 'camp': return put(COL.camps, body.k, body);
-    case 'natl': return put(COL.national, body.k, body);
-    case 'natlDrop': return drop(COL.national, body.k);
-    case 'agenda': return put(COL.agenda, body.k, body);
-    case 'visit': return put(COL.visits, body.k, body);
-    case 'cal': return put(COL.calendar, body.k, body);
-    case 'calDrop': return drop(COL.calendar, body.k);
-    case 'user': return put(COL.users, body.code || body.k, body);
+    case 'camp': return put(COL.camps, body.k, body.camp || body);
+    case 'natl': return put(COL.national, body.k, body.natl || body);
+    case 'natlDrop': return drop(COL.national, (body.natl || {}).k || body.k);
+    case 'agenda': return put(COL.agenda, body.k, body.agenda || body);
+    case 'visit': return put(COL.visits, body.k, body.visit || body);
+    case 'calDrop': return drop(COL.calendar, (body.cal || {}).k || body.k);
+    case 'user': return put(COL.users, body.code || body.k, body.user || body);
     case 'userDrop': return drop(COL.users, body.code || body.k);
     case 'targets': return put(COL.settings, 'config', body);
 
+    /* استيراد كشف اتحاد: صفوف كثيرة دفعةً واحدة — مقابل calSave_ */
+    case 'cal': {
+      const rows = body.calendar || [body.cal || {}];
+      if (!rows.length) return { ok: false, error: 'missing' };
+      const at = nowISO(), out = [];
+      const b = writeBatch(db);
+      const by = S(PROFILE && (PROFILE.name || PROFILE.uid));
+      for (let i = 0; i < rows.length; i++) {
+        const c = rows[i] || {};
+        if (!S(c.name) || !S(c.season)) continue;
+        const k = S(c.k) || ('CL' + Date.now() + i);
+        const row = Object.assign({}, c, { by, at });
+        delete row.k;
+        b.set(doc(db, COL.calendar, k), row, { merge: true });
+        out.push(k);
+      }
+      if (!out.length) return { ok: false, error: 'missing' };
+      await b.commit();
+      return { ok: true, at, k: out[0], keys: out, n: out.length };
+    }
+
+    case 'weekdata': return weekData(body);
+
     /* مزايا المساعد كانت تنادي واجهة خارجية من Apps Script.
        لا يمكن نقلها للمتصفّح دون كشف المفتاح — تحتاج Cloud Function. */
-    case 'ask':
-    case 'airev':
-    case 'aiweek':
-    case 'aistatus':
+    case 'ask': case 'airev': case 'aiweek': case 'aistatus':
       return { ok: false, error: 'ai_needs_function' };
-    case 'weekdata':
-      return { ok: true, rows: [] };
 
     /* بلا action ⇐ حفظ الرصد، مقابل saveTicks_ */
     case '': {
@@ -204,14 +240,15 @@ async function dispatch(body) {
       if (!Array.isArray(rows) || !rows.length) return { ok: true, n: 0 };
       const b = writeBatch(db);
       const stamp = {
-        by: S(PROFILE && (PROFILE.code || PROFILE.uid)),
+        by: S(PROFILE && (PROFILE.name || PROFILE.code || PROFILE.uid)),
         at: nowISO(),
       };
       for (const t of rows) {
-        b.set(doc(db, COL.ticks, S(t.k)), Object.assign({}, t, stamp), { merge: true });
+        const row = Object.assign({}, t, stamp);
+        delete row.k;
+        b.set(doc(db, COL.ticks, S(t.k)), row, { merge: true });
       }
       await b.commit();
-      CACHE.data = null;
       return { ok: true, n: rows.length };
     }
 
@@ -220,10 +257,9 @@ async function dispatch(body) {
   }
 }
 
-/* ── نقطة الدخول: بديل fetch ─────────────────────────────────── */
+/* ── نقطة الدخول: بديل fetch ─────────────────────────────── */
 const respond = (obj) => ({
-  ok: true,
-  status: 200,
+  ok: true, status: 200,
   json: async () => obj,
   text: async () => JSON.stringify(obj),
 });
@@ -233,23 +269,20 @@ export async function __fmacApi(url, opts) {
     await ready();
     /* fetch يفترض GET حين لا يُذكر method — ونداء init يمرّر {cache:'no-store'} فقط */
     const method = S(opts && opts.method).toUpperCase() || 'GET';
-    if (method === 'GET') {
-      return respond(await initPayload());
-    }
+    if (method === 'GET') return respond(await initPayload());
     let body = {};
-    try {
-      body = JSON.parse(opts.body || '{}');
-    } catch (e) {
-      body = {};
-    }
+    try { body = JSON.parse(opts.body || '{}'); } catch (e) { body = {}; }
     return respond(await dispatch(body));
   } catch (e) {
     return respond({ ok: false, error: String((e && e.message) || e) });
   }
 }
 
-/* الوحدات مؤجَّلة، والسكربت الداخلي يعمل أثناء التحليل — لذا يوجد وسيط
-   في index.html ينتظر هذا الوعد. نحلّه أوّلاً ثم نستبدل الوسيط بالدالة نفسها. */
 if (typeof window.__fmacResolve === 'function') window.__fmacResolve(__fmacApi);
 window.__fmacApi = __fmacApi;
+
+/* نبدأ المصادقة فوراً حتى تظهر شاشة الدخول أوّلاً، لا بوّابة الأكواد القديمة. */
+window.__fmacAuthReady = ready();
+window.__fmacLogout = () => import('./fmac-auth.js').then((m) => m.logout());
+
 export default __fmacApi;

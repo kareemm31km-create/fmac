@@ -121,9 +121,12 @@ function screen() {
   return w;
 }
 
-/* ينتظر مستخدماً مسجَّلاً وملفّاً صالحاً في users، ويرجع الملف */
+/* ينتظر مستخدماً مسجَّلاً وملفّاً صالحاً في users، ويرجع الملف.
+   محفوظة: كل نداء يعيد الوعد نفسه، فلا يتراكم مستمع onAuthStateChanged. */
+let _ready = null;
 export function ready() {
-  return new Promise((resolve) => {
+  if (_ready) return _ready;
+  _ready = new Promise((resolve) => {
     let box = null;
     onAuthStateChanged(auth, async (u) => {
       if (!u) {
@@ -152,6 +155,7 @@ export function ready() {
       resolve(PROFILE);
     });
   });
+  return _ready;
 }
 
 export const logout = () => signOut(auth);
