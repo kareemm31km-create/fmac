@@ -46,3 +46,7 @@ export const COACH_WRITABLE = [
 ];
 
 export const BUILD = 7;
+
+/* حساب الإدارة الأوّل — يُنشأ ملفّه تلقائياً عند أوّل دخول.
+   ليس سرّاً: القواعد تعترف بهذا المعرّف وحده، ومن يملكه يملك الحساب أصلاً. */
+export const BOOTSTRAP_UID = 'hHUCpTBk8eR5xIEXjzrB5mP3kk12';

@@ -6,11 +6,11 @@ import {
   sendPasswordResetEmail,
 } from '../vendor/firebase-auth.js';
 import {
-  getFirestore, doc, getDoc,
+  getFirestore, doc, getDoc, setDoc,
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
 } from '../vendor/firebase-firestore.js';
 import { getStorage } from '../vendor/firebase-storage.js';
-import { FIREBASE_CONFIG } from './fmac-config.js';
+import { FIREBASE_CONFIG, BOOTSTRAP_UID } from './fmac-config.js';
 
 export const app = initializeApp(FIREBASE_CONFIG);
 export const auth = getAuth(app);
@@ -148,6 +148,26 @@ export function ready() {
         return;
       }
       if (!snap.exists()) {
+        /* حساب الإدارة الأوّل: يُنشأ ملفّه من هنا — القواعد تسمح لهذا المعرّف وحده */
+        if (u.uid === BOOTSTRAP_UID) {
+          try {
+            const seed = {
+              name: 'كريم زاهر', role: 'إدارة', admin: true, code: 'admin1',
+              sport: '', branch: '', phone: '', note: '', photo: '',
+              email: u.email || '', active: true,
+            };
+            await setDoc(doc(db, 'users', u.uid), seed, { merge: true });
+            PROFILE = Object.assign({ uid: u.uid, email: u.email }, seed);
+            if (box) { box.remove(); box = null; }
+            resolve(PROFILE);
+            return;
+          } catch (e) {
+            if (!box) box = screen();
+            const el = document.getElementById('fmErr');
+            if (el) el.textContent = 'تعذّر إنشاء ملفّ الإدارة: ' + (e && e.message);
+            return;
+          }
+        }
         await signOut(auth);
         if (!box) box = screen();
         const el = document.getElementById('fmErr');

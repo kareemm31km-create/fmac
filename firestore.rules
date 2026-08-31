@@ -16,11 +16,18 @@ service cloud.firestore {
       return signedIn() &&
              exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
+    /* حساب الإدارة الأوّل — يكسر الدورة: القاعدة تتطلّب ملفّاً في users،
+       وإنشاء الملفّ يتطلّب صلاحية إدارة. معرّف واحد ثابت، لا يمنح غيره شيئاً.
+       يبقى صالحاً بعد إنشاء الملفّ، فهو حساب المدير الفنّي نفسه. */
+    function bootstrapAdmin() {
+      return request.auth != null &&
+             request.auth.uid == 'hHUCpTBk8eR5xIEXjzrB5mP3kk12';
+    }
     function active() {
-      return exists_() && profile().active != false;
+      return bootstrapAdmin() || (exists_() && profile().active != false);
     }
     function isAdmin() {
-      return exists_() && profile().admin == true;
+      return bootstrapAdmin() || (exists_() && profile().admin == true);
     }
 
     /* كل المجموعات المعروفة */

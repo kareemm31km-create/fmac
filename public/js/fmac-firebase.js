@@ -281,8 +281,10 @@ export async function __fmacApi(url, opts) {
 if (typeof window.__fmacResolve === 'function') window.__fmacResolve(__fmacApi);
 window.__fmacApi = __fmacApi;
 
-/* نبدأ المصادقة فوراً حتى تظهر شاشة الدخول أوّلاً، لا بوّابة الأكواد القديمة. */
-window.__fmacAuthReady = ready();
+/* نبدأ المصادقة فوراً حتى تظهر شاشة الدخول أوّلاً، لا بوّابة الأكواد القديمة.
+   الشرط يمنع ظهور شاشة الدخول فوق صفحات الفحص التي تستورد الوحدة للقراءة فقط؛
+   صفحات الإدارة تنادي ready() بنفسها. */
+if (document.getElementById('gate')) window.__fmacAuthReady = ready();
 window.__fmacLogout = () => import('./fmac-auth.js').then((m) => m.logout());
 
 export default __fmacApi;
