@@ -1,0 +1,53 @@
+rules_version = '2';
+
+/* قواعد أمان Firestore — بديل حارس user.admin في Apps Script.
+   لا تعديل إلا من الإدارة، عدا المجموعات التي يكتبها المدرب صراحةً. */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function exists_() {
+      return signedIn() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    function active() {
+      return exists_() && profile().active != false;
+    }
+    function isAdmin() {
+      return exists_() && profile().admin == true;
+    }
+
+    /* كل المجموعات المعروفة */
+    function known() {
+      return ['plans','planItems','ticks','notes','weeks','results','shields',
+              'camps','national','agenda','visits','calendar','settings','audit',
+              'subs','cancels','attendance','replies','segments','deviations',
+              'acts','sessions','stages','versions'];
+    }
+
+    /* ما يكتبه المدرب — ما عداها للإدارة وحدها (القيد رقم 2 في وثيقة المشروع) */
+    function coachWritable() {
+      return ['subs','cancels','attendance','replies','segments',
+              'deviations','acts','sessions','stages','versions'];
+    }
+
+    /* المستخدمون: كلٌّ يقرأ ملفّه، والإدارة وحدها تقرأ وتكتب الجميع.
+       مطابقة مستقلّة — والقاعدة العامة تحته تستثني 'users' صراحةً. */
+    match /users/{uid} {
+      allow read:  if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    match /{col}/{doc} {
+      allow read: if col != 'users' && col in known() && active();
+      allow write: if col != 'users' && col in known() &&
+                      (isAdmin() || (active() && col in coachWritable()));
+    }
+  }
+}

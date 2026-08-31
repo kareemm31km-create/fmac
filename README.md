@@ -4,19 +4,27 @@
 التدريبية الأسبوعية، نتائج البطولات والمواسم، الزيارات الميدانية، كالندر مشاركات الموسم،
 والتقارير. واجهة عربية RTL مع تحويل كامل للإنجليزية.
 
-> التوثيق الكامل للمشروع في [`docs/FMAC-PROJECT.md`](docs/FMAC-PROJECT.md) — يُقرأ أولاً قبل أي تعديل.
+> التوثيق الأصلي في [`docs/FMAC-PROJECT.md`](docs/FMAC-PROJECT.md).
+> **انتبه:** القسمان 3 و10 فيه يصفان معمارية Apps Script + Google Sheet، وقد استُبدلت
+> بـFirebase. البقيّة (الصفحات · التصميم · الترجمة · الأخطاء المصلَحة) ما زالت سارية.
 
 ---
 
 ## المعمارية
 
 ```
-المتصفّح (ملف HTML واحد)  ←→  Google Apps Script Web App  ←→  Google Sheet
-   public/index.html              apps-script/*.gs             التخزين الفعلي
+index.html (الواجهة كما هي، بلا تعديل منطقي)
+      │   __fmacApi(API, …)          ← 31 نداءً، كانت fetch(API, …)
+      ▼
+public/js/fmac-firebase.js           ← تحاكي عقد Apps Script فوق Firestore
+public/js/fmac-auth.js               ← الدخول بالبريد وكلمة المرور
+      ▼
+Firebase — Auth · Firestore · Storage
 ```
 
-لا خادم ولا قاعدة بيانات. جدول جوجل هو قاعدة البيانات، وApps Script هو الـAPI،
-والموقع ملفّ ساكن واحد يُنشر على Vercel.
+طبقة النقل تُحاكي عقد الـHTTP القديم بالضبط: نداء `GET` يرجع حمولة `init` بمفاتيحها
+الثمانية والعشرين، و`POST` يوزّع على الإجراءات الخمسة والعشرين. لذلك **لم تتغيّر
+أي سطر من منطق الواجهة** (~14,000 سطر).
 
 ---
 
@@ -25,14 +33,15 @@
 | المسار | الدور |
 |---|---|
 | `public/` | الموقع كما يُنشر — **مجلد الإخراج على Vercel** |
-| `public/index.html` | الواجهة كاملةً (~1.8 ميجا): CSS وJS والأيقونات والشعار وبيانات المواسم مضمّنة |
-| `public/manifest.json` · `public/sw.js` | إعداد الـPWA وعامل الخدمة (شبكة أولاً، والكاش احتياطي) |
-| `public/icon-*.png` · `apple-touch-icon.png` | أيقونات التطبيق |
-| `apps-script/FMAC-Apps-Script.gs` | سكربت جدول جوجل كاملاً |
-| `docs/FMAC-PROJECT.md` | ملف تعريف المشروع |
+| `public/index.html` | الواجهة كاملةً (~1.8 ميجا) |
+| `public/js/fmac-config.js` | إعداد Firebase + خريطة المجموعات |
+| `public/js/fmac-auth.js` | المصادقة وشاشة الدخول |
+| `public/js/fmac-firebase.js` | طبقة النقل (حمولة init + الإجراءات) |
+| `public/vendor/firebase-*.js` | حزم Firebase مستضافة ذاتياً (القيد §3) |
+| `public/_selftest.html` | فحص ذاتي: تحليل الملفات · تحميل الوحدات · الربط |
+| `firestore.rules` · `storage.rules` | قواعد الأمان — **الحارس الوحيد للصلاحيات** |
+| `apps-script/FMAC-Apps-Script.gs` | السكربت القديم — مرجع للهجرة فقط |
 | `scripts/dev-server.mjs` | خادم تطوير ساكن بلا اعتماديات |
-| `scripts/check-build.mjs` | حارس النسخة: `NEED_BUILD` = `BUILD` |
-| `vercel.json` | مجلد الإخراج + ترويسات الكاش |
 
 ---
 
@@ -42,59 +51,58 @@
 npm run dev
 ```
 
-يفتح على `http://127.0.0.1:3000/`. لا يحتاج `npm install` — الخادم بلا اعتماديات.
+`http://127.0.0.1:3000/` — لا يحتاج `npm install`، الخادم بلا اعتماديات.
 
-لتغيير المنفذ:
-
-```bash
-PORT=4000 npm run dev
-```
-
-للتأكّد من تطابق رقم النسخة بين الموقع والسكربت:
-
-```bash
-npm run check
-```
+للفحص الذاتي بعد التشغيل: `http://127.0.0.1:3000/_selftest.html`
 
 ---
 
-## الربط بجدول جوجل
+## لماذا الاستضافة الذاتية لحزم Firebase
 
-الموقع يُنشر بعنوان API فارغ، ويُربط الجهاز **مرّة واحدة** بفتح:
+القيد §3 يقول «لا طلبات خارجية إطلاقاً»، و`public/sw.js` لا يخزّن أي أصل من نطاق آخر:
 
+```js
+if (url.origin !== location.origin) return;
 ```
-https://<الموقع>/?api=<رابط-AppsScript>&u=admin1
-```
 
-يُحفظ العنوان في `localStorage['fmac.api']` ثم يُنظَّف الرابط. بعد الربط:
-**الإعدادات ← المستخدمون ← انسخ روابط المدربين من جديد** (تحمل العنوان الجديد تلقائياً).
+لذلك تُحمَّل الحزم من `public/vendor/` بمسار نسبي: عامل الخدمة يخزّنها، والقيد يبقى قائماً.
+رُوجعت الحزم لإزالة الاستيراد المطلق من gstatic.
 
-شريط تحذير أحمر يظهر تلقائياً لو الموقع غير مرتبط أو نشر الـApps Script قديم.
+> **حدّ العمل بلا شبكة:** الاستضافة الذاتية تلغي طلب *ملفات* الحزمة فقط. مناداة
+> Firestore وAuth تبقى عبر الشبكة — والعمل دون اتصال يعتمد على الكاش المحلّي الدائم
+> (`persistentLocalCache`) المفعَّل في `fmac-auth.js`، أي قراءة ما سبق تحميله لا كتابة جديدة.
 
 ---
 
 ## النشر
 
-### أ — Apps Script
+### أ — Firebase (مرّة واحدة)
 
-1. جدول جوجل ← الإضافات ← Apps Script ← الصق `apps-script/FMAC-Apps-Script.gs`
-2. شغّل `setup()` (ينشئ التبويبات الناقصة وكودَي الإدارة `admin1` و`admin2`)
-3. نشر ← إدارة عمليات النشر ← تعديل ← **إصدار جديد** ← انسخ الرابط
+1. فعّل **Authentication ← Email/Password** من لوحة Firebase.
+2. فعّل **Firestore** و**Storage**.
+3. انشر قواعد الأمان:
 
-> **ارفع `BUILD` في السكربت و`NEED_BUILD` في `public/index.html` معاً** كلما أُضيف شيت أو إجراء جديد.
+```bash
+npx firebase deploy --only firestore:rules,storage
+```
+
+4. أنشئ أوّل حساب إدارة من لوحة Authentication، ثم أضف وثيقة في `users`
+   معرّفها **نفس الـuid**، وفيها `admin: true` و`name`.
+
+> بلا وثيقة `users/{uid}` لن يدخل المستخدم — الشاشة تعرض «الحساب موجود لكن بلا ملفّ».
 
 ### ب — Vercel
 
-المستودع جاهز للنشر بلا خطوة بناء:
+بلا خطوة بناء: Framework **Other**، Build Command فارغ، Output Directory `public`
+(مضبوط في `vercel.json`). اربط المستودع من لوحة Vercel أو `npx vercel --prod`.
 
-- Framework Preset: **Other**
-- Build Command: (فارغ)
-- Output Directory: `public` — مضبوط في `vercel.json`
+---
 
-اربط المستودع من لوحة Vercel، أو:
+## المتبقّي
 
-```bash
-npx vercel --prod
-```
-
-كل المسارات نسبية ⇒ الموقع يعمل من الجذر ومن مجلد فرعي (GitHub Pages) على السواء.
+- **هجرة البيانات** من جدول جوجل إلى Firestore (سكربت لم يُكتب بعد).
+- **مزايا المساعد** (`ask` · `airev` · `aiweek` · `aistatus`) كانت تنادي واجهة خارجية
+  من داخل Apps Script. لا يمكن نقلها للمتصفّح دون كشف المفتاح ⇒ تحتاج Cloud Function.
+  الطبقة ترجع لها `ai_needs_function` صراحةً بدل الفشل الصامت.
+- **إنشاء حسابات المدربين** من داخل الموقع (تحتاج نسخة تطبيق ثانوية أو Cloud Function).
+- **روابط الدعوة** (`inviteLink()`) صارت بلا معنى بعد الانتقال للبريد وكلمة المرور.

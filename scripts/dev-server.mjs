@@ -24,8 +24,15 @@ const TYPES = {
 const NO_STORE = new Set(['/sw.js', '/index.html', '/manifest.json', '/']);
 
 function resolvePath(urlPath) {
-  const decoded = decodeURIComponent(urlPath.split('?')[0]);
-  const rel = normalize(decoded).replace(/^([/\])+/, '');
+  let decoded;
+  try {
+    decoded = decodeURIComponent(urlPath.split('?')[0]);
+  } catch {
+    return null;                    // ترميز معطوب في الرابط — لا يُسقِط الخادم
+  }
+  // إزالة الفواصل البادئة (تُكتب بلا محارف هروب تفادياً لأخطاء الاقتباس)
+  let rel = normalize(decoded);
+  while (rel.startsWith('/') || rel.startsWith(sep)) rel = rel.slice(1);
   const full = join(ROOT, rel);
   // منع الخروج خارج مجلد public
   if (full !== ROOT && !full.startsWith(ROOT + sep)) return null;
@@ -82,6 +89,6 @@ server.listen(PORT, HOST, () => {
   const base = `http://${HOST}:${PORT}/`;
   console.log(`\n  FMAC — خادم التطوير يعمل`);
   console.log(`  ${base}`);
-  console.log(`\n  للربط بجدول جوجل مرّة واحدة، افتح:`);
-  console.log(`  ${base}?api=<رابط-AppsScript>&u=admin1\n`);
+  console.log(`  ${base}_selftest.html   ← فحص ذاتي للطبقة والوحدات`);
+  console.log(`\n  الدخول بالبريد وكلمة المرور عبر Firebase Auth.\n`);
 });

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>FMAC self test</title>
+<style>body{background:#08090c;color:#e9ecf1;font:14px/1.7 monospace;padding:20px}
+.ok{color:#22c07f}.bad{color:#ff4d59}.warn{color:#ffc233}h2{font-size:15px;margin:18px 0 6px;color:#5b8def}</style>
+</head><body>
+<h1 style="font-size:17px">FMAC — فحص ذاتي</h1>
+<div id="out">running…</div>
+<script type="module">
+const out = [];
+const put = (cls, msg) => out.push('<div class="' + cls + '">' + msg + '</div>');
+const H = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+/* ── 1. فحص التحليل: كل ملف يُقرأ ويُمرَّر على محرّك JS ── */
+put('', '<h2>[1] فحص التحليل (parse)</h2>');
+const files = [
+  './js/fmac-config.js',
+  './js/fmac-auth.js',
+  './js/fmac-firebase.js',
+  '../scripts/dev-server.mjs',
+];
+for (const f of files) {
+  let txt = null;
+  try {
+    const r = await fetch(f);
+    if (!r.ok) { put('bad', 'FAIL ' + f + ' — HTTP ' + r.status); continue; }
+    txt = await r.text();
+  } catch (e) { put('bad', 'FAIL ' + f + ' — ' + H(e.message)); continue; }
+
+  const NL = String.fromCharCode(10);
+  let src = txt.split(NL)
+    .filter((l) => !l.trim().startsWith('import ') && !l.trim().startsWith('export '))
+    .join(NL);
+  src = src.split('import.meta.url').join("'file:///x.mjs'");
+  src = src.split('export const').join('const');
+  src = src.split('export function').join('function');
+  src = src.split('export async function').join('async function');
+  src = src.split('export let').join('let');
+  src = src.split('export default').join('void ');
+  try {
+    new Function(src);
+    put('ok', 'PASS  ' + f + '  (' + txt.length + ' bytes)');
+  } catch (e) {
+    put('bad', 'FAIL  ' + f + ' — ' + e.name + ': ' + H(e.message));
+  }
+}
+
+/* ── 2. تحميل الوحدات فعلياً (يكشف أخطاء الاستيراد والمسارات) ── */
+put('', '<h2>[2] تحميل الوحدات (module graph)</h2>');
+const mods = [
+  './vendor/firebase-app.js',
+  './vendor/firebase-auth.js',
+  './vendor/firebase-firestore.js',
+  './vendor/firebase-storage.js',
+  './js/fmac-config.js',
+];
+for (const m of mods) {
+  try {
+    const ns = await import(m);
+    put('ok', 'PASS  ' + m + '  (exports: ' + Object.keys(ns).length + ')');
+  } catch (e) {
+    put('bad', 'FAIL  ' + m + ' — ' + e.name + ': ' + H(e.message));
+  }
+}
+
+/* ── 3. لا طلبات خارجية داخل حزم Firebase ── */
+put('', '<h2>[3] لا طلبات خارجية (القيد §3)</h2>');
+for (const m of mods.slice(0, 4)) {
+  const t = await (await fetch(m)).text();
+  const hits = t.split('https://www.gstatic.com/firebasejs').length - 1;
+  const imports = (t.match(/from"https:/g) || []).length;
+  put(imports === 0 ? 'ok' : 'bad',
+    (imports === 0 ? 'PASS  ' : 'FAIL  ') + m +
+    ' — absolute imports: ' + imports + ', gstatic strings: ' + hits);
+}
+
+/* ── 4. تحقّق من ربط index.html ── */
+put('', '<h2>[4] ربط index.html</h2>');
+const idx = await (await fetch('./index.html')).text();
+const nFetch = (idx.match(/fetch\(API/g) || []).length;
+const nShim = (idx.match(/__fmacApi\(API/g) || []).length;
+const hasMod = idx.indexOf('js/fmac-firebase.js') >= 0;
+const hasBridge = idx.indexOf('__fmacResolve') >= 0;
+const sentinel = idx.indexOf("var API = 'firebase'") >= 0;
+put(nFetch === 0 ? 'ok' : 'bad', (nFetch === 0 ? 'PASS' : 'FAIL') + '  fetch(API sites remaining: ' + nFetch);
+put(nShim === 31 ? 'ok' : 'warn', (nShim === 31 ? 'PASS' : 'WARN') + '  __fmacApi(API sites: ' + nShim + ' (expected 31)');
+put(hasMod ? 'ok' : 'bad', (hasMod ? 'PASS' : 'FAIL') + '  module tag present');
+put(hasBridge ? 'ok' : 'bad', (hasBridge ? 'PASS' : 'FAIL') + '  bridge proxy present');
+put(sentinel ? 'ok' : 'bad', (sentinel ? 'PASS' : 'FAIL') + '  API sentinel set');
+
+document.getElementById('out').innerHTML = out.join('');
+</script></body></html>

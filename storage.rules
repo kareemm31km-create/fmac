@@ -1,0 +1,34 @@
+rules_version = '2';
+
+/* قواعد التخزين — الصور والملفات المرفوعة.
+   القراءة لمن سجّل الدخول، والرفع بحدّ حجم ونوع. */
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return signedIn() &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.admin == true;
+    }
+    function underSize(mb) {
+      return request.resource.size < mb * 1024 * 1024;
+    }
+
+    /* مرفقات الخطط والوسائط — المدرب يرفع، والجميع يقرأ بعد الدخول */
+    match /media/{allPaths=**} {
+      allow read:   if signedIn();
+      allow create: if signedIn() && underSize(20);
+      allow delete: if isAdmin();
+    }
+
+    /* صور المستخدمين — الإدارة وحدها */
+    match /users/{uid}/{allPaths=**} {
+      allow read:   if signedIn();
+      allow write:  if isAdmin() && underSize(5) &&
+                       request.resource.contentType.matches('image/.*');
+    }
+  }
+}
