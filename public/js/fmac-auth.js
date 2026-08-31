@@ -168,10 +168,19 @@ export function ready() {
             return;
           }
         }
+        /* نعرض المعرّف نفسه — لأنّ إصلاح الحالة يحتاجه حرفياً */
+        const badUid = u.uid;
         await signOut(auth);
         if (!box) box = screen();
         const el = document.getElementById('fmErr');
-        if (el) el.textContent = say('no-profile');
+        if (el) {
+          el.innerHTML = 'الحساب موجود لكن بلا ملفّ في المستخدمين.<br>' +
+            'المعرّف (UID):<br>' +
+            '<code dir="ltr" style="display:block;user-select:all;margin-top:6px;' +
+            'padding:7px 9px;background:#191d24;border-radius:8px;font-size:12px;' +
+            'color:#e9ecf1;word-break:break-all">' + badUid + '</code>';
+        }
+        console.log('FMAC uid =', badUid);
         return;
       }
       PROFILE = Object.assign({ uid: u.uid, email: u.email }, snap.data());
