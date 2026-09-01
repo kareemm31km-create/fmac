@@ -274,7 +274,17 @@ export function render(host, ctx) {
       } catch (e) {
         btn.disabled = false;
         sm.style.color = '#ff4d59';
-        sm.textContent = 'تعذّر الحفظ: ' + (e && e.message);
+        const t = S(e && e.message);
+        /* أشهر سببين: قواعد لم تُنشر بعد — نقولها صراحةً بدل نصّ Firebase الخام */
+        if (t.indexOf('storage/unauthorized') >= 0 || t.indexOf('permission to access') >= 0) {
+          sm.textContent = 'قواعد التخزين ترفض الرفع. انشر storage.rules من لوحة Firebase ' +
+            '(Storage ← Rules) ثم أعد المحاولة.';
+        } else if (t.indexOf('permission-denied') >= 0 || t.indexOf('insufficient') >= 0) {
+          sm.textContent = 'قواعد Firestore ترفض الحفظ. انشر firestore.rules من لوحة Firebase ' +
+            '(Firestore ← Rules) ثم أعد المحاولة.';
+        } else {
+          sm.textContent = 'تعذّر الحفظ: ' + t;
+        }
       }
     });
   }

@@ -25,6 +25,14 @@ service firebase.storage {
       allow delete: if isAdmin();
     }
 
+    /* ملفّات الخطط الشهرية — يرفعها المدرب، وتُقرأ بعد الدخول.
+       بلا هذه المطابقة يُرفض الرفع بـstorage/unauthorized. */
+    match /monthly/{allPaths=**} {
+      allow read:   if signedIn();
+      allow create: if signedIn() && underSize(20);
+      allow delete: if isAdmin();
+    }
+
     /* صور المستخدمين — الإدارة وحدها */
     match /users/{uid}/{allPaths=**} {
       allow read:   if signedIn();
