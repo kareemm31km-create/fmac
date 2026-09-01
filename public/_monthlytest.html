@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>FMAC monthly test</title>
+<style>body{background:#08090c;color:#e9ecf1;font:13.5px/1.75 ui-monospace,monospace;padding:20px}
+.ok{color:#22c07f}.bad{color:#ff4d59}.warn{color:#ffc233}
+h2{font-size:14px;margin:20px 0 6px;color:#5b8def;font-weight:700}
+#sum{margin:16px 0;padding:12px 14px;border-radius:12px;background:#0f1115;border:1px solid #23272f;font-size:15px}</style>
+</head><body>
+<h1 style="font-size:17px">FMAC — فحص الخطط الشهرية</h1>
+<div id="sum">running…</div><div id="out"></div>
+<script type="module">
+import { readXlsx } from './js/fmac-xlsx.js?v=2';
+import * as M from './js/fmac-monthly.js?v=2';
+
+const out = []; let pass = 0, fail = 0;
+const head = (t) => out.push('<h2>' + t + '</h2>');
+const eq = (label, got, want) => {
+  const g = JSON.stringify(got), w = JSON.stringify(want);
+  if (g === w) { pass++; out.push('<div class="ok">PASS  ' + label + '  = ' + g + '</div>'); }
+  else { fail++; out.push('<div class="bad">FAIL  ' + label + '<br>   got:  ' + g + '<br>   want: ' + w + '</div>'); }
+};
+const truthy = (label, v) => {
+  if (v) { pass++; out.push('<div class="ok">PASS  ' + label + '</div>'); }
+  else { fail++; out.push('<div class="bad">FAIL  ' + label + '</div>'); }
+};
+
+/* ── 1. الأوزان والتقديرات ── */
+head('[1] الـrubric — مطابقة ملف آلية التقييم');
+eq('عدد المحاور', M.RUBRIC.length, 8);
+eq('مجموع الأوزان', Math.round(M.RUBRIC.reduce((s, a) => s + a.weight, 0) * 100) / 100, 1);
+eq('وزن تقنين الحمل (الأعلى)', M.RUBRIC.find((a) => a.n === 3).weight, 0.2);
+eq('وزن التوثيق (الأدنى)', M.RUBRIC.find((a) => a.n === 8).weight, 0.05);
+eq('وزن المحاور المحسوبة', Math.round(M.RUBRIC.filter((a) => a.auto)
+  .reduce((s, a) => s + a.weight, 0) * 100) / 100, 0.5);
+eq('تقدير 95', M.gradeOf(95).grade, 'متميز');
+eq('تقدير 85', M.gradeOf(85).grade, 'جيد جداً');
+eq('تقدير 75', M.gradeOf(75).grade, 'جيد');
+eq('تقدير 65', M.gradeOf(65).grade, 'مقبول');
+eq('تقدير 59', M.gradeOf(59).grade, 'يحتاج تطوير');
+eq('قرار 65', M.gradeOf(65).decision, 'إعادة ضبط جزئي');
+eq('أولوية 55', M.priorityOf(55), 'عالية');
+eq('أولوية 70', M.priorityOf(70), 'متوسطة');
+eq('أولوية 85', M.priorityOf(85), 'منخفضة');
+
+/* ── 2. الشهر والموعد النهائي ── */
+head('[2] الموعد النهائي — آخر يوم في الشهر السابق ناقص يوم');
+eq('«سبتمبر 2026» ⇒ مفتاح', M.monthKey('سبتمبر 2026'), '2026-09');
+eq('من مسمّى أسبوع', M.monthOfWeek('الأسبوع 2 — سبتمبر 2026'), '2026-09');
+eq('مفتاح ⇒ مسمّى', M.monthLabel('2026-09'), 'سبتمبر 2026');
+eq('خطة سبتمبر ⇒ 30 أغسطس', M.dueLabel('2026-09'), '30 أغسطس 2026');
+eq('خطة مارس ⇒ 27 فبراير (28 يوماً)', M.dueLabel('2027-03'), '27 فبراير 2027');
+eq('خطة مارس 2028 ⇒ 28 فبراير (كبيسة)', M.dueLabel('2028-03'), '28 فبراير 2028');
+eq('خطة يناير ⇒ 30 ديسمبر (عبور السنة)', M.dueLabel('2027-01'), '30 ديسمبر 2026');
+eq('رفع يوم 30 أغسطس ⇒ في الموعد',
+   M.lateness('2026-09', '2026-08-30T10:00:00Z').state, 'في الموعد');
+eq('رفع يوم 31 أغسطس ⇒ متأخرة',
+   M.lateness('2026-09', '2026-08-31T10:00:00Z').state, 'متأخرة');
+eq('تأخير يومين',
+   M.lateness('2026-09', '2026-09-01T10:00:00Z').days, 2);
+
+/* ── 3. خطة كاملة ── */
+head('[3] خطة كاملة — plan-full.xlsx');
+const bufFull = await (await fetch('./_fixtures/plan-full.xlsx')).arrayBuffer();
+const rFull = await M.evaluateFile(bufFull, readXlsx);
+truthy('قُرئت بلا خطأ', rFull.ok);
+if (rFull.ok) {
+  const p = rFull.plan, R = rFull.result;
+  eq('صفوف الحصص', p.sessions.length, 12);
+  eq('الأسابيع', p.weeks.length, 4);
+  eq('صفّ المثال مُتخطّى (هدف واحد لا اثنان)', p.objectives.length, 1);
+  eq('الشهر من الترويسة', M.monthKey(p.header['الشهر']), '2026-09');
+
+  const ax = (n) => R.axes.find((a) => a.n === n);
+  /* أحمال: 18×3+67×7+10×2=543 · 610 · 476 · 677 — ثلاثة انتقالات كلّها ملموسة */
+  eq('محور 2 (بناء دوري)', ax(2).score, 100);
+  eq('محور 3 (تقنين الحمل)', ax(3).score, 100);
+  eq('محور 5 (بناء الوحدة)', ax(5).score, 100);
+  eq('محور 8 (التوثيق)', ax(8).score, 100);
+  eq('الإجمالي', R.total, 100);
+  eq('التغطية %', R.coverage, 50);
+  eq('التقدير', R.grade, 'متميز');
+  eq('القرار', R.decision, 'اعتماد كمرجع');
+  eq('الدرجة الموزونة لمحور 3', ax(3).weighted, 20);
+  truthy('الدليل يذكر أرقاماً فعلية', ax(3).evidence.indexOf('12') >= 0);
+  truthy('الأحمال مذكورة في الدليل', ax(2).evidence.indexOf('543') >= 0);
+}
+
+/* ── 4. خطة ناقصة — لازم تفرّق ── */
+head('[4] خطة ناقصة — plan-thin.xlsx');
+const bufThin = await (await fetch('./_fixtures/plan-thin.xlsx')).arrayBuffer();
+const rThin = await M.evaluateFile(bufThin, readXlsx);
+truthy('قُرئت بلا خطأ', rThin.ok);
+if (rThin.ok) {
+  const R = rThin.result;
+  const ax = (n) => R.axes.find((a) => a.n === n);
+  /* حمل ثابت 375 و375 ⇒ لا تغيّر · الأهداف مكتوبة · الطبيعة فارغة */
+  eq('محور 2: حمل ثابت ⇒ 0.5×0+0.3×100+0.2×0', ax(2).score, 30);
+  /* 4 صفوف: شدة موجودة · راحة غائبة · مدة موجودة */
+  eq('محور 3: بلا راحة ⇒ 0.5+0.2', ax(3).score, 70);
+  /* بلا تهدئة ⇒ لا حصة مكتملة · المدد موجودة */
+  eq('محور 5: بلا تهدئة ⇒ 0.4 فقط', ax(5).score, 40);
+  /* 3 من 8 حقول + الشهر مقروء */
+  eq('محور 8: 3 من 8 حقول', ax(8).score, 56);
+  eq('الإجمالي المطبَّع', R.total, 51);
+  eq('التقدير', R.grade, 'يحتاج تطوير');
+  eq('القرار', R.decision, 'إعادة بناء');
+  eq('أولوية محور 2 عالية', ax(2).priority, 'عالية');
+  truthy('المطلوب يذكر الراحة', ax(3).required.indexOf('الراحة') >= 0);
+  truthy('المطلوب يذكر التهدئة أو الأقسام', ax(5).required.indexOf('الأقسام') >= 0);
+}
+
+/* ── 5. الصدق: المحاور غير المقيسة لا تُحسب صفراً ── */
+head('[5] الصدق في الأرقام');
+if (rFull.ok) {
+  const R = rFull.result;
+  const pending = R.axes.filter((a) => a.score === null);
+  eq('أربعة محاور بانتظار الذكاء', pending.length, 4);
+  eq('أرقامها null لا صفر', pending.every((a) => a.score === null && a.weighted === null), true);
+  eq('مصدرها معلَن', pending.every((a) => a.source === 'ذكاء اصطناعي'), true);
+  /* لو حُسبت صفراً لكان الإجمالي 50 لا 100 */
+  truthy('الإجمالي مطبَّع على المقيس وحده (100 لا 50)', R.total === 100);
+  truthy('التغطية معلنة صراحةً', R.coverage === 50);
+}
+
+/* ── 6. قالب فارغ ⇒ لا يُخترع رقم ── */
+head('[6] القالب الفارغ');
+const bufTpl = await (await fetch('./templates/FMAC-Monthly-Plan-Template.xlsx')).arrayBuffer();
+const rTpl = await M.evaluateFile(bufTpl, readXlsx);
+truthy('القالب يُقرأ', rTpl.ok);
+if (rTpl.ok) {
+  const ax = (n) => rTpl.result.axes.find((a) => a.n === n);
+  eq('لا حصص (صفوف المثال متخطّاة)', rTpl.plan.sessions.length, 0);
+  eq('محور 3 غير قابل للقياس', ax(3).score, null);
+  eq('محور 5 غير قابل للقياس', ax(5).score, null);
+  eq('محور 2 غير قابل للقياس', ax(2).score, null);
+  truthy('محور 8 مقيس (الحقول فارغة لكن قابلة للعدّ)', ax(8).score !== null);
+}
+
+document.getElementById('out').innerHTML = out.join('');
+document.getElementById('sum').innerHTML = (fail === 0)
+  ? '<span class="ok">كل الفحوص نجحت — ' + pass + '/' + (pass + fail) + '</span>'
+  : '<span class="bad">' + fail + ' فشل</span> · <span class="ok">' + pass + ' نجاح</span>';
+</script></body></html>

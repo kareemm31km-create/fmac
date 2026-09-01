@@ -59,9 +59,12 @@ const server = createServer(async (req, res) => {
     const key = urlPath.split('?')[0];
     res.writeHead(200, {
       'Content-Type': TYPES[ext] || 'application/octet-stream',
-      'Cache-Control': NO_STORE.has(key) || ext === '.html'
-        ? 'no-store'
-        : 'public, max-age=3600',
+      /* خادم تطوير: لا يُخزَّن أي شيء نصّي، وإلا بقيت الوحدات القديمة
+         في المتصفّح بعد التعديل. الصور وحدها تُخزَّن. */
+      'Cache-Control': (ext === '.png' || ext === '.jpg' || ext === '.ico' ||
+                        ext === '.woff' || ext === '.woff2')
+        ? 'public, max-age=3600'
+        : 'no-store',
       'Service-Worker-Allowed': '/',
     });
     res.end(body);
