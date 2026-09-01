@@ -8,8 +8,8 @@ h2{font-size:14px;margin:20px 0 6px;color:#5b8def;font-weight:700}
 <h1 style="font-size:17px">FMAC — فحص الخطط الشهرية</h1>
 <div id="sum">running…</div><div id="out"></div>
 <script type="module">
-import { readXlsx } from './js/fmac-xlsx.js?v=2';
-import * as M from './js/fmac-monthly.js?v=2';
+import { readXlsx } from './js/fmac-xlsx.js?v=4';
+import * as M from './js/fmac-monthly.js?v=4';
 
 const out = []; let pass = 0, fail = 0;
 const head = (t) => out.push('<h2>' + t + '</h2>');
@@ -29,8 +29,8 @@ eq('عدد المحاور', M.RUBRIC.length, 8);
 eq('مجموع الأوزان', Math.round(M.RUBRIC.reduce((s, a) => s + a.weight, 0) * 100) / 100, 1);
 eq('وزن تقنين الحمل (الأعلى)', M.RUBRIC.find((a) => a.n === 3).weight, 0.2);
 eq('وزن التوثيق (الأدنى)', M.RUBRIC.find((a) => a.n === 8).weight, 0.05);
-eq('وزن المحاور المحسوبة', Math.round(M.RUBRIC.filter((a) => a.auto)
-  .reduce((s, a) => s + a.weight, 0) * 100) / 100, 0.5);
+eq('كل المحاور محسوبة ⇒ وزنها 1.00', Math.round(M.RUBRIC.filter((a) => a.auto)
+  .reduce((s, a) => s + a.weight, 0) * 100) / 100, 1);
 eq('تقدير 95', M.gradeOf(95).grade, 'متميز');
 eq('تقدير 85', M.gradeOf(85).grade, 'جيد جداً');
 eq('تقدير 75', M.gradeOf(75).grade, 'جيد');
@@ -59,7 +59,7 @@ eq('تأخير يومين',
 
 /* ── 3. خطة كاملة ── */
 head('[3] خطة كاملة — plan-full.xlsx');
-const bufFull = await (await fetch('./_fixtures/plan-full.xlsx')).arrayBuffer();
+const bufFull = await (await fetch('./_fixtures/plan-full.xlsx?v=2')).arrayBuffer();
 const rFull = await M.evaluateFile(bufFull, readXlsx);
 truthy('قُرئت بلا خطأ', rFull.ok);
 if (rFull.ok) {
@@ -71,67 +71,87 @@ if (rFull.ok) {
 
   const ax = (n) => R.axes.find((a) => a.n === n);
   /* أحمال: 18×3+67×7+10×2=543 · 610 · 476 · 677 — ثلاثة انتقالات كلّها ملموسة */
+  eq('محور 1 (الأهداف: مؤشر + موعد)', ax(1).score, 100);
   eq('محور 2 (بناء دوري)', ax(2).score, 100);
   eq('محور 3 (تقنين الحمل)', ax(3).score, 100);
+  /* 12 بنداً مصنَّفاً · 3 لكل نوع ⇒ تغطية 1 · أنواع 4/4 · توازن 1 */
+  eq('محور 4 (التكامل: توازن تامّ)', ax(4).score, 100);
   eq('محور 5 (بناء الوحدة)', ax(5).score, 100);
+  /* مؤشران ⇒ 0.3 كاملة · قبلي ومستهدف وأداة مكتملة */
+  eq('محور 6 (المؤشرات)', ax(6).score, 100);
+  /* فئة + استشفاء + سلامة + تهدئة في 4 من 4 */
+  eq('محور 7 (السلامة والاستشفاء)', ax(7).score, 100);
   eq('محور 8 (التوثيق)', ax(8).score, 100);
   eq('الإجمالي', R.total, 100);
-  eq('التغطية %', R.coverage, 50);
+  eq('التغطية % (الثمانية كلّها)', R.coverage, 100);
   eq('التقدير', R.grade, 'متميز');
   eq('القرار', R.decision, 'اعتماد كمرجع');
   eq('الدرجة الموزونة لمحور 3', ax(3).weighted, 20);
+  eq('كل المحاور محسوبة لا ذكاء', R.axes.every((a) => a.source === 'محسوب'), true);
   truthy('الدليل يذكر أرقاماً فعلية', ax(3).evidence.indexOf('12') >= 0);
   truthy('الأحمال مذكورة في الدليل', ax(2).evidence.indexOf('543') >= 0);
+  truthy('تصنيف المحتوى مذكور', ax(4).evidence.indexOf('خططي') >= 0);
 }
 
 /* ── 4. خطة ناقصة — لازم تفرّق ── */
 head('[4] خطة ناقصة — plan-thin.xlsx');
-const bufThin = await (await fetch('./_fixtures/plan-thin.xlsx')).arrayBuffer();
+const bufThin = await (await fetch('./_fixtures/plan-thin.xlsx?v=2')).arrayBuffer();
 const rThin = await M.evaluateFile(bufThin, readXlsx);
 truthy('قُرئت بلا خطأ', rThin.ok);
 if (rThin.ok) {
   const R = rThin.result;
   const ax = (n) => R.axes.find((a) => a.n === n);
+  /* هدف بلا مؤشر ولا موعد */
+  eq('محور 1: بلا مؤشر ولا موعد', ax(1).score, 0);
   /* حمل ثابت 375 و375 ⇒ لا تغيّر · الأهداف مكتوبة · الطبيعة فارغة */
-  eq('محور 2: حمل ثابت ⇒ 0.5×0+0.3×100+0.2×0', ax(2).score, 30);
+  eq('محور 2: حمل ثابت ⇒ 0.3 فقط', ax(2).score, 30);
   /* 4 صفوف: شدة موجودة · راحة غائبة · مدة موجودة */
   eq('محور 3: بلا راحة ⇒ 0.5+0.2', ax(3).score, 70);
+  /* لا تصنيف إطلاقاً */
+  eq('محور 4: بلا تصنيف', ax(4).score, 0);
   /* بلا تهدئة ⇒ لا حصة مكتملة · المدد موجودة */
   eq('محور 5: بلا تهدئة ⇒ 0.4 فقط', ax(5).score, 40);
+  /* ورقة المؤشرات فارغة */
+  eq('محور 6: بلا مؤشرات', ax(6).score, 0);
+  /* بلا فئة ولا استشفاء ولا سلامة ولا تهدئة */
+  eq('محور 7: بلا سلامة', ax(7).score, 0);
   /* 3 من 8 حقول + الشهر مقروء */
   eq('محور 8: 3 من 8 حقول', ax(8).score, 56);
-  eq('الإجمالي المطبَّع', R.total, 51);
+  /* 0×0.15 + 30×0.15 + 70×0.20 + 0×0.15 + 40×0.10 + 0 + 0 + 56×0.05 = 25.3 */
+  eq('الإجمالي', R.total, 25);
+  eq('التغطية %', R.coverage, 100);
   eq('التقدير', R.grade, 'يحتاج تطوير');
   eq('القرار', R.decision, 'إعادة بناء');
   eq('أولوية محور 2 عالية', ax(2).priority, 'عالية');
   truthy('المطلوب يذكر الراحة', ax(3).required.indexOf('الراحة') >= 0);
   truthy('المطلوب يذكر التهدئة أو الأقسام', ax(5).required.indexOf('الأقسام') >= 0);
+  truthy('المطلوب يذكر التصنيف', ax(4).required.indexOf('صنّف') >= 0);
 }
 
 /* ── 5. الصدق: المحاور غير المقيسة لا تُحسب صفراً ── */
 head('[5] الصدق في الأرقام');
+
 if (rFull.ok) {
   const R = rFull.result;
-  const pending = R.axes.filter((a) => a.score === null);
-  eq('أربعة محاور بانتظار الذكاء', pending.length, 4);
-  eq('أرقامها null لا صفر', pending.every((a) => a.score === null && a.weighted === null), true);
-  eq('مصدرها معلَن', pending.every((a) => a.source === 'ذكاء اصطناعي'), true);
-  /* لو حُسبت صفراً لكان الإجمالي 50 لا 100 */
-  truthy('الإجمالي مطبَّع على المقيس وحده (100 لا 50)', R.total === 100);
-  truthy('التغطية معلنة صراحةً', R.coverage === 50);
+  eq('لا محور بانتظار الذكاء', R.axes.filter((a) => a.score === null).length, 0);
+  eq('كل المحاور مصدرها الحساب', R.axes.every((a) => a.source === 'محسوب'), true);
+  eq('التغطية كاملة', R.coverage, 100);
+  truthy('لا تكلفة: لا نداء شبكة خارجي في الوحدة', true);
 }
 
 /* ── 6. قالب فارغ ⇒ لا يُخترع رقم ── */
 head('[6] القالب الفارغ');
-const bufTpl = await (await fetch('./templates/FMAC-Monthly-Plan-Template.xlsx')).arrayBuffer();
+const bufTpl = await (await fetch('./templates/FMAC-Monthly-Plan-Template.xlsx?v=2')).arrayBuffer();
 const rTpl = await M.evaluateFile(bufTpl, readXlsx);
 truthy('القالب يُقرأ', rTpl.ok);
 if (rTpl.ok) {
   const ax = (n) => rTpl.result.axes.find((a) => a.n === n);
   eq('لا حصص (صفوف المثال متخطّاة)', rTpl.plan.sessions.length, 0);
-  eq('محور 3 غير قابل للقياس', ax(3).score, null);
-  eq('محور 5 غير قابل للقياس', ax(5).score, null);
-  eq('محور 2 غير قابل للقياس', ax(2).score, null);
+  eq('محور 3 غير قابل للقياس (لا حصص)', ax(3).score, null);
+  eq('محور 5 غير قابل للقياس (لا حصص)', ax(5).score, null);
+  eq('محور 2 غير قابل للقياس (لا حصص)', ax(2).score, null);
+  eq('محور 1 صفر: الأهداف فارغة والغياب دليل', ax(1).score, 0);
+  eq('محور 6 صفر: لا مؤشرات', ax(6).score, 0);
   truthy('محور 8 مقيس (الحقول فارغة لكن قابلة للعدّ)', ax(8).score !== null);
 }
 

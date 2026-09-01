@@ -1,7 +1,7 @@
 /* الخطط الشهرية — الموعد النهائي، قراءة القالب، والتقييم المحسوب.
-   المحاور 2 و3 و5 و8 (وزنها 0.50) تُحسب من بنية الخطة بلا ذكاء اصطناعي.
-   المحاور 1 و4 و6 و7 تحتاج حكماً ⇒ Cloud Function. حتى تجهز تُعرض
-   «غير قابل للقياس» ولا يُخترع لها رقم (القيد: الصدق في الأرقام). */
+   المحاور الثمانية كلّها تُحسب من بنية الخطة — بلا ذكاء اصطناعي وبلا تكلفة.
+   التصنيف الذي كان يحتاج حكماً (نوع المحتوى) صار إقراراً من المدرب في القالب،
+   فصار قابلاً للعدّ. وما لا دليل عليه يبقى بلا رقم (القيد: الصدق في الأرقام). */
 import { AR_MONTHS, S } from './fmac-payload.js';
 
 /* الخانة الفارغة ترجع NaN لا صفراً — الفرق بين «لم يكتب» و«كتب صفراً»
@@ -17,15 +17,18 @@ const has = (v) => S(v).trim() !== '';
 
 /* ── محاور التقييم — منقولة عن ورقة «آلية التقييم» ── */
 export const RUBRIC = [
-  { n: 1, name: 'وضوح الأهداف وقابليتها للقياس', weight: 0.15, auto: false },
+  { n: 1, name: 'وضوح الأهداف وقابليتها للقياس', weight: 0.15, auto: true },
   { n: 2, name: 'البناء الدوري والتدرج بين الأسابيع', weight: 0.15, auto: true },
   { n: 3, name: 'تقنين الحمل: الحجم والشدة والراحة', weight: 0.20, auto: true },
-  { n: 4, name: 'التكامل الفني والبدني والخططي والنفسي', weight: 0.15, auto: false },
+  { n: 4, name: 'التكامل الفني والبدني والخططي والنفسي', weight: 0.15, auto: true },
   { n: 5, name: 'بناء الوحدة التدريبية وتوزيع الزمن', weight: 0.10, auto: true },
-  { n: 6, name: 'مؤشرات القياس والاختبارات والمتابعة', weight: 0.10, auto: false },
-  { n: 7, name: 'ملاءمة الفئة والسلامة والاستشفاء', weight: 0.10, auto: false },
+  { n: 6, name: 'مؤشرات القياس والاختبارات والمتابعة', weight: 0.10, auto: true },
+  { n: 7, name: 'ملاءمة الفئة والسلامة والاستشفاء', weight: 0.10, auto: true },
   { n: 8, name: 'جودة التوثيق واتساق البيانات', weight: 0.05, auto: true },
 ];
+
+/* أنواع المحتوى — يعلنها المدرب في عمود «نوع المحتوى» */
+export const CONTENT_TYPES = ['فني', 'بدني', 'خططي', 'نفسي'];
 
 export const GRADES = [
   { min: 90, grade: 'متميز', decision: 'اعتماد كمرجع', action: 'تعميم أفضل الممارسات' },
@@ -120,7 +123,7 @@ export function parsePlan(sheets) {
     .map((r) => ({
       week: NUM(r[0]), day: S(r[1]), date: S(r[2]), goal: S(r[3]),
       section: S(r[4]), dur: NUM(r[5]), item: S(r[6]),
-      volume: S(r[7]), rpe: NUM(r[8]), rest: NUM(r[9]),
+      volume: S(r[7]), rpe: NUM(r[8]), rest: NUM(r[9]), kind: S(r[10]),
     }));
 
   const kpis = sheets[SH.kpi].slice(3)
@@ -268,22 +271,136 @@ function axisDocs(p) {
       : (monthOk ? 'لا مطلوب.' : 'اكتب الشهر بصيغة «سبتمبر 2026».'));
 }
 
-/* المحاور التي تحتاج حكماً — تبقى بلا رقم حتى تجهز Cloud Function */
-function pendingAxes() {
-  return RUBRIC.filter((a) => !a.auto).map((a) => ({
-    n: a.n, name: a.name, weight: a.weight, source: 'ذكاء اصطناعي',
-    score: null, weighted: null,
-    evidence: 'لم يُشغَّل التقييم الذكي بعد.',
-    meaning: 'هذا المحور يحتاج حكماً على المحتوى لا مجرّد وجود بيانات.',
-    required: 'يُفعَّل بنشر Cloud Function للتقييم.',
-    priority: '—',
-  }));
+/* محور 1 — وضوح الأهداف وقابليتها للقياس (0.15)
+   «محدد زمنياً ويمكن التحقق منه» ⇒ مؤشر رقمي + موعد قياس */
+const hasDigit = (t) => /[0-9٠-٩]/.test(S(t));
+function axisGoals(p) {
+  const o = p.objectives;
+  if (!o.length) {
+    return axis(1, 0, 'ورقة «الأهداف» فارغة.',
+      'بلا أهداف مكتوبة لا يمكن الحكم على الخطة ولا قياس تحققها.',
+      'اكتب أهداف الشهر، ولكل هدف مؤشر رقمي وموعد قياس.');
+  }
+  const withKpi = o.filter((x) => hasDigit(x.kpi)).length;
+  const withWhen = o.filter((x) => has(x.when)).length;
+  const score = 100 * (0.6 * pct(withKpi, o.length) + 0.4 * pct(withWhen, o.length));
+  return axis(1, score,
+    'من ' + o.length + ' هدفاً: ' + withKpi + ' له مؤشر رقمي، و' +
+      withWhen + ' له موعد قياس.',
+    score >= 80 ? 'الأهداف محددة زمنياً وقابلة للتحقق رقمياً.'
+      : 'الأهداف موجودة لكن لا يمكن إثبات تحققها رقمياً.',
+    withKpi < o.length
+      ? ('أضف مؤشراً رقمياً لـ' + (o.length - withKpi) + ' هدفاً (مثل: نجاح 8 من 10).')
+      : (withWhen < o.length ? 'أضف موعد القياس لكل هدف.' : 'لا مطلوب.'));
+}
+
+/* محور 4 — التكامل الفني والبدني والخططي والنفسي (0.15)
+   التصنيف إقرار المدرب في عمود «نوع المحتوى» لا تخمين. */
+function axisIntegration(p) {
+  const rows = p.sessions;
+  if (!rows.length) {
+    return axis(4, null, 'لا توجد صفوف في ورقة «الحصص».',
+      'لا يمكن قياس التوازن بلا محتوى مكتوب.',
+      'اكتب الحصص وصنّف كل بند في عمود «نوع المحتوى».');
+  }
+  const counts = {};
+  for (const t of CONTENT_TYPES) counts[t] = 0;
+  let tagged = 0;
+  for (const r of rows) {
+    const t = CONTENT_TYPES.find((x) => S(r.kind).indexOf(x) >= 0);
+    if (t) { counts[t]++; tagged++; }
+  }
+  if (!tagged) {
+    return axis(4, 0, 'لم يُصنَّف أي بند في عمود «نوع المحتوى».',
+      'بلا تصنيف لا يمكن إثبات توازن المحتوى بين الفني والبدني والخططي والنفسي.',
+      'صنّف كل بند من القائمة المنسدلة: فني · بدني · خططي · نفسي.');
+  }
+  const present = CONTENT_TYPES.filter((t) => counts[t] > 0);
+  const shares = present.map((t) => counts[t] / tagged);
+  const even = shares.length ? Math.min(...shares) / Math.max(...shares) : 0;
+  const score = 100 * (0.5 * pct(tagged, rows.length) +
+                       0.3 * (present.length / CONTENT_TYPES.length) +
+                       0.2 * even);
+  const missing = CONTENT_TYPES.filter((t) => !counts[t]);
+  return axis(4, score,
+    'صُنِّف ' + tagged + ' من ' + rows.length + ' بنداً: ' +
+      CONTENT_TYPES.map((t) => t + ' ' + counts[t]).join(' · ') + '.',
+    missing.length ? ('غاب من الخطة: ' + missing.join(' و') + '.')
+      : (score >= 80 ? 'المحتوى متوازن بين الجوانب الأربعة.'
+        : 'الجوانب الأربعة موجودة لكن التوزيع غير متوازن.'),
+    missing.length ? ('أضف محتوى ' + missing.join(' و') + ' أو صنّف ما يقابلها.')
+      : (tagged < rows.length ? ('صنّف ' + (rows.length - tagged) + ' بنداً متبقياً.')
+        : 'لا مطلوب.'));
+}
+
+/* محور 6 — مؤشرات القياس والاختبارات (0.10) */
+function axisKpis(p) {
+  const k = p.kpis;
+  if (!k.length) {
+    return axis(6, 0, 'ورقة «المؤشرات» فارغة.',
+      'بلا اختبارات قبلية وبعدية لا يمكن إثبات التطوّر.',
+      'أضف مؤشرين على الأقل، ولكلٍّ قياس قبلي ومستهدف وأداة قياس.');
+  }
+  const pre = k.filter((x) => has(x.pre)).length;
+  const tgt = k.filter((x) => has(x.target)).length;
+  const tool = k.filter((x) => has(x.tool)).length;
+  const score = 100 * (0.3 * Math.min(1, k.length / 2) + 0.3 * pct(pre, k.length) +
+                       0.2 * pct(tgt, k.length) + 0.2 * pct(tool, k.length));
+  const gaps = [];
+  if (pre < k.length) gaps.push('القياس القبلي ناقص في ' + (k.length - pre));
+  if (tgt < k.length) gaps.push('المستهدف ناقص في ' + (k.length - tgt));
+  if (tool < k.length) gaps.push('أداة القياس ناقصة في ' + (k.length - tool));
+  return axis(6, score,
+    k.length + ' مؤشراً: ' + pre + ' له قياس قبلي، و' + tgt + ' له مستهدف، و' +
+      tool + ' له أداة قياس.',
+    score >= 80 ? 'التطوّر قابل للإثبات رقمياً قبل وبعد.'
+      : 'المتابعة موجودة لكن التطوّر لا يُقاس بالكامل.',
+    gaps.length ? ('أكمل: ' + gaps.join(' · ') + '.') : 'لا مطلوب.');
+}
+
+/* محور 7 — ملاءمة الفئة والسلامة والاستشفاء (0.10) */
+function axisSafety(p) {
+  const rows = p.sessions;
+  const cat = has(p.header['الفئة']);
+  const recovery = has(p.header['إجراءات الاستشفاء']);
+  const safety = has(p.header['إجراءات السلامة والوقاية']);
+  if (!rows.length && !cat && !recovery && !safety) {
+    return axis(7, null, 'لا بيانات فئة ولا استشفاء ولا حصص.',
+      'لا يمكن الحكم على الملاءمة والسلامة بلا بيانات.',
+      'اكتب الفئة وإجراءات الاستشفاء والسلامة، واذكر التهدئة في الحصص.');
+  }
+  const sess = {};
+  for (const r of rows) {
+    const k = r.week + '|' + r.day + '|' + r.date;
+    if (!sess[k]) sess[k] = false;
+    if (kindOf(r.section) === 'cool') sess[k] = true;
+  }
+  const all = Object.keys(sess);
+  const cool = all.filter((k) => sess[k]).length;
+  const coolFrac = all.length ? pct(cool, all.length) : 0;
+  const score = 100 * (0.25 * (cat ? 1 : 0) + 0.25 * (recovery ? 1 : 0) +
+                       0.25 * (safety ? 1 : 0) + 0.25 * coolFrac);
+  const gaps = [];
+  if (!cat) gaps.push('الفئة');
+  if (!recovery) gaps.push('إجراءات الاستشفاء');
+  if (!safety) gaps.push('إجراءات السلامة والوقاية');
+  if (cool < all.length) gaps.push('التهدئة في ' + (all.length - cool) + ' حصة');
+  return axis(7, score,
+    (cat ? 'الفئة مكتوبة' : 'الفئة غير مكتوبة') + ' · ' +
+      (recovery ? 'الاستشفاء موصوف' : 'الاستشفاء غير موصوف') + ' · ' +
+      (safety ? 'السلامة موصوفة' : 'السلامة غير موصوفة') + ' · ' +
+      cool + ' من ' + all.length + ' حصة فيها تهدئة.',
+    score >= 80 ? 'الخطة تراعي الفئة والسلامة والاستشفاء.'
+      : 'نقص السلامة والاستشفاء يرفع خطر الإصابة والإجهاد.',
+    gaps.length ? ('أكمل: ' + gaps.join(' · ') + '.') : 'لا مطلوب.');
 }
 
 /* ── التجميع ──────────────────────────────────────────────── */
 export function evaluate(plan) {
-  const auto = [axisPeriodisation(plan), axisLoad(plan), axisSession(plan), axisDocs(plan)];
-  const axes = auto.concat(pendingAxes()).sort((a, b) => a.n - b.n);
+  const axes = [
+    axisGoals(plan), axisPeriodisation(plan), axisLoad(plan), axisIntegration(plan),
+    axisSession(plan), axisKpis(plan), axisSafety(plan), axisDocs(plan),
+  ].sort((a, b) => a.n - b.n);
 
   const measured = axes.filter((a) => a.score !== null);
   const covW = measured.reduce((s, a) => s + a.weight, 0);
