@@ -296,7 +296,10 @@ export function evaluateCoachPlan(p) {
     let sum = 0;
     for (const d of w.days) {
       if (!d.active || !isFinite(d.rpe)) continue;
-      sum += useVol && isFinite(d.volume) ? d.rpe * d.volume : d.rpe;
+      /* أساس واحد للأسبوع كلّه — خلط «شدة × حجم» مع «شدة» وحدها
+         يجمع وحدتين مختلفتين في رقم بلا معنى */
+      if (useVol) { if (isFinite(d.volume)) sum += d.rpe * d.volume; }
+      else sum += d.rpe;
     }
     return Math.round(sum * 10) / 10;
   });

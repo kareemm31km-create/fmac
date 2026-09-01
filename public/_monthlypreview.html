@@ -17,17 +17,17 @@ h1{font-size:20px;margin:0 0 4px}
 
 <script type="module">
 import * as UI from './js/fmac-monthly-ui.js?v=3';
-import * as M from './js/fmac-monthly.js?v=6';
-import * as CP from './js/fmac-coachplan.js?v=6';
-import { readXlsx } from './js/fmac-xlsx.js?v=6';
+import * as M from './js/fmac-monthly.js?v=9';
+import * as CP from './js/fmac-coachplan.js?v=9';
+import { readXlsx } from './js/fmac-xlsx.js?v=9';
 
 /* تقييم حقيقي لنموذجين محفوظين — لا أرقام مكتوبة يدوياً */
 async function evalFixture(name) {
-  const buf = await (await fetch('./_fixtures/' + name + '?v=2')).arrayBuffer();
+  const buf = await (await fetch('./_fixtures/' + name + '?v=3')).arrayBuffer();
   const r = await CP.evaluateCoachFile(buf, readXlsx);
   return r.ok ? r.result : null;
 }
-const full = await evalFixture('coach-plan-filled.xlsx');
+const full = await evalFixture('sample-plan.xlsx');
 const thin = full;
 
 const monthly = [

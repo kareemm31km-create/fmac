@@ -8,9 +8,9 @@ h2{font-size:14px;margin:20px 0 6px;color:#5b8def;font-weight:700}
 <h1 style="font-size:17px">FMAC — فحص الخطط الشهرية</h1>
 <div id="sum">running…</div><div id="out"></div>
 <script type="module">
-import { readXlsx } from './js/fmac-xlsx.js?v=8';
-import * as M from './js/fmac-monthly.js?v=8';
-import * as CP from './js/fmac-coachplan.js?v=8';
+import { readXlsx } from './js/fmac-xlsx.js?v=9';
+import * as M from './js/fmac-monthly.js?v=9';
+import * as CP from './js/fmac-coachplan.js?v=9';
 
 const out = []; let pass = 0, fail = 0;
 const head = (t) => out.push('<h2>' + t + '</h2>');
@@ -88,40 +88,40 @@ if (rT.ok) {
   truthy('محور 7 مقيس (الورقة موجودة)', ax(7).score !== null);
 }
 
-/* ── 5. خطة حقيقية بالنموذج قبل التوسيع ── */
-head('[5] خطة مصارعة حقيقية — النموذج قبل التوسيع');
-const bufW = await (await fetch('./_fixtures/coach-plan-filled.xlsx?v=3')).arrayBuffer();
+/* ── 5. نموذج اختبار صناعي — يمرّ على صيغ الشدة الأربع ── */
+head('[5] نموذج صناعي — كسر · نسبة · مدى · RPE');
+const bufW = await (await fetch('./_fixtures/sample-plan.xlsx?v=1')).arrayBuffer();
 const rW = await CP.evaluateCoachFile(bufW, readXlsx);
-truthy('قُرئت بلا خطأ', rW.ok);
+truthy('قُرئ بلا خطأ', rW.ok);
 if (rW.ok) {
-  const R = rW.result, ax = (n) => R.axes.find((a) => a.n === n);
+  const R = rW.result, P = rW.plan, ax = (n) => R.axes.find((a) => a.n === n);
   eq('أربعة أسابيع', R.weeks, 4);
   eq('24 يوم تدريب', R.activeDays, 24);
-  eq('المرحلة مقروءة', rW.plan.weeks[0].phase, 'الاعداد');
-  eq('رقم الأسبوع التدريبي', rW.plan.weeks[0].trainingWeek, '32');
-  eq('20 هدفاً عبر الأسابيع',
-     rW.plan.weeks.reduce((s, w) => s + w.objectives.length, 0), 20);
-  eq('الشدة 0.65 موحَّدة إلى 6.5', rW.plan.weeks[0].days[0].rpe, 6.5);
-  eq('محور 5 = 100 (كل الأيام لها الأجزاء الثلاثة)', ax(5).score, 100);
-  /* الموجة داخل الأسبوع تامّة (انتشار 27–36٪) والانتشار بين الأسابيع 13٪ */
-  eq('محور 2 = 96 (يرى الموجة داخل الأسبوع)', ax(2).score, 96);
-  /* «4×50» صارت حجماً رقمياً بعد إصلاح القارئ */
-  eq('محور 3 = 59 (الحجم «4×50» رقمي)', ax(3).score, 59);
-  truthy('الدليل يذكر الموجة الداخلية', ax(2).evidence.indexOf('الموجة داخل الأسبوع') >= 0);
-  truthy('الدليل يذكر الانتشار بين الأسابيع', ax(2).evidence.indexOf('الانتشار بين الأسابيع') >= 0);
-  truthy('الإجمالي 57', R.total === 57);
-
-  eq('محور 4 = 0 (لا تصنيف في النموذج القديم)', ax(4).score, 0);
-  eq('محور 6 غير قابل للقياس (لا ورقة مؤشرات)', ax(6).score, null);
-  eq('محور 7 غير قابل للقياس (لا ورقة بيانات)', ax(7).score, null);
+  eq('20 هدفاً', P.weeks.reduce((s, w) => s + w.objectives.length, 0), 20);
+  /* أربع صيغ مختلفة للشدة تُوحَّد كلّها على 0–10 */
+  eq('كسر 0.60 ⇒ 6', P.weeks[0].days[0].rpe, 6);
+  eq('نسبة 65% ⇒ 6.5', P.weeks[1].days[0].rpe, 6.5);
+  eq('مدى 60–70% ⇒ 6.5', P.weeks[2].days[0].rpe, 6.5);
+  eq('RPE 6 ⇒ 6', P.weeks[3].days[0].rpe, 6);
+  eq('الحجم «3,000م» ⇒ 3000', P.weeks[0].days[0].volume, 3000);
+  eq('نوعه رقمي', P.weeks[0].days[0].volumeKind, 'رقمي');
+  /* 4 أهداف من 20 فيها مؤشر رقمي ⇒ 0.5×1 + 0.5×0.2 */
+  eq('محور 1 = 60', ax(1).score, 60);
+  /* موجة داخلية 96٪ · انتشار 29٪ ⇒ 98.78 */
+  eq('محور 2 = 99', ax(2).score, 99);
+  /* شدة 24/24 · حجم رقمي 24/24 · راحة 0 ⇒ 0.4+0.3 */
+  eq('محور 3 = 70', ax(3).score, 70);
+  eq('محور 4 = 0 (لا تصنيف)', ax(4).score, 0);
+  eq('محور 5 = 100', ax(5).score, 100);
+  eq('محور 6 غير قابل للقياس', ax(6).score, null);
+  eq('محور 7 غير قابل للقياس', ax(7).score, null);
+  eq('محور 8 = 40', ax(8).score, 40);
+  eq('الإجمالي 62', R.total, 62);
   eq('التغطية 80%', R.coverage, 80);
-  truthy('الدليل يعلن أن الحمل من الشدة وحدها',
-    ax(2).evidence.indexOf('الشدة وحدها') >= 0);
-  truthy('الدليل يذكر عدد الأيام', ax(3).evidence.indexOf('24') >= 0);
-  truthy('المطلوب يذكر الراحة',
-    ax(3).required.indexOf('الراحة') >= 0);
+  eq('التقدير', R.grade, 'مقبول');
+  truthy('الحمل على أساس شدة × حجم', ax(2).evidence.indexOf('شدة × حجم') >= 0);
+  truthy('المطلوب يذكر الراحة', ax(3).required.indexOf('الراحة') >= 0);
 }
-
 /* ── 6. الصدق: الغائب لا يُحسب صفراً ── */
 head('[6] الصدق في الأرقام');
 if (rW.ok) {
