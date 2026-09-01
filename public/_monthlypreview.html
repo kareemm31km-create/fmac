@@ -16,18 +16,19 @@ h1{font-size:20px;margin:0 0 4px}
 <div id="host"></div>
 
 <script type="module">
-import * as UI from './js/fmac-monthly-ui.js?v=2';
-import * as M from './js/fmac-monthly.js?v=5';
-import { readXlsx } from './js/fmac-xlsx.js?v=5';
+import * as UI from './js/fmac-monthly-ui.js?v=3';
+import * as M from './js/fmac-monthly.js?v=6';
+import * as CP from './js/fmac-coachplan.js?v=6';
+import { readXlsx } from './js/fmac-xlsx.js?v=6';
 
 /* تقييم حقيقي لنموذجين محفوظين — لا أرقام مكتوبة يدوياً */
 async function evalFixture(name) {
   const buf = await (await fetch('./_fixtures/' + name + '?v=2')).arrayBuffer();
-  const r = await M.evaluateFile(buf, readXlsx);
+  const r = await CP.evaluateCoachFile(buf, readXlsx);
   return r.ok ? r.result : null;
 }
-const full = await evalFixture('plan-full.xlsx');
-const thin = await evalFixture('plan-thin.xlsx');
+const full = await evalFixture('coach-plan-filled.xlsx');
+const thin = full;
 
 const monthly = [
   { k: 'c1__2026-09', month: '2026-09', sport: 'الجودو', branch: 'الفجيرة',

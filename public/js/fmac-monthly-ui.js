@@ -2,6 +2,7 @@
    الأصناف بسابقة mo- تفادياً لتصادم الأسماء (الخطأ رقم 3 في وثيقة المشروع). */
 import { readXlsx } from './fmac-xlsx.js';
 import * as M from './fmac-monthly.js';
+import { evaluateCoachFile } from './fmac-coachplan.js';
 
 const S = (v) => (v === null || v === undefined) ? '' : String(v);
 const esc = (s) => S(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -149,7 +150,7 @@ export function render(host, ctx) {
     '<h3 class="mo-title">الخطط الشهرية</h3>' +
     '<p class="mo-sub">تُرفع قبل بداية الشهر — الموعد النهائي آخر يوم في الشهر السابق ناقص يوم. ' +
     'التقييم يظهر فور الرفع.</p></div>' +
-    '<a class="mo-btn ghost" href="./templates/FMAC-Monthly-Plan-Template.xlsx" download>تنزيل القالب</a>' +
+    '<a class="mo-btn ghost" href="./templates/FMAC-نموذج-الخطة-الشهرية.xlsx" download>تنزيل القالب</a>' +
     '</div>' +
     '<div class="mo-row" style="margin-top:14px">' +
     '<label class="mo-sub" for="moMonth">الشهر</label>' +
@@ -208,13 +209,13 @@ export function render(host, ctx) {
     catch (e) { msg.className = 'mo-msg'; msg.style.color = '#ff4d59';
       msg.textContent = 'تعذّرت قراءة الملف.'; return; }
 
-    const r = await M.evaluateFile(buf, readXlsx);
+    const r = await evaluateCoachFile(buf, readXlsx);
     if (!r.ok) {
       msg.style.color = '#ff4d59';
       msg.textContent = r.error;
       return;
     }
-    const monthFromFile = M.monthKey(r.plan.header['الشهر']);
+    const monthFromFile = M.monthKey((r.plan.header || {})['الشهر']);
     if (monthFromFile && monthFromFile !== sel.value) {
       msg.style.color = '#ffc233';
       msg.textContent = 'تنبيه: الشهر في الملف «' + M.monthLabel(monthFromFile) +
@@ -248,10 +249,11 @@ export function render(host, ctx) {
         file: toB64(buf),
         monthly: {
           month,
-          sport: S(r.plan.header['اللعبة']) || S(user.sport),
-          branch: S(r.plan.header['الفرع']) || S(user.branch),
-          category: S(r.plan.header['الفئة']),
-          players: S(r.plan.header['عدد اللاعبين']),
+          sport: S((r.plan.header||{})['اللعبة']) || S(user.sport),
+          branch: S((r.plan.header||{})['الفرع']) || S(user.branch),
+          category: S((r.plan.header||{})['الفئة']),
+          weeks: r.result.weeks, activeDays: r.result.activeDays,
+          players: S((r.plan.header||{})['عدد اللاعبين']),
           coachName: S(user.name),
           total: r.result.total, grade: r.result.grade,
           decision: r.result.decision, coverage: r.result.coverage,
