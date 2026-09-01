@@ -253,29 +253,63 @@ export function evaluateCoachPlan(p) {
     return Math.round(sum * 10) / 10;
   });
   const usable = loads.filter((x) => x > 0);
+
+  /* الانتشار النسبي: (الأعلى − الأدنى) ÷ المتوسط — يقيس وجود موجة لا حدّتها */
+  const spread = (arr) => {
+    const v = arr.filter((x) => isFinite(x));
+    if (v.length < 2) return null;
+    const mean = v.reduce((a, b) => a + b, 0) / v.length;
+    if (!(mean > 0)) return null;
+    return (Math.max(...v) - Math.min(...v)) / mean;
+  };
+
+  /* الموجة داخل الأسبوع — التدرّج بين أيامه. المقياس السابق كان أعمى عنها. */
+  const intra = [];
+  for (const w of weeks) {
+    const s = spread(w.days.filter((d) => d.active).map((d) => d.rpe));
+    if (s !== null) intra.push(Math.min(1, s / 0.25));      // انتشار 25٪ ⇒ درجة كاملة
+  }
+  const intraAvg = intra.length ? intra.reduce((a, b) => a + b, 0) / intra.length : null;
+
+  /* الاتجاه بين الأسابيع */
+  const inter = spread(usable);
+  const interScore = inter === null ? null : Math.min(1, inter / 0.15);
+
   let a2;
-  if (usable.length < 2) {
-    a2 = mk(2, null, 'أسابيع بحمل قابل للحساب: ' + usable.length + '.',
-      'موجة الحمل تحتاج أسبوعين على الأقل بشدّة مكتوبة.',
+  if (intraAvg === null && interScore === null) {
+    a2 = mk(2, null, 'لا شدّات مكتوبة تكفي لحساب الموجة.',
+      'البناء الدوري يحتاج شدّات مكتوبة عبر الأيام أو الأسابيع.',
       'اكتب الشدة لأيام أسبوعين على الأقل.');
   } else {
-    const mean = usable.reduce((a, b) => a + b, 0) / usable.length;
-    let changes = 0;
-    for (let i = 1; i < loads.length; i++) {
-      if (mean > 0 && Math.abs(loads[i] - loads[i - 1]) / mean >= 0.05) changes++;
-    }
     const phase = weeks.filter((w) => has(w.phase)).length;
     const period = weeks.filter((w) => has(w.period)).length;
-    a2 = mk(2, 100 * (0.5 * pct(changes, loads.length - 1) +
-                      0.25 * pct(phase, weeks.length) + 0.25 * pct(period, weeks.length)),
+    /* الوزن يُعاد توزيعه على المتاح حتى لا يُعاقَب غياب ما لا يُقاس */
+    const parts = [];
+    if (intraAvg !== null) parts.push([0.30, intraAvg]);
+    if (interScore !== null) parts.push([0.25, interScore]);
+    parts.push([0.25, pct(phase, weeks.length)]);
+    parts.push([0.20, pct(period, weeks.length)]);
+    const wSum = parts.reduce((s, [w]) => s + w, 0);
+    const score = 100 * parts.reduce((s, [w, v]) => s + w * v, 0) / wSum;
+
+    const pctS = (x) => Math.round(x * 100) + '٪';
+    a2 = mk(2, score,
       'أحمال الأسابيع (' + (useVol ? 'شدة × حجم' : 'الشدة وحدها — الحجم غير مكتوب') +
-        '): ' + loads.join(' ← ') + '. تغيّر ملموس في ' + changes + ' من ' +
-        (loads.length - 1) + '. المرحلة مكتوبة في ' + phase + ' والفترة في ' + period + '.',
-      changes === 0 ? 'الحمل ثابت بين الأسابيع فلا تظهر موجة تدرّج.'
-        : 'يوجد تدرّج بين الأسابيع.',
-      changes === 0 ? 'غيّر الشدة أو الحجم بين الأسابيع بما يعكس مرحلة الموسم.'
-        : (phase < weeks.length || period < weeks.length
-          ? 'أكمل «المرحلة» و«الفترة» في كل ورقة أسبوع.' : 'لا مطلوب.'));
+        '): ' + loads.join(' ← ') + '. ' +
+        (interScore !== null ? 'الانتشار بين الأسابيع ' + pctS(inter) + '. ' : '') +
+        (intraAvg !== null ? 'الموجة داخل الأسبوع ' + pctS(intraAvg) + ' من التمام. ' : '') +
+        'المرحلة مكتوبة في ' + phase + ' والفترة في ' + period + '.',
+      (intraAvg !== null && intraAvg >= 0.8)
+        ? 'التدرّج داخل الأسبوع واضح، والأسابيع مترابطة.'
+        : (intraAvg !== null && intraAvg < 0.3)
+          ? 'الشدة شبه ثابتة داخل الأسبوع فلا تظهر موجة حمل.'
+          : 'يوجد تدرّج لكنه غير مكتمل.',
+      (intraAvg !== null && intraAvg < 0.5)
+        ? 'درّج الشدة بين أيام الأسبوع بدل تثبيتها.'
+        : (interScore !== null && interScore < 0.5)
+          ? 'ميّز أحمال الأسابيع عن بعضها بما يعكس مرحلة الموسم.'
+          : (phase < weeks.length || period < weeks.length
+            ? 'أكمل «المرحلة» و«الفترة» في كل ورقة أسبوع.' : 'لا مطلوب.'));
   }
 
   /* ── 3. تقنين الحمل ── */

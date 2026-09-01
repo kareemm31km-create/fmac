@@ -8,9 +8,9 @@ h2{font-size:14px;margin:20px 0 6px;color:#5b8def;font-weight:700}
 <h1 style="font-size:17px">FMAC — فحص الخطط الشهرية</h1>
 <div id="sum">running…</div><div id="out"></div>
 <script type="module">
-import { readXlsx } from './js/fmac-xlsx.js?v=6';
-import * as M from './js/fmac-monthly.js?v=6';
-import * as CP from './js/fmac-coachplan.js?v=6';
+import { readXlsx } from './js/fmac-xlsx.js?v=7';
+import * as M from './js/fmac-monthly.js?v=7';
+import * as CP from './js/fmac-coachplan.js?v=7';
 
 const out = []; let pass = 0, fail = 0;
 const head = (t) => out.push('<h2>' + t + '</h2>');
@@ -96,6 +96,11 @@ if (rW.ok) {
      rW.plan.weeks.reduce((s, w) => s + w.objectives.length, 0), 20);
   eq('الشدة 0.65 موحَّدة إلى 6.5', rW.plan.weeks[0].days[0].rpe, 6.5);
   eq('محور 5 = 100 (كل الأيام لها الأجزاء الثلاثة)', ax(5).score, 100);
+  /* الموجة داخل الأسبوع تامّة (انتشار 27–36٪) والانتشار بين الأسابيع 13٪ */
+  eq('محور 2 = 96 (يرى الموجة داخل الأسبوع)', ax(2).score, 96);
+  truthy('الدليل يذكر الموجة الداخلية', ax(2).evidence.indexOf('الموجة داخل الأسبوع') >= 0);
+  truthy('الدليل يذكر الانتشار بين الأسابيع', ax(2).evidence.indexOf('الانتشار بين الأسابيع') >= 0);
+  truthy('الإجمالي 52', R.total === 52);
   eq('محور 3 = 40 (شدة نعم · حجم لا · راحة لا)', ax(3).score, 40);
   eq('محور 4 = 0 (لا تصنيف في النموذج القديم)', ax(4).score, 0);
   eq('محور 6 غير قابل للقياس (لا ورقة مؤشرات)', ax(6).score, null);
