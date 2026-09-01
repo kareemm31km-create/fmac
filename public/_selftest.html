@@ -29,6 +29,9 @@ const mods = [
   './js/fmac-payload.js',
   './js/fmac-migrate.js',
   './js/fmac-accounts.js',
+  './js/fmac-xlsx.js',
+  './js/fmac-monthly.js',
+  './js/fmac-monthly-ui.js',
 ];
 const NS = {};
 for (const m of mods) {
@@ -52,13 +55,21 @@ if (shim && typeof shim.__fmacApi === 'function') ok('التصدير __fmacApi �
 else bad('التصدير __fmacApi مفقود');
 
 const cfg = NS['./js/fmac-config.js'];
-if (cfg && cfg.COL && Object.keys(cfg.COL).length >= 24)
-  ok('خريطة المجموعات: ' + Object.keys(cfg.COL).length + ' مجموعة');
-else bad('خريطة المجموعات ناقصة');
+const nCol = cfg && cfg.COL ? Object.keys(cfg.COL).length : 0;
+if (nCol === 27)
+  ok('خريطة المجموعات: ' + nCol + ' مجموعة (المتوقَّع 27)');
+else bad('خريطة المجموعات: ' + nCol + ' والمتوقَّع 27');
 
 const authNs = NS['./js/fmac-auth.js'];
 if (authNs && authNs.auth && authNs.db && authNs.storage) ok('Auth + Firestore + Storage مهيّأة');
 else bad('تهيئة Firebase ناقصة');
+
+const undef = cfg && cfg.COL ? Object.keys(cfg.COL).filter((k) => !cfg.COL[k]) : ['?'];
+if (!undef.length) ok('لا اسم مجموعة فارغ');
+else bad('مجموعات بلا اسم: ' + undef.join(' · '));
+const cw = cfg ? (cfg.COACH_WRITABLE || []) : [];
+if (cw.length && cw.every(Boolean)) ok('ما يكتبه المدرب: ' + cw.length + ' مجموعة، كلّها معرَّفة');
+else bad('COACH_WRITABLE فيه قيمة فارغة');
 
 /* ── 3. لا طلبات خارجية (القيد §3) ── */
 head('[3] لا طلبات خارجية');
@@ -79,6 +90,9 @@ const checks = [
   ['الوسيط موجود', idx.indexOf('__fmacResolve') >= 0],
   ['قيمة API الحارسة', idx.indexOf("var API = 'firebase'") >= 0],
   ['لا أثر لعنوان Apps Script', idx.indexOf('script.google.com') < 0],
+  ['قسم الخطط الشهرية موجود', idx.indexOf('monthlyView') >= 0],
+  ['وحدة الواجهة الشهرية موصولة', idx.indexOf('fmac-monthly-ui.js') >= 0],
+  ['الخطط الشهرية في التنقّل', idx.indexOf("['monthly','") >= 0],
 ];
 for (const [label, good] of checks) { if (good) ok(label); else bad(label); }
 

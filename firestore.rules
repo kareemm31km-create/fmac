@@ -35,13 +35,15 @@ service cloud.firestore {
       return ['plans','planItems','ticks','notes','weeks','results','shields',
               'camps','national','agenda','visits','calendar','settings','audit',
               'subs','cancels','attendance','replies','segments','deviations',
-              'acts','sessions','stages','versions'];
+              'acts','sessions','stages','versions',
+              'monthlyPlans','monthlyReviews'];
     }
 
     /* ما يكتبه المدرب — ما عداها للإدارة وحدها (القيد رقم 2 في وثيقة المشروع) */
     function coachWritable() {
       return ['subs','cancels','attendance','replies','segments',
-              'deviations','acts','sessions','stages','versions'];
+              'deviations','acts','sessions','stages','versions',
+              'monthlyPlans','monthlyReviews'];
     }
 
     /* المستخدمون: كلٌّ يقرأ ملفّه، والإدارة وحدها تقرأ وتكتب الجميع.

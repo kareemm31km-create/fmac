@@ -39,6 +39,7 @@ async function initPayload() {
     weeks: COL.weeks, results: COL.results, shields: COL.shields,
     camps: COL.camps, national: COL.national, agenda: COL.agenda,
     visits: COL.visits, calendar: COL.calendar, acts: COL.acts, audit: COL.audit,
+    monthly: COL.monthly, reviews: COL.reviews,
   };
   const keys = Object.keys(map);
   const got = await Promise.all(keys.map((k) => readCol(map[k]).catch(() => [])));
@@ -100,6 +101,17 @@ async function initPayload() {
     visits: P.visitsList(R.visits),
     calendar: P.calendarList(R.calendar),
     history: P.history(R),
+    /* الخطط الشهرية — المدرب يرى خططه وحدها، والإدارة ترى الجميع */
+    monthly: R.monthly
+      .filter((m) => user.admin || S(m.coach) === user.code)
+      .map((m) => Object.assign({}, m, { k: S(m.k) }))
+      .sort((a, b) => S(b.month).localeCompare(S(a.month))),
+    monthlyReviews: mapOf(R.reviews, (r) => ({
+      axes: Array.isArray(r.axes) ? r.axes : [],
+      total: r.total === null || r.total === undefined ? null : NUM(r.total),
+      coverage: NUM(r.coverage), grade: S(r.grade),
+      decision: S(r.decision), action: S(r.action), at: S(r.at),
+    })),
     build: BUILD,
     ai: { on: false, model: '' },   // مزايا المساعد تحتاج Cloud Function
   };
@@ -228,6 +240,44 @@ async function dispatch(body) {
     }
 
     case 'weekdata': return weekData(body);
+
+    /* الخطة الشهرية: الملفّ إلى Storage، والبيانات والتقييم وثيقتان */
+    case 'monthly': {
+      const m = body.monthly || {};
+      if (!S(m.month)) return { ok: false, error: 'missing_month' };
+      const me = PROFILE || {};
+      /* المدرب لا يرفع باسم غيره */
+      const coach = me.admin ? (S(m.coach) || S(me.code)) : S(me.code || me.uid);
+      const id = S(m.k) || (coach + '__' + S(m.month));
+      let url = S(m.url);
+      if (body.file) url = await putFile(body.file, body.name, 'monthly');
+
+      const row = Object.assign({}, m, {
+        month: S(m.month), coach, coachName: S(me.admin ? m.coachName : me.name),
+        url, file: S(body.name || m.file),
+        uploadedAt: S(m.uploadedAt) || nowISO(),
+      });
+      delete row.k; delete row.axes;
+      await put(COL.monthly, id, row);
+
+      if (body.review) {
+        const rv = body.review;
+        await put(COL.reviews, id, {
+          axes: rv.axes || [], total: rv.total, coverage: rv.coverage,
+          grade: S(rv.grade), decision: S(rv.decision), action: S(rv.action),
+          month: S(m.month), coach,
+        });
+      }
+      return { ok: true, k: id, url };
+    }
+    case 'monthlyDrop': {
+      const d = adminOnly(); if (d) return d;
+      const k = S((body.monthly || {}).k || body.k);
+      if (!k) return { ok: false, error: 'missing' };
+      await drop(COL.monthly, k);
+      await drop(COL.reviews, k).catch(() => null);
+      return { ok: true };
+    }
 
     /* مزايا المساعد كانت تنادي واجهة خارجية من Apps Script.
        لا يمكن نقلها للمتصفّح دون كشف المفتاح — تحتاج Cloud Function. */

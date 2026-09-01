@@ -137,6 +137,24 @@ export function parsePlan(sheets) {
 const pct = (a, b) => b > 0 ? a / b : 0;
 const r0 = (x) => Math.round(x);
 
+/* تمييز العدد في العربية — «هدف واحد» لا «1 هدفاً» */
+const AR_N = {
+  row: ['صفّ واحد', 'صفّان', 'صفوف', 'صفّاً'],
+  goal: ['هدف واحد', 'هدفان', 'أهداف', 'هدفاً'],
+  sess: ['حصة واحدة', 'حصتان', 'حصص', 'حصةً'],
+  kpi: ['مؤشر واحد', 'مؤشران', 'مؤشرات', 'مؤشراً'],
+  item: ['بند واحد', 'بندان', 'بنود', 'بنداً'],
+  field: ['حقل واحد', 'حقلان', 'حقول', 'حقلاً'],
+  week: ['أسبوع واحد', 'أسبوعان', 'أسابيع', 'أسبوعاً'],
+};
+const cnt = (n, kind) => {
+  const f = AR_N[kind] || AR_N.row;
+  if (n === 1) return f[0];
+  if (n === 2) return f[1];
+  if (n >= 3 && n <= 10) return n + ' ' + f[2];
+  return n + ' ' + f[3];
+};
+
 const axis = (n, score, evidence, meaning, required) => {
   const def = RUBRIC.find((a) => a.n === n);
   const measured = score !== null && score !== undefined;
@@ -164,11 +182,11 @@ function axisLoad(p) {
                        0.3 * pct(withRest, rows.length) +
                        0.2 * pct(withVol, rows.length));
   const gaps = [];
-  if (withRpe < rows.length) gaps.push('الشدة ناقصة في ' + (rows.length - withRpe) + ' صفّاً');
-  if (withRest < rows.length) gaps.push('الراحة ناقصة في ' + (rows.length - withRest) + ' صفّاً');
-  if (withVol < rows.length) gaps.push('الحجم أو المدة ناقص في ' + (rows.length - withVol) + ' صفّاً');
+  if (withRpe < rows.length) gaps.push('الشدة ناقصة في ' + cnt(rows.length - withRpe, 'row'));
+  if (withRest < rows.length) gaps.push('الراحة ناقصة في ' + cnt(rows.length - withRest, 'row'));
+  if (withVol < rows.length) gaps.push('الحجم أو المدة ناقص في ' + cnt(rows.length - withVol, 'row'));
   return axis(3, score,
-    'من ' + rows.length + ' صفّاً: ' + withRpe + ' فيها شدة رقمية (1–10)، و' +
+    'من ' + cnt(rows.length, 'row') + ': ' + withRpe + ' فيها شدة رقمية (1–10)، و' +
       withRest + ' فيها راحة، و' + withVol + ' فيها حجم أو مدة.',
     score >= 80 ? 'الحمل مقنَّن بصورة تسمح بتجميعه ومقارنته بين الأسابيع.'
       : 'الأساس موجود لكن لا يمكن تجميع الحمل رقمياً على كل الحصص.',
@@ -205,7 +223,7 @@ function axisPeriodisation(p) {
   return axis(2, score,
     'أحمال الأسابيع (مدة × شدة): ' + loads.map(r0).join(' ← ') + '. ' +
       'تغيّر ملموس في ' + changes + ' من ' + (loads.length - 1) + ' انتقالاً. ' +
-      p.weeks.filter((w) => has(w.goal)).length + ' من ' + p.weeks.length + ' أسبوعاً له هدف مكتوب.',
+      p.weeks.filter((w) => has(w.goal)).length + ' من ' + cnt(p.weeks.length, 'week') + ' له هدف مكتوب.',
     changes === 0 ? 'الحمل ثابت بين الأسابيع، فلا تظهر موجة تدرّج.'
       : score >= 80 ? 'الأسابيع مترابطة وموجة الحمل واضحة.'
         : 'يوجد تدرّج لكنه غير مكتمل أو غير موصوف.',
@@ -244,12 +262,12 @@ function axisSession(p) {
   const score = 100 * (0.6 * pct(complete, all.length) + 0.4 * pct(withDur, rows.length));
 
   return axis(5, score,
-    complete + ' من ' + all.length + ' حصة فيها الإحماء والجزء الرئيسي والتهدئة معاً، و' +
-      withDur + ' من ' + rows.length + ' صفّاً فيه مدة القسم.',
+    complete + ' من ' + cnt(all.length, 'sess') + ' فيها الإحماء والجزء الرئيسي والتهدئة معاً، و' +
+      withDur + ' من ' + cnt(rows.length, 'row') + ' فيه مدة القسم.',
     score >= 80 ? 'بناء الوحدة واضح وزمنها موزَّع.'
       : 'بعض الحصص ناقصة الأقسام أو بلا توزيع زمني.',
     complete < all.length
-      ? ('أكمل الأقسام الثلاثة في ' + (all.length - complete) + ' حصة، واكتب مدة كل قسم.')
+      ? ('أكمل الأقسام الثلاثة في ' + cnt(all.length - complete, 'sess') + '، واكتب مدة كل قسم.')
       : 'أكمل مدة القسم في الصفوف الناقصة.');
 }
 
@@ -262,7 +280,7 @@ function axisDocs(p) {
   const score = 100 * (0.7 * pct(filled.length, HEAD_FIELDS.length) + 0.3 * (monthOk ? 1 : 0));
   const missing = HEAD_FIELDS.filter((f) => !has(p.header[f]));
   return axis(8, score,
-    filled.length + ' من ' + HEAD_FIELDS.length + ' حقلاً مكتمل في «بيانات الخطة». ' +
+    filled.length + ' من ' + cnt(HEAD_FIELDS.length, 'field') + ' مكتمل في «بيانات الخطة». ' +
       (monthOk ? 'الشهر مقروء: ' + monthLabel(monthKey(p.header['الشهر'])) + '.'
                : 'الشهر غير مقروء أو غير مكتوب.'),
     score >= 80 ? 'التوثيق مكتمل ويسمح بالأرشفة والمقارنة.'
@@ -285,12 +303,12 @@ function axisGoals(p) {
   const withWhen = o.filter((x) => has(x.when)).length;
   const score = 100 * (0.6 * pct(withKpi, o.length) + 0.4 * pct(withWhen, o.length));
   return axis(1, score,
-    'من ' + o.length + ' هدفاً: ' + withKpi + ' له مؤشر رقمي، و' +
+    'من ' + cnt(o.length, 'goal') + ': ' + withKpi + ' له مؤشر رقمي، و' +
       withWhen + ' له موعد قياس.',
     score >= 80 ? 'الأهداف محددة زمنياً وقابلة للتحقق رقمياً.'
       : 'الأهداف موجودة لكن لا يمكن إثبات تحققها رقمياً.',
     withKpi < o.length
-      ? ('أضف مؤشراً رقمياً لـ' + (o.length - withKpi) + ' هدفاً (مثل: نجاح 8 من 10).')
+      ? ('أضف مؤشراً رقمياً لـ' + cnt(o.length - withKpi, 'goal') + ' (مثل: نجاح 8 من 10).')
       : (withWhen < o.length ? 'أضف موعد القياس لكل هدف.' : 'لا مطلوب.'));
 }
 
@@ -323,13 +341,13 @@ function axisIntegration(p) {
                        0.2 * even);
   const missing = CONTENT_TYPES.filter((t) => !counts[t]);
   return axis(4, score,
-    'صُنِّف ' + tagged + ' من ' + rows.length + ' بنداً: ' +
+    'صُنِّف ' + tagged + ' من ' + cnt(rows.length, 'item') + ': ' +
       CONTENT_TYPES.map((t) => t + ' ' + counts[t]).join(' · ') + '.',
     missing.length ? ('غاب من الخطة: ' + missing.join(' و') + '.')
       : (score >= 80 ? 'المحتوى متوازن بين الجوانب الأربعة.'
         : 'الجوانب الأربعة موجودة لكن التوزيع غير متوازن.'),
     missing.length ? ('أضف محتوى ' + missing.join(' و') + ' أو صنّف ما يقابلها.')
-      : (tagged < rows.length ? ('صنّف ' + (rows.length - tagged) + ' بنداً متبقياً.')
+      : (tagged < rows.length ? ('صنّف ' + cnt(rows.length - tagged, 'item') + ' متبقياً.')
         : 'لا مطلوب.'));
 }
 
@@ -351,7 +369,7 @@ function axisKpis(p) {
   if (tgt < k.length) gaps.push('المستهدف ناقص في ' + (k.length - tgt));
   if (tool < k.length) gaps.push('أداة القياس ناقصة في ' + (k.length - tool));
   return axis(6, score,
-    k.length + ' مؤشراً: ' + pre + ' له قياس قبلي، و' + tgt + ' له مستهدف، و' +
+    cnt(k.length, 'kpi') + ': ' + pre + ' له قياس قبلي، و' + tgt + ' له مستهدف، و' +
       tool + ' له أداة قياس.',
     score >= 80 ? 'التطوّر قابل للإثبات رقمياً قبل وبعد.'
       : 'المتابعة موجودة لكن التطوّر لا يُقاس بالكامل.',
@@ -384,12 +402,12 @@ function axisSafety(p) {
   if (!cat) gaps.push('الفئة');
   if (!recovery) gaps.push('إجراءات الاستشفاء');
   if (!safety) gaps.push('إجراءات السلامة والوقاية');
-  if (cool < all.length) gaps.push('التهدئة في ' + (all.length - cool) + ' حصة');
+  if (cool < all.length) gaps.push('التهدئة في ' + cnt(all.length - cool, 'sess'));
   return axis(7, score,
     (cat ? 'الفئة مكتوبة' : 'الفئة غير مكتوبة') + ' · ' +
       (recovery ? 'الاستشفاء موصوف' : 'الاستشفاء غير موصوف') + ' · ' +
       (safety ? 'السلامة موصوفة' : 'السلامة غير موصوفة') + ' · ' +
-      cool + ' من ' + all.length + ' حصة فيها تهدئة.',
+      cool + ' من ' + cnt(all.length, 'sess') + ' فيها تهدئة.',
     score >= 80 ? 'الخطة تراعي الفئة والسلامة والاستشفاء.'
       : 'نقص السلامة والاستشفاء يرفع خطر الإصابة والإجهاد.',
     gaps.length ? ('أكمل: ' + gaps.join(' · ') + '.') : 'لا مطلوب.');

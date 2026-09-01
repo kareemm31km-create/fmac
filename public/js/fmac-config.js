@@ -37,10 +37,13 @@ export const COL = {
   visits:     'visits',       // الزيارات الفنية
   calendar:   'calendar',     // كالندر الموسم
   audit:      'audit',        // سجل التدقيق
+  monthly:    'monthlyPlans',   // الخطط الشهرية
+  reviews:    'monthlyReviews', // تقييمات الخطط الشهرية
 };
 
 /* المجموعات التي يكتبها المدرب — ما عداها للإدارة وحدها */
 export const COACH_WRITABLE = [
+  COL.monthly, COL.reviews,
   COL.subs, COL.cancels, COL.attend, COL.replies,
   COL.segs, COL.devs, COL.acts, COL.sess, COL.stages, COL.versions,
 ];

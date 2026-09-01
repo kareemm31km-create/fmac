@@ -4622,6 +4622,12 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
     <div id="calFull"></div>
   </section>
 
+  <section id="monthlyView" hidden>
+    <header class="dashhead"><div><h1>الخطط الشهرية</h1>
+      <div class="sub">ترفع الخطة قبل بداية الشهر، ويظهر تقييمها فور الرفع.</div></div></header>
+    <div id="monthlyHost"></div>
+  </section>
+
   <section id="archiveView" hidden>
     <header class="dashhead"><div><h1>الأرشيف</h1>
       <div class="sub">الأسابيع المنتهية وخططها كما نُفِّذت — للاطّلاع والطباعة</div></div></header>
@@ -4752,6 +4758,7 @@ window.__fmacApi = function(url, opts){
 };
 </script>
 <script type="module" src="./js/fmac-firebase.js"></script>
+<script type="module" src="./js/fmac-monthly-ui.js"></script>
 <script>
 /* ================= FMAC tracker — roles + Google Sheet sync ================= */
 window.addEventListener('error',function(ev){
@@ -4852,6 +4859,7 @@ let state={}, assign={}, user=null, view=[], SPORTS=[], curSport='', cur='', cur
 let settings={week:'',dates:'',club:''}, coaches=[], subs=[], curView='home', subFilter='all';
 let cancels={}, attend={}, replies={}, history=[];
 let stages={}, versions=[], segs={}, devs=[], acts={}, sess={};
+let monthlyData=[], monthlyRv={};
 let notes=[], weeks={}, audit=[], results={}, agenda=[], visits=[], calendar=[], shields={}, camps={}, staff=[],
     national={};
 let PLANS = [];
@@ -5256,6 +5264,7 @@ async function tryCode(code){
   archive=j.archive||[]; results=j.results||{}; shields=j.shields||{}; camps=j.camps||{};
   staff=j.staff||[]; national=j.national||{};
   agenda=j.agenda||[]; visits=j.visits||[]; calendar=j.calendar||[];
+  monthlyData=j.monthly||[]; monthlyRv=j.monthlyReviews||{};
   try{ if(!offline) checkLink(j); }catch(e){}
   mergePlans(j.plans2||[]);
   /* ما رُصد ولم يصل الخادم (إغلاق مفاجئ · انقطاع شبكة) يُعاد فوق نسخة الخادم ثم يُرسل */
@@ -9614,7 +9623,7 @@ const NAV_IC={
 /* خمس مجموعات لا عشرة أقسام — وداخل المجموعة تبويبات */
 const NAV_COACH=[
   {k:'home',    ic:'home',    label:'الرئيسية', views:[['home','']]},
-  {k:'plans',   ic:'plan',    label:'خطتي',     views:[['plan','']]},
+  {k:'plans',   ic:'plan',    label:'خطتي',     views:[['plan','متابعة التنفيذ'],['monthly','الخطة الشهرية']]},
   {k:'reports', ic:'archive', label:'الأرشيف',  views:[['archive','']]},
   {k:'settings',ic:'settings',label:'الإعدادات',views:[['settings','']]}
 ];
@@ -9634,7 +9643,7 @@ const NAV_BASE=[
   {k:'home',    ic:'home',    label:'الرئيسية', views:[['home','']]},
   {k:'sports',  ic:'medal',   label:'الألعاب',  views:[['sport','']]},
   {k:'plans',   ic:'plan',    label:'الخطط',    views:[
-      ['plan','متابعة التنفيذ'],['calendar','تقويم الأسبوع']]},
+      ['plan','متابعة التنفيذ'],['monthly','الخطط الشهرية'],['calendar','تقويم الأسبوع']]},
   {k:'visits',  ic:'visit',   label:'المتابعة الفنية', views:[['visit','']]},
   {k:'season',  ic:'calendar',label:'كالندر الموسم', views:[['season','']]},
   {k:'reports', ic:'reports', label:'التقارير', views:[['reports','التقرير'],['archive','الأرشيف']]},
@@ -9646,7 +9655,7 @@ const NAV_PRO=[
   {k:'home',    ic:'home',    label:'الرئيسية', views:[['home','']]},
   {k:'sports',  ic:'medal',   label:'الألعاب',  views:[['sport','']]},
   {k:'plans',   ic:'plan',    label:'الخطط',    views:[
-      ['plan','متابعة التنفيذ'],['calendar','تقويم الأسبوع']]},
+      ['plan','متابعة التنفيذ'],['monthly','الخطط الشهرية'],['calendar','تقويم الأسبوع']]},
   {k:'visits',  ic:'visit',   label:'المتابعة الفنية', views:[['visit','']]},
   {k:'season',  ic:'calendar',label:'كالندر الموسم', views:[['season','']]},
   {k:'reports', ic:'reports', label:'التقارير', views:[
@@ -13216,7 +13225,8 @@ function renderSubs(){
 const VIEWS={home:'homeView',todo:'todoView',plan:'planView',calendar:'calendarView',
              sport:'sportView',visit:'visitView',season:'seasonView',
              coaches:'coachesView',reports:'reportsView',settings:'settingsView',
-             review:'reviewView',audit:'auditView',archive:'archiveView'};
+             review:'reviewView',audit:'auditView',archive:'archiveView',
+             monthly:'monthlyView'};
 /* في العرض المبسّط لكل صفحة موسّعة بديل يؤدّي الغرض نفسه — لا نُرجع المستخدم لصفحة فارغة */
 const PRO_FALL={review:'plan', calendar:'plan', coaches:'home', audit:'reports'};
 /* صفحة اللعبة متاحة في العرضين — هي قلب قسم الإعداد الفني */
@@ -13247,6 +13257,17 @@ function setView(v){
       const pw=$('aiWeekPanel'); if(pw&&!aiWeekTxt) pw.hidden=true; }
     requestAnimationFrame(()=>{ revealAll($('reportsView'));
       drawStroke($('trendChart')); drawRings($('sportRings')); }); }
+  else if(v==='monthly'){
+    const h=$('monthlyHost');
+    if(h && window.__fmacMonthlyUI){
+      window.__fmacMonthlyUI.render(h,{
+        user:user, monthly:monthlyData, reviews:monthlyRv,
+        api:window.__fmacApi,
+        onSaved:()=>{ setTimeout(()=>location.reload(),700); }
+      });
+    }
+    requestAnimationFrame(()=>revealAll($('monthlyView')));
+  }
   else if(v==='settings'){ renderSettings(); requestAnimationFrame(()=>revealAll($('settingsView'))); }
   else if(v==='todo'){ renderTodoPage(); requestAnimationFrame(()=>revealAll($('todoView'))); }
   else if(v==='calendar'){ renderCalendar(); renderAgendaWeek();
