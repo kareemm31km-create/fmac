@@ -117,12 +117,20 @@ export async function readXlsx(arrayBuffer) {
     if (!xml) continue;
 
     const rows = [];
-    for (const rm of xml.matchAll(/<row[^>]*r="(\d+)"[^>]*>([\s\S]*?)<\/row>/g)) {
-      const rowIdx = Number(rm[1]) - 1;
+    /* الصفّ قد يكون ذاتيّ الإغلاق (<row …/>) حين يكون فارغاً تماماً */
+    for (const rm of xml.matchAll(/<row\s+([^>]*?)(?:\/>|>([\s\S]*?)<\/row>)/g)) {
+      const rAttr = rm[1].match(/r="(\d+)"/);
+      if (!rAttr) continue;
+      const rowIdx = Number(rAttr[1]) - 1;
+      const inner = rm[2] || '';
       const cells = [];
-      for (const cm of rm[2].matchAll(/<c r="([A-Z]+\d+)"([^>]*)>([\s\S]*?)<\/c>/g)) {
-        const ci = colNum(cm[1]) - 1;
-        const attrs2 = cm[2], body = cm[3];
+      /* الخانة الفارغة ذات النمط تُكتب <c r="B2" s="19"/> — ذاتية الإغلاق.
+         بلا هذا البديل يبتلع الـregex الخانة التالية وتُنسب قيمتها لعمود خاطئ. */
+      for (const cm of inner.matchAll(/<c\s+([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+        const attrs2 = cm[1], body = cm[2] || '';
+        const ref = attrs2.match(/r="([A-Z]+)\d+"/);
+        if (!ref) continue;
+        const ci = colNum(ref[1]) - 1;
         let val = '';
         if (/t="s"/.test(attrs2)) {
           const vm = body.match(/<v>([\s\S]*?)<\/v>/);
