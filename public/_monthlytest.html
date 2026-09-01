@@ -8,9 +8,9 @@ h2{font-size:14px;margin:20px 0 6px;color:#5b8def;font-weight:700}
 <h1 style="font-size:17px">FMAC — فحص الخطط الشهرية</h1>
 <div id="sum">running…</div><div id="out"></div>
 <script type="module">
-import { readXlsx } from './js/fmac-xlsx.js?v=7';
-import * as M from './js/fmac-monthly.js?v=7';
-import * as CP from './js/fmac-coachplan.js?v=7';
+import { readXlsx } from './js/fmac-xlsx.js?v=8';
+import * as M from './js/fmac-monthly.js?v=8';
+import * as CP from './js/fmac-coachplan.js?v=8';
 
 const out = []; let pass = 0, fail = 0;
 const head = (t) => out.push('<h2>' + t + '</h2>');
@@ -55,12 +55,19 @@ eq('تأخير يومين', M.lateness('2026-09', '2026-09-01T10:00:00Z').days, 
 
 /* ── 3. توحيد مقياس الشدة ── */
 head('[3] الشدة — كسر أو RPE');
-eq('0.65 كسر ⇒ 6.5', CP.normIntensity(0.65), 6.5);
-eq('1 يُقرأ كسراً ⇒ 10', CP.normIntensity(1), 10);
-eq('7 يُقرأ RPE ⇒ 7', CP.normIntensity(7), 7);
-eq('85 يُقرأ نسبةً ⇒ 8.5', CP.normIntensity(85), 8.5);
-eq('صفر ⇒ NaN', Number.isNaN(CP.normIntensity(0)), true);
-eq('فارغ ⇒ NaN', Number.isNaN(CP.normIntensity('')), true);
+eq('«80–94%» مدى ⇒ وسطه 8.7', CP.parseIntensity('80–94%'), 8.7);
+eq('«85%» نسبة ⇒ 8.5', CP.parseIntensity('85%'), 8.5);
+eq('«0.65» كسر ⇒ 6.5', CP.parseIntensity('0.65'), 6.5);
+eq('«7» RPE ⇒ 7', CP.parseIntensity('7'), 7);
+eq('ضوضاء إكسل 0.55000000000000004 ⇒ 5.5',
+   CP.parseIntensity(0.55000000000000004), 5.5);
+eq('نصّ بلا رقم ⇒ NaN', Number.isNaN(CP.parseIntensity('متوسط')), true);
+eq('«5,000م» ⇒ رقمي 5000', CP.parseVolume('5,000م'), { kind: 'رقمي', value: 5000 });
+eq('«4×50» ⇒ رقمي', CP.parseVolume('4×50').kind, 'رقمي');
+eq('«متوسط» ⇒ وصفي', CP.parseVolume('متوسط').kind, 'وصفي');
+eq('فارغ ⇒ بلا نوع', CP.parseVolume('').kind, '');
+eq('أرقام مع فاصل آلاف', CP.numbersIn('5,000م'), [5000]);
+eq('أرقام المدى', CP.numbersIn('80–94%'), [80, 94]);
 eq('اسم ورقة أسبوع', CP.isWeekSheet('اسبوع 3'), true);
 eq('ورقة غير أسبوعية', CP.isWeekSheet('بيانات الخطة'), false);
 
@@ -98,10 +105,12 @@ if (rW.ok) {
   eq('محور 5 = 100 (كل الأيام لها الأجزاء الثلاثة)', ax(5).score, 100);
   /* الموجة داخل الأسبوع تامّة (انتشار 27–36٪) والانتشار بين الأسابيع 13٪ */
   eq('محور 2 = 96 (يرى الموجة داخل الأسبوع)', ax(2).score, 96);
+  /* «4×50» صارت حجماً رقمياً بعد إصلاح القارئ */
+  eq('محور 3 = 59 (الحجم «4×50» رقمي)', ax(3).score, 59);
   truthy('الدليل يذكر الموجة الداخلية', ax(2).evidence.indexOf('الموجة داخل الأسبوع') >= 0);
   truthy('الدليل يذكر الانتشار بين الأسابيع', ax(2).evidence.indexOf('الانتشار بين الأسابيع') >= 0);
-  truthy('الإجمالي 52', R.total === 52);
-  eq('محور 3 = 40 (شدة نعم · حجم لا · راحة لا)', ax(3).score, 40);
+  truthy('الإجمالي 57', R.total === 57);
+
   eq('محور 4 = 0 (لا تصنيف في النموذج القديم)', ax(4).score, 0);
   eq('محور 6 غير قابل للقياس (لا ورقة مؤشرات)', ax(6).score, null);
   eq('محور 7 غير قابل للقياس (لا ورقة بيانات)', ax(7).score, null);
@@ -109,8 +118,8 @@ if (rW.ok) {
   truthy('الدليل يعلن أن الحمل من الشدة وحدها',
     ax(2).evidence.indexOf('الشدة وحدها') >= 0);
   truthy('الدليل يذكر عدد الأيام', ax(3).evidence.indexOf('24') >= 0);
-  truthy('المطلوب يذكر الحجم والراحة',
-    ax(3).required.indexOf('الحجم') >= 0 && ax(3).required.indexOf('الراحة') >= 0);
+  truthy('المطلوب يذكر الراحة',
+    ax(3).required.indexOf('الراحة') >= 0);
 }
 
 /* ── 6. الصدق: الغائب لا يُحسب صفراً ── */

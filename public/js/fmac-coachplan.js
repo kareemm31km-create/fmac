@@ -24,16 +24,51 @@ const afterColon = (t) => {
   return i >= 0 ? s.slice(i + 1).trim() : '';
 };
 
+/** كل الأرقام داخل نصّ، مع احترام فاصل الآلاف ووحدات القياس.
+ *  «5,000م» ⇒ [5000] · «80–94%» ⇒ [80,94] · «0.65» ⇒ [0.65] */
+export function numbersIn(t) {
+  const s = S(t)
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(/[٬]/g, '')
+    .replace(/(\d),(\d{3})(?!\d)/g, '$1$2');       // 5,000 ⇒ 5000
+  return (s.match(/\d+(?:\.\d+)?/g) || []).map(Number);
+}
+
+/** الشدة تُكتب رقماً أو نسبةً أو مدى: «0.65» · «7» · «85%» · «80–94%».
+ *  المدى يُؤخذ بوسطه. ثم تُوحَّد على مقياس 0–10. */
+export function parseIntensity(raw) {
+  const nums = numbersIn(raw);
+  if (!nums.length) return NaN;
+  const v = nums.length >= 2 ? (nums[0] + nums[1]) / 2 : nums[0];
+  return normIntensity(v);
+}
+
 /** المدربون يكتبون الشدة ككسر (0.65) أو كـRPE (7). نوحّدها على مقياس 0–10.
  *  القيمة ≤ 1 تُقرأ كسراً — فـ«1» تعني الشدة القصوى لا RPE‑1. */
 export function normIntensity(v) {
   const n = Number(v);
   if (!isFinite(n) || n <= 0) return NaN;
-  if (n <= 1) return n * 10;
-  if (n <= 10) return n;
-  if (n <= 100) return n / 10;                 // مكتوبة نسبةً مئوية
-  return NaN;
+  let r;
+  if (n <= 1) r = n * 10;
+  else if (n <= 10) r = n;
+  else if (n <= 100) r = n / 10;               // مكتوبة نسبةً مئوية
+  else return NaN;
+  /* إكسل يكتب 0.55 أحياناً 0.55000000000000004 — نقرّب لمنزلتين */
+  return Math.round(r * 100) / 100;
 }
+
+/** الحجم يُكتب رقماً أحياناً وكلمةً أحياناً («متوسط»).
+ *  الوصفي لا يُجمَّع، فيأخذ نصف رصيد المحور — والـrubric تشترط
+ *  «بديلاً عددياً قابلاً للتجميع». */
+export function parseVolume(raw) {
+  const t = S(raw).trim();
+  if (!t) return { kind: '', value: NaN };
+  const nums = numbersIn(t);
+  /* «5,000م» و«4×50» رقميان قابلان للتجميع؛ «متوسط» وصفيّ */
+  if (nums.length) return { kind: 'رقمي', value: nums[0] };
+  return { kind: 'وصفي', value: NaN };
+}
+export const volumeKind = (raw) => parseVolume(raw).kind;
 
 export const DAY_NAMES = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 /* كل يوم ثلاثة أعمدة: هدف التدريب · الشدة · الحجم */
@@ -125,13 +160,17 @@ export function parseWeekSheet(rows, sheetName) {
   for (let c = firstCol; c < firstCol + DAY_SPAN * 7; c += DAY_SPAN) {
     const name = S(dayCells[c]).trim();
     if (!name || DAY_NAMES.indexOf(name) < 0) continue;
-    const raw = NUM(cell(rows, valRow, c + 1));
+    const rawInt = cell(rows, valRow, c + 1);
+    const rawVol = cell(rows, valRow, c + 2);
+    const vol = parseVolume(rawVol);
     const d = {
       day: name,
       goal: cell(rows, valRow, c),
-      intensity: raw,
-      rpe: normIntensity(raw),
-      volume: NUM(cell(rows, valRow, c + 2)),
+      intensity: rawInt,
+      rpe: parseIntensity(rawInt),
+      volume: vol.value,
+      volumeText: rawVol,
+      volumeKind: vol.kind,
       warm: warmRow >= 0 ? cell(rows, warmRow, c) : '',
       main: mainRow >= 0 ? cell(rows, mainRow, c) : '',
       cool: coolRow >= 0 ? cell(rows, coolRow, c) : '',
@@ -141,27 +180,36 @@ export function parseWeekSheet(rows, sheetName) {
     };
     /* يوم بلا أي محتوى = راحة، لا يُحسب ضمن أيام التدريب */
     d.active = has(d.goal) || has(d.warm) || has(d.main) || has(d.cool) ||
-               isFinite(d.intensity) || isFinite(d.volume);
+               isFinite(d.rpe) || has(d.volumeText);
     out.days.push(d);
   }
   return out;
 }
 
-/** يقرأ الملفّ كلّه — كل ورقة «اسبوع ن» */
+/* الأوراق المعروفة التي ليست أسابيع */
+const NON_WEEK = ['بيانات الخطة', 'المؤشرات', 'تعليمات'];
+
+/** يقرأ الملفّ كلّه.
+ *  الورقة تُعَدّ أسبوعاً بمحتواها لا باسمها — المدربون يسمّونها
+ *  «اسبوع 1» أو «اغسطس 1» أو غير ذلك، فالاسم ليس عقداً. */
 export function parseCoachPlan(sheets) {
-  const names = Object.keys(sheets).filter(isWeekSheet)
-    .sort((a, b) => weekNoOfSheet(a) - weekNoOfSheet(b));
-  if (!names.length) {
-    return { ok: false,
-      error: 'لم يُعثر على أوراق الأسابيع. المتوقَّع أوراق باسم «اسبوع 1» … «اسبوع 4».' };
-  }
+  const all = Object.keys(sheets).filter((n) => NON_WEEK.indexOf(n) < 0);
   const weeks = [];
-  for (const n of names) {
+  for (const n of all) {
     const w = parseWeekSheet(sheets[n], n);
-    if (w) weeks.push(w);
+    if (w && w.days.length) weeks.push(w);
   }
+  /* الترتيب: برقم داخل الاسم إن وُجد، وإلا بترتيب الأوراق */
+  weeks.sort((a, b) => {
+    const x = weekNoOfSheet(a.sheet), y = weekNoOfSheet(b.sheet);
+    if (x && y && x !== y) return x - y;
+    return all.indexOf(a.sheet) - all.indexOf(b.sheet);
+  });
+  weeks.forEach((w, i) => { if (!w.no) w.no = i + 1; });
+
   if (!weeks.length) {
-    return { ok: false, error: 'أوراق الأسابيع موجودة لكن تخطيطها غير متوقَّع.' };
+    return { ok: false,
+      error: 'لم يُعثر على أوراق أسابيع. الورقة تحتاج صفّ «هدف التدريب» وأسماء الأيام.' };
   }
   const activeDays = weeks.reduce((s, w) => s + w.days.filter((d) => d.active).length, 0);
 
@@ -179,7 +227,7 @@ export function parseCoachPlan(sheets) {
     }
   }
 
-  return { ok: true, weeks, activeDays, sheetNames: names, header, kpis,
+  return { ok: true, weeks, activeDays, sheetNames: weeks.map((w) => w.sheet), header, kpis,
     hasHeaderSheet: !!hs, hasKpiSheet: !!ks };
 }
 
@@ -314,20 +362,30 @@ export function evaluateCoachPlan(p) {
 
   /* ── 3. تقنين الحمل ── */
   const wI = days.filter((d) => isFinite(d.rpe)).length;
-  const wV = days.filter((d) => isFinite(d.volume)).length;
+  const vNum = days.filter((d) => d.volumeKind === 'رقمي').length;
+  const vTxt = days.filter((d) => d.volumeKind === 'وصفي').length;
   const wR = days.filter((d) => isFinite(d.rest)).length;
+  /* الوصفي مكتوب لكنه غير قابل للتجميع ⇒ نصف رصيد، عملاً بنصّ الـrubric:
+     «الحجم والشدة والراحة وRPE أو بديل عددي قابل للتجميع» */
+  const volScore = pct(vNum + vTxt * 0.5, nd);
   const a3 = !nd
     ? mk(3, null, 'لا أيام تدريب مكتوبة.', 'لا يمكن قياس الحمل بلا أيام.',
       'اكتب أيام التدريب مع الشدة والحجم والراحة.')
-    : mk(3, 100 * (0.4 * pct(wI, nd) + 0.3 * pct(wV, nd) + 0.3 * pct(wR, nd)),
-      'من ' + cnt(nd, 'day') + ': ' + wI + ' فيه شدة، و' + wV + ' فيه حجم، و' +
-        wR + ' فيه راحة.',
-      (wV && wR) ? 'الحمل مقنَّن بصورة تسمح بتجميعه ومقارنته.'
-        : 'الحمل غير مكتمل التقنين، فلا يمكن تجميعه بدقّة.',
-      [wI < nd ? 'الشدة في ' + (nd - wI) : '', wV < nd ? 'الحجم في ' + (nd - wV) : '',
-        wR < nd ? 'الراحة في ' + (nd - wR) : ''].filter(Boolean).length
+    : mk(3, 100 * (0.4 * pct(wI, nd) + 0.3 * volScore + 0.3 * pct(wR, nd)),
+      'من ' + cnt(nd, 'day') + ': ' + wI + ' فيه شدة، و' +
+        (vNum ? vNum + ' فيه حجم رقمي' : 'لا حجم رقمي') +
+        (vTxt ? '، و' + vTxt + ' فيه حجم وصفي (كلمة لا رقم)' : '') +
+        '، و' + wR + ' فيه راحة.',
+      (vNum === nd && wR === nd) ? 'الحمل مقنَّن بصورة تسمح بتجميعه ومقارنته.'
+        : vTxt ? 'الحجم موصوف بكلمة لا برقم، فلا يمكن جمعه ولا مقارنة الأسابيع به.'
+          : 'الحمل غير مكتمل التقنين، فلا يمكن تجميعه بدقّة.',
+      [wI < nd ? 'الشدة في ' + cnt(nd - wI, 'day') : '',
+        vTxt ? 'حوّل الحجم الوصفي إلى رقم (دقائق أو تكرارات) في ' + cnt(vTxt, 'day') : '',
+        (nd - vNum - vTxt) ? 'الحجم في ' + cnt(nd - vNum - vTxt, 'day') : '',
+        wR < nd ? 'الراحة في ' + cnt(nd - wR, 'day') : ''].filter(Boolean).length
         ? ('أكمل: ' + [wI < nd ? 'الشدة في ' + cnt(nd - wI, 'day') : '',
-          wV < nd ? 'الحجم في ' + cnt(nd - wV, 'day') : '',
+          vTxt ? 'حوّل الحجم الوصفي إلى رقم (دقائق أو تكرارات) في ' + cnt(vTxt, 'day') : '',
+          (nd - vNum - vTxt) ? 'الحجم في ' + cnt(nd - vNum - vTxt, 'day') : '',
           wR < nd ? 'الراحة في ' + cnt(nd - wR, 'day') : ''].filter(Boolean).join(' · ') + '.')
         : 'لا مطلوب.');
 
