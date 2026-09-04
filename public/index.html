@@ -4765,6 +4765,7 @@ window.__fmacApi = function(url, opts){
 </script>
 <script type="module" src="./js/fmac-firebase.js"></script>
 <script type="module" src="./js/fmac-monthly-ui.js"></script>
+<script type="module" src="./js/fmac-router.js"></script>
 <script>
 /* ================= FMAC tracker — roles + Google Sheet sync ================= */
 window.addEventListener('error',function(ev){
@@ -7811,6 +7812,7 @@ let archive=[];            /* فهرس الأسابيع المنتهية — ي�
 let arcCache={};           /* week -> {plans, cancels, attend} يُجلب عند الفتح */
 let arcWeek='';            /* الأسبوع المفتوح حالياً */
 let arcPlan='';            /* الخطة المفتوحة داخله */
+let routing=false;         /* يمنع دفع مسار جديد أثناء تطبيق مسار قائم */
 let arcQ='', arcSport='', arcCoach='';
 let arcCmp=[];             /* أسبوعان للمقارنة */
 let arcBusy=false;
@@ -13247,6 +13249,11 @@ function setView(v){
     if(alt==='plan' && !cur) v='home'; else v=alt;
   }
   curView=v;
+  /* حدّث المسار ليطابق الصفحة — إلا حين نأتي من زرّ الرجوع نفسه.
+     window.history صراحةً: متغيّر history هنا هو سجلّ الأسابيع (§9). */
+  if(!routing && window.__fmacRouter){
+    try{ window.__fmacRouter.push(v,{sport:curSport,tab:repTab}); }catch(e){}
+  }
   Object.keys(VIEWS).forEach(k=>{ const e=$(VIEWS[k]); if(e) e.hidden = k!==v; });
   const sn=$('sideNav');
   const gk=groupOf(v);
@@ -14322,7 +14329,26 @@ document.addEventListener('keydown',e=>{
   try{ prof=await (window.__fmacAuthReady||Promise.resolve(null)); }catch(e){}
   const code=(prof&&(prof.code||prof.uid))||'firebase';
   const ok=await tryCode(code);
-  if(!ok) showGate('تعذّر تحميل بياناتك. حدّث الصفحة أو راجع الإدارة.');
+  if(!ok){ showGate('تعذّر تحميل بياناتك. حدّث الصفحة أو راجع الإدارة.'); return; }
+
+  /* ── التوجيه: افتح الصفحة التي يشير إليها المسار، وتابع زرّ الرجوع ── */
+  const R=window.__fmacRouter;
+  if(R){
+    const apply=(st)=>{
+      routing=true;
+      try{
+        if(st.sport && SPORTS.indexOf(st.sport)>=0) curSport=st.sport;
+        if(st.tab && curView!==st.view) repTab=st.tab;
+        setView(st.view);
+        if(st.view==='reports' && st.tab) setRepTab(st.tab);
+      }catch(e){}
+      routing=false;
+    };
+    apply(R.parse());
+    /* استبدل لا تدفع، حتى لا يُضاف مدخل زائد عند أوّل تحميل */
+    try{ R.replace(curView,{sport:curSport,tab:repTab}); }catch(e){}
+    addEventListener('popstate',()=>{ apply(R.parse()); });
+  }
 })();
 })();
 </script>

@@ -43,6 +43,11 @@ const server = createServer(async (req, res) => {
   const urlPath = req.url || '/';
   let file = resolvePath(urlPath);
 
+  /* مسارات نظيفة للصفحتين المستقلّتين — تطابق rewrites في vercel.json */
+  const ALIAS = { '/accounts': '/_accounts.html', '/migrate': '/_migrate.html' };
+  const aliased = ALIAS[urlPath.split('?')[0]];
+  if (aliased) file = resolvePath(aliased);
+
   if (file) {
     try {
       const info = await stat(file);

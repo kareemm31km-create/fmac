@@ -3,6 +3,11 @@
   "outputDirectory": "public",
   "cleanUrls": false,
   "trailingSlash": false,
+  "rewrites": [
+    { "source": "/accounts", "destination": "/_accounts.html" },
+    { "source": "/migrate", "destination": "/_migrate.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/sw.js",
