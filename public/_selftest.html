@@ -15,6 +15,7 @@ const H = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const head = (t) => out.push('<h2>' + t + '</h2>');
 const ok  = (m) => { pass++; out.push('<div class="ok">PASS  ' + m + '</div>'); };
 const bad = (m) => { fail++; out.push('<div class="bad">FAIL  ' + m + '</div>'); };
+const bad0 = bad;
 
 /* ── 1. تحميل كل وحدة فعلياً — الاستيراد الحقيقي يكشف خطأ التحليل والمسار ── */
 head('[1] تحميل الوحدات (import حقيقي)');
@@ -32,6 +33,7 @@ const mods = [
   './js/fmac-xlsx.js',
   './js/fmac-monthly.js',
   './js/fmac-monthly-ui.js',
+  './js/fmac-router.js',
 ];
 const NS = {};
 for (const m of mods) {
@@ -97,6 +99,43 @@ const checks = [
 ];
 for (const [label, good] of checks) { if (good) ok(label); else bad(label); }
 
+
+/* ── 6. أشكال الحمولة — الخطأ الذي أضاع البيانات ── */
+head('[6] مفاتيح تداخل الحمولة');
+{
+  /* المصدر الوحيد للحقيقة: ما يرسله index.html فعلاً */
+  const found = {};
+  for (const m of idx.matchAll(/action:'([a-zA-Z]+)'\s*,\s*([a-zA-Z]+)\s*:/g)) {
+    if (!found[m[1]]) found[m[1]] = m[2];
+  }
+  /* ما تتوقّعه الطبقة */
+  const NEST = {
+    cancel: 'cancel', attendance: 'attend', reply: 'reply', stage: 'stage',
+    session: 'session', note: 'note', ack: 'ack', closeweek: 'week',
+    result: 'result', shield: 'shield', camp: 'camp',
+    natl: 'player', natlDrop: 'player',
+    user: 'userRow', userDrop: 'userRow',
+    agenda: 'agenda', visit: 'visit', cal: 'cal', calDrop: 'cal',
+    targets: 'targets', media: 'media',
+  };
+  let bad = 0;
+  for (const act of Object.keys(found)) {
+    const real = found[act], want = NEST[act];
+    if (want === undefined) continue;            // إجراء بحمولة مسطّحة
+    if (real === want) ok('action:' + act + ' ⇐ ' + real);
+    else { bad++; bad0('action:' + act + ' ترسل «' + real + '» والطبقة تقرأ «' + want + '»'); }
+  }
+  /* حفظ الرصد يُرسل تحت changes */
+  const shim = await (await fetch('./js/fmac-firebase.js')).text();
+  if (shim.indexOf('body.changes') >= 0) ok('حفظ الرصد يقرأ changes');
+  else bad0('حفظ الرصد لا يقرأ changes — سيُبلغ نجاحاً بلا حفظ');
+  /* الدروع: أسماء الحقول */
+  if (shim.indexOf('nextClub') >= 0) ok('الدروع تحوّل nextClub ⇒ rival');
+  else bad0('الدروع لا تحوّل nextClub');
+  /* الملفّ كائن لا نصّ */
+  if (shim.indexOf('fileOf') >= 0) ok('الملفّ يُقرأ ككائن {name,data}');
+  else bad0('الملفّ يُعامَل كنصّ base64');
+}
 /* ── 5. خادم التطوير (نسخة Node) ── */
 head('[5] scripts/dev-server.mjs');
 {
@@ -121,6 +160,55 @@ head('[5] scripts/dev-server.mjs');
   }
 }
 
+
+/* ── 7. التوجيه — مسار لكل صفحة ── */
+head('[7] التوجيه');
+{
+  const R = NS['./js/fmac-router.js'];
+  if (!R) { bad0('وحدة التوجيه لم تُحمَّل'); }
+  else {
+    const p = (path) => R.parse(path, '');
+    const eqv = (label, got, want) => (got === want)
+      ? ok(label + ' = ' + got) : bad0(label + ' — got ' + got + ' want ' + want);
+
+    eqv('/ ⇒ home', p('/').view, 'home');
+    eqv('/plan ⇒ plan', p('/plan').view, 'plan');
+    eqv('/monthly ⇒ monthly', p('/monthly').view, 'monthly');
+    eqv('/sports ⇒ sport', p('/sports').view, 'sport');
+    eqv('/archive ⇒ archive', p('/archive').view, 'archive');
+    eqv('/settings ⇒ settings', p('/settings').view, 'settings');
+    eqv('مسار مجهول ⇒ home', p('/nope').view, 'home');
+    eqv('اللعبة من المسار', p('/sports/judo').sport, 'الجودو');
+    eqv('تبويب التقارير', p('/reports/week').tab, 'week');
+
+    eqv('home ⇒ /', R.build('home', {}, ''), '/');
+    eqv('plan ⇒ /plan', R.build('plan', {}, ''), '/plan');
+    eqv('لعبة ⇒ /sports/judo', R.build('sport', { sport: 'الجودو' }, ''), '/sports/judo');
+    eqv('تبويب ⇒ /reports/week', R.build('reports', { tab: 'week' }, ''), '/reports/week');
+    eqv('التبويب الافتراضي لا يظهر', R.build('reports', { tab: 'month' }, ''), '/reports');
+
+    /* ذهاب وعودة لكل صفحة */
+    let rt = 0;
+    for (const r of R.ROUTES) {
+      if (p(R.build(r.view, {}, '')).view === r.view) rt++;
+    }
+    if (rt === R.ROUTES.length) ok('ذهاب وعودة لكل الصفحات (' + rt + ')');
+    else bad0('ذهاب وعودة فشل في ' + (R.ROUTES.length - rt) + ' صفحة');
+
+    /* كل صفحة في VIEWS لها مسار */
+    const views = (idx.match(/const VIEWS=\{[\s\S]*?\};/) || [''])[0];
+    const missing = R.ROUTES.filter((r) => views.indexOf(r.view + ':') < 0);
+    if (!missing.length) ok('كل مسار يقابل صفحة موجودة');
+    else bad0('مسارات بلا صفحة: ' + missing.map((m) => m.view).join(' · '));
+
+    if (idx.indexOf('__fmacRouter.push') >= 0) ok('setView يحدّث المسار');
+    else bad0('setView لا يحدّث المسار');
+    if (idx.indexOf("addEventListener('popstate'") >= 0) ok('زرّ الرجوع متابَع');
+    else bad0('زرّ الرجوع غير متابَع');
+    if (idx.indexOf('window.__fmacRouter.push') >= 0) ok('window.history صراحةً (§9)');
+    else bad0('قد يُحجب history المحلّي');
+  }
+}
 document.getElementById('out').innerHTML = out.join('');
 const el = document.getElementById('sum');
 el.innerHTML = (fail === 0)

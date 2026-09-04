@@ -181,42 +181,103 @@ async function putFile(b64, name, folder) {
 const ADMIN = ['result', 'shield', 'targets', 'camp', 'natl', 'natlDrop',
   'user', 'userDrop', 'agenda', 'visit', 'cal', 'calDrop', 'closeweek', 'note'];
 
+/* اسم المفتاح الذي تأتي تحته بيانات كل إجراء في index.html.
+   لا يطابق اسم الإجراء غالباً: natl ⇒ player · user ⇒ userRow ·
+   attendance ⇒ attend · segments ⇒ segs · deviations ⇒ devs. */
+const NEST = {
+  cancel: 'cancel', attendance: 'attend', reply: 'reply', stage: 'stage',
+  session: 'session', note: 'note', ack: 'ack', closeweek: 'week',
+  result: 'result', shield: 'shield', camp: 'camp',
+  natl: 'player', natlDrop: 'player',
+  user: 'userRow', userDrop: 'userRow',
+  agenda: 'agenda', visit: 'visit', cal: 'cal', calDrop: 'cal',
+  targets: 'targets', media: 'media',
+};
+/* الكيان ومعرّفه — المفتاح يأتي داخل الكيان لا في جذر الحمولة */
+const entOf = (body, a) => {
+  const v = body[NEST[a]];
+  return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+};
+const idOf = (ent, body) => S(ent.k) || S(ent.code) || S(body.k) || '';
+
+/* الملفّ يصل ككائن {name,type,data} لا كنصّ base64 */
+const fileOf = (body) => {
+  const f = body.file;
+  if (!f) return null;
+  if (typeof f === 'string') return { data: f, name: S(body.name) };
+  return { data: S(f.data), name: S(f.name) || S(body.name) };
+};
+
 async function dispatch(body) {
   const a = S(body.action);
   if (ADMIN.indexOf(a) >= 0) { const d = adminOnly(); if (d) return d; }
 
   switch (a) {
     case 'upload': {
-      const url = body.file ? await putFile(body.file, body.name, 'media') : S(body.url);
-      const row = Object.assign({}, body, { url });
-      await put(COL.versions, body.k, row);
-      return put(COL.subs, body.k, row);
+      /* حمولة الرفع مسطّحة في الجذر، والملفّ كائن */
+      const f = fileOf(body);
+      const url = f ? await putFile(f.data, f.name, 'media') : S(body.url);
+      const row = {
+        at: nowISO(), code: S(PROFILE && (PROFILE.code || PROFILE.uid)),
+        name: S(body.coach) || S(PROFILE && PROFILE.name), sport: S(body.sport),
+        branch: S(body.branch), category: S(body.category), week: S(body.week),
+        players: NUM(body.players), slot: NUM(body.slot),
+        file: f ? f.name : '', url, note: S(body.note),
+      };
+      const key = S(row.code) + '__' + S(row.week) + '__' + S(row.category);
+      await put(COL.versions, key, Object.assign({ planId: '', n: 1 }, row));
+      return put(COL.subs, key, row);
     }
     case 'media': {
-      const url = await putFile(body.file, body.name, 'media');
-      return put(COL.subs, body.k, Object.assign({}, body, { url }));
+      const e = entOf(body, a);
+      const f = fileOf(body);
+      const url = f ? await putFile(f.data, f.name, 'media') : '';
+      const key = idOf(e, body) || (S(e.sport) + '__' + S(e.week) + '__' + S(e.day));
+      return put(COL.subs, key, Object.assign({}, e, { url, file: f ? f.name : '' }));
     }
-    case 'cancel': return put(COL.cancels, body.k, body);
-    case 'attendance': return put(COL.attend, body.k, body);
-    case 'reply': return put(COL.replies, body.k, body);
-    case 'stage': return put(COL.stages, body.k, body);
-    case 'segments': return put(COL.segs, body.k, body);
-    case 'deviations': return put(COL.devs, body.k, body);
-    case 'ack': return put(COL.acts, body.k, body);
-    case 'session': return put(COL.sess, body.k, body);
-    case 'note': return put(COL.notes, body.k, body);
-    case 'closeweek': return put(COL.weeks, body.k || body.week, body);
-    case 'result': return put(COL.results, body.k, body);
-    case 'shield': return put(COL.shields, body.k, body);
-    case 'camp': return put(COL.camps, body.k, body.camp || body);
-    case 'natl': return put(COL.national, body.k, body.natl || body);
-    case 'natlDrop': return drop(COL.national, (body.natl || {}).k || body.k);
-    case 'agenda': return put(COL.agenda, body.k, body.agenda || body);
-    case 'visit': return put(COL.visits, body.k, body.visit || body);
-    case 'calDrop': return drop(COL.calendar, (body.cal || {}).k || body.k);
-    case 'user': return put(COL.users, body.code || body.k, body.user || body);
-    case 'userDrop': return drop(COL.users, body.code || body.k);
-    case 'targets': return put(COL.settings, 'config', body);
+    case 'cancel': case 'attendance': case 'reply': case 'stage':
+    case 'segments': case 'deviations': case 'ack': case 'session':
+    case 'note': case 'closeweek': case 'result': case 'shield':
+    case 'camp': case 'natl': case 'agenda': case 'visit': case 'user': {
+      const COLS = {
+        cancel: COL.cancels, attendance: COL.attend, reply: COL.replies,
+        stage: COL.stages, ack: COL.acts, session: COL.sess, note: COL.notes,
+        closeweek: COL.weeks, result: COL.results, shield: COL.shields,
+        camp: COL.camps, natl: COL.national, agenda: COL.agenda,
+        visit: COL.visits, user: COL.users,
+      };
+      /* صفوف متعدّدة: زمن الأجزاء وسجل الانحراف يُرسلان دفعةً */
+      if (a === 'segments' || a === 'deviations') {
+        const rows = body[a === 'segments' ? 'segs' : 'devs'] || [];
+        if (!Array.isArray(rows) || !rows.length) return { ok: true, n: 0 };
+        const col = a === 'segments' ? COL.segs : COL.devs;
+        const b = writeBatch(db);
+        const stamp = { by: S(PROFILE && (PROFILE.name || PROFILE.uid)), at: nowISO() };
+        for (const r of rows) {
+          const row = Object.assign({}, r, stamp);
+          delete row.k;
+          b.set(doc(db, col, S(r.k)), row, { merge: true });
+        }
+        await b.commit();
+        return { ok: true, n: rows.length, at: stamp.at };
+      }
+      const e = entOf(body, a);
+      /* إغلاق الأسبوع: المفتاح هو مسمّى الأسبوع نفسه */
+      const key = a === 'closeweek' ? (S(e.week) || S(body.k)) : idOf(e, body);
+      let row = Object.assign({}, e);
+      /* الدروع: أسماء الحقول في الواجهة تختلف عن أسماء القراءة */
+      if (a === 'shield') {
+        row.rival = S(e.nextClub); row.rivalPoints = NUM(e.nextPoints);
+        delete row.nextClub; delete row.nextPoints;
+      }
+      /* المستخدمون: الكود هو معرّف الوثيقة ويبقى حقلاً كذلك */
+      if (a === 'user') row.code = S(e.code) || key;
+      return put(COLS[a], key, row);
+    }
+    case 'natlDrop': return drop(COL.national, idOf(entOf(body, a), body));
+    case 'userDrop': return drop(COL.users, idOf(entOf(body, a), body));
+    case 'calDrop': return drop(COL.calendar, idOf(entOf(body, a), body));
+    case 'targets': return put(COL.settings, 'config', entOf(body, a));
 
     /* استيراد كشف اتحاد: صفوف كثيرة دفعةً واحدة — مقابل calSave_ */
     case 'cal': {
@@ -284,9 +345,10 @@ async function dispatch(body) {
     case 'ask': case 'airev': case 'aiweek': case 'aistatus':
       return { ok: false, error: 'ai_needs_function' };
 
-    /* بلا action ⇐ حفظ الرصد، مقابل saveTicks_ */
+    /* بلا action ⇐ حفظ الرصد. الواجهة ترسلها تحت المفتاح changes،
+       وكانت الطبقة تقرأ ticks/rows فترجع ok بلا حفظ — صمتاً. */
     case '': {
-      const rows = body.ticks || body.rows || [];
+      const rows = body.changes || body.ticks || body.rows || [];
       if (!Array.isArray(rows) || !rows.length) return { ok: true, n: 0 };
       const b = writeBatch(db);
       const stamp = {
