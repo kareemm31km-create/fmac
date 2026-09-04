@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FMAC — تشخيص الحفظ</title>
+<style>
+body{background:#08090c;color:#e9ecf1;font:14px/1.7 Tajawal,'Segoe UI',system-ui,sans-serif;
+  padding:22px;max-width:920px;margin:0 auto;direction:rtl}
+h1{font-size:19px;margin:0 0 4px}
+p.sub{color:#9aa3b0;font-size:12.5px;margin:0 0 18px}
+.card{background:#0f1115;border:1px solid #23272f;border-radius:14px;padding:16px;margin:12px 0}
+.ok{color:#22c07f}.bad{color:#ff4d59}.warn{color:#ffc233}
+pre{background:#191d24;border-radius:10px;padding:12px;overflow:auto;direction:ltr;
+  text-align:left;font:12px ui-monospace,monospace;color:#c7cdd6;max-height:260px}
+b.t{display:block;margin-bottom:8px;font-size:15px}
+</style></head><body>
+<h1>تشخيص الحفظ</h1>
+<p class="sub">يحاول كتابةً حقيقيةً ويعرض الخطأ الخام. احذف ما يكتبه من Firestore بعد الفحص إن شئت.</p>
+<div id="out"><div class="card">جارٍ التحقّق من الدخول…</div></div>
+
+<script type="module">
+const out = document.getElementById('out');
+const card = (title, cls, body) => {
+  const d = document.createElement('div');
+  d.className = 'card';
+  d.innerHTML = '<b class="t ' + (cls || '') + '">' + title + '</b>' + (body || '');
+  out.appendChild(d);
+  return d;
+};
+const pre = (o) => '<pre>' + JSON.stringify(o, null, 2)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</pre>';
+
+out.innerHTML = '';
+let auth, db, PROFILE, api;
+try {
+  const A = await import('./js/fmac-auth.js?d=1');
+  await import('./js/fmac-firebase.js?d=1');
+  PROFILE = await A.ready();
+  auth = A.auth; db = A.db;
+  api = window.__fmacApi;
+} catch (e) {
+  card('تعذّر تحميل الوحدات', 'bad', pre({ error: String(e && e.message) }));
+  throw e;
+}
+
+/* ── 1. من أنا ── */
+card('١ — الحساب', PROFILE && PROFILE.admin ? 'ok' : 'warn', pre({
+  uid: PROFILE && PROFILE.uid,
+  email: PROFILE && PROFILE.email,
+  name: PROFILE && PROFILE.name,
+  admin: PROFILE && PROFILE.admin,
+  code: PROFILE && PROFILE.code,
+  'صلاحية الإدارة': (PROFILE && PROFILE.admin) ? 'نعم' : 'لا — الكتابة ستُرفض',
+}));
+
+/* ── 2. كتابة مباشرة إلى Firestore (تتجاوز الطبقة) ── */
+const { doc, setDoc, getDoc, deleteDoc } = await import('./vendor/firebase-firestore.js?d=1');
+const probe = 'diag_' + Date.now();
+let directErr = null;
+try {
+  await setDoc(doc(db, 'national', probe),
+    { sport: 'تشخيص', season: '2026', name: 'اختبار', by: 'diag', at: new Date().toISOString() });
+} catch (e) { directErr = e; }
+if (directErr) {
+  card('٢ — كتابة مباشرة إلى national', 'bad', pre({
+    code: directErr.code, message: directErr.message,
+    'المعنى': directErr.code === 'permission-denied'
+      ? 'قواعد Firestore ترفض الكتابة — انشر firestore.rules'
+      : 'خطأ آخر، انظر الرسالة',
+  }));
+} else {
+  card('٢ — كتابة مباشرة إلى national', 'ok', '<span class="ok">نجحت — القواعد تسمح.</span>');
+}
+
+/* ── 3. الحفظ عبر الطبقة، بنفس حمولة الموقع ── */
+async function viaShim(label, payload) {
+  let res, j, err = null;
+  try {
+    res = await api('firebase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    j = await res.json();
+  } catch (e) { err = e; }
+  const good = j && j.ok;
+  card(label, good ? 'ok' : 'bad', pre({
+    'الحمولة المُرسَلة': payload,
+    'ردّ الطبقة': j || null,
+    'استثناء': err ? { message: err.message } : null,
+  }));
+  return j;
+}
+
+const y = '2026-2027';
+const rNatl = await viaShim('٣ — لاعب منتخب عبر الطبقة (action:natl)', {
+  u: (PROFILE && PROFILE.code) || '', action: 'natl',
+  player: { sport: 'تشخيص', season: y, name: 'لاعب اختبار', cat: 'ناشئين', note: '' },
+});
+
+const rCal = await viaShim('٤ — بطولة في الكالندر (action:cal)', {
+  u: (PROFILE && PROFILE.code) || '', action: 'cal',
+  cal: { season: y, date: '2026-10-01', name: 'بطولة اختبار',
+         sport: 'تشخيص', scope: 'محلي', fed: '', place: '', status: 'قادمة' },
+});
+
+/* ── 4. هل تُقرأ بعد الكتابة؟ ── */
+const initRes = await api('firebase' + '?action=init&u=x', { cache: 'no-store' });
+const payload = await initRes.json();
+const natSport = payload.national && payload.national['تشخيص'];
+const calHit = (payload.calendar || []).filter((c) => c.sport === 'تشخيص');
+card('٥ — هل تظهر بعد إعادة القراءة؟', (natSport && calHit.length) ? 'ok' : 'bad', pre({
+  'لاعبو المنتخب — تشخيص': natSport || 'غير موجود',
+  'الكالندر — صفوف تشخيص': calHit.length,
+  'إجمالي الكالندر': (payload.calendar || []).length,
+  'إجمالي الرصد': Object.keys(payload.ticks || {}).length,
+  'إجمالي الخطط': Object.keys(payload.plans || {}).length,
+  'المستخدمون': (payload.staff || []).length,
+}));
+
+/* ── 5. تنظيف ما كتبه الفحص ── */
+try { await deleteDoc(doc(db, 'national', probe)); } catch (e) { /* لا شيء */ }
+card('انتهى', '', '<span class="sub">صفوف «تشخيص» التي أنشأها هذا الفحص ' +
+  'يمكن حذفها من لوحة Firebase أو من داخل الموقع.</span>');
+</script></body></html>
