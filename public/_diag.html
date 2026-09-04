@@ -32,14 +32,32 @@ const pre = (o) => '<pre>' + JSON.stringify(o, null, 2)
 out.innerHTML = '';
 let auth, db, PROFILE, api;
 try {
-  const A = await import('./js/fmac-auth.js?d=1');
-  await import('./js/fmac-firebase.js?d=1');
+  const A = await import('./js/fmac-auth.js');
+  await import('./js/fmac-firebase.js');
   PROFILE = await A.ready();
   auth = A.auth; db = A.db;
   api = window.__fmacApi;
 } catch (e) {
   card('تعذّر تحميل الوحدات', 'bad', pre({ error: String(e && e.message) }));
   throw e;
+}
+
+/* ── 0. أي نسخة من الكود تعمل الآن؟ ── */
+{
+  const src = await (await fetch('./js/fmac-firebase.js', { cache: 'no-store' })).text();
+  const marks = {
+    'يقرأ changes لحفظ الرصد': src.indexOf('body.changes') >= 0,
+    'يعرف مفاتيح التداخل (NEST)': src.indexOf('const NEST') >= 0,
+    'يحوّل nextClub ⇒ rival': src.indexOf('nextClub') >= 0,
+    'يقرأ الملفّ ككائن (fileOf)': src.indexOf('fileOf') >= 0,
+  };
+  const stale = Object.keys(marks).filter((k) => !marks[k]);
+  card('٠ — نسخة الكود في متصفّحك', stale.length ? 'bad' : 'ok', pre(
+    Object.assign({}, marks, {
+      'الخلاصة': stale.length
+        ? 'نسخة قديمة — المتصفّح يشغّل ملفاً محفوظاً. اضغط Ctrl+Shift+R'
+        : 'محدَّثة',
+    })));
 }
 
 /* ── 1. من أنا ── */
@@ -53,7 +71,9 @@ card('١ — الحساب', PROFILE && PROFILE.admin ? 'ok' : 'warn', pre({
 }));
 
 /* ── 2. كتابة مباشرة إلى Firestore (تتجاوز الطبقة) ── */
-const { doc, setDoc, getDoc, deleteDoc } = await import('./vendor/firebase-firestore.js?d=1');
+/* نفس رابط الوحدة الذي تستعمله fmac-auth — أي استعلام مختلف
+   يعطي نسخةً ثانيةً من المكتبة فترفض doc() قاعدةَ البيانات الأولى */
+const { doc, setDoc, getDoc, deleteDoc } = await import('./vendor/firebase-firestore.js');
 const probe = 'diag_' + Date.now();
 let directErr = null;
 try {
