@@ -13296,7 +13296,11 @@ function setView(v){
 document.addEventListener('click',e=>{
   if(e.target.id==='signout'||e.target.closest('#signout2')){
     try{localStorage.removeItem(LS+'.code');}catch(x){}
-    location.href=location.pathname; return; }
+    /* الخروج الحقيقي من Firebase. بدونه تبقى الجلسة محفوظة في المتصفّح،
+       فتعيد الصفحة تحميلها وتجد المستخدم مسجَّلاً فتُدخله تلقائياً. */
+    const go=()=>{ location.href=location.pathname; };
+    if(window.__fmacLogout){ window.__fmacLogout().then(go,go); } else { go(); }
+    return; }
   if(e.target.id==='btnUpload'){ openUpload(); return; }
   if(e.target.id==='btnLang'){ setLang(LANG==='en'?'ar':'en'); return; }
   if(e.target.closest('#btnSearch')){ openSearch(); return; }

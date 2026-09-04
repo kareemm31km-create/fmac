@@ -90,6 +90,7 @@ const checks = [
   ['الوسيط موجود', idx.indexOf('__fmacResolve') >= 0],
   ['قيمة API الحارسة', idx.indexOf("var API = 'firebase'") >= 0],
   ['لا أثر لعنوان Apps Script', idx.indexOf('script.google.com') < 0],
+  ['زر الخروج ينادي Firebase', idx.indexOf('window.__fmacLogout()') >= 0],
   ['قسم الخطط الشهرية موجود', idx.indexOf('monthlyView') >= 0],
   ['وحدة الواجهة الشهرية موصولة', idx.indexOf('fmac-monthly-ui.js') >= 0],
   ['الخطط الشهرية في التنقّل', idx.indexOf("['monthly','") >= 0],
