@@ -169,6 +169,29 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   transition:transform .25s cubic-bezier(.34,1.5,.64,1)}
 .tab:not(.soon):hover .bdg{transform:scale(1.14)}
 .tab.soon .bdg{filter:grayscale(1);opacity:.5}
+/* لوحة المدربين تحت شارة اللعبة — تظهر بمرور المؤشر أو بالتركيز بلوحة المفاتيح */
+.spwrap{position:relative;display:inline-flex}
+.spwrap>.tab{cursor:pointer}
+.coachpop{position:absolute;inset-inline-start:0;top:calc(100% + 6px);z-index:60;
+  min-width:210px;max-width:290px;padding:6px;border-radius:var(--r-xl);
+  background:var(--surface-soft,var(--surface));border:1px solid var(--hairline);
+  box-shadow:0 12px 28px rgba(0,0,0,.42);
+  opacity:0;visibility:hidden;transform:translateY(-4px);
+  transition:opacity .14s ease-out,transform .14s ease-out,visibility .14s}
+.spwrap:hover>.coachpop,.spwrap:focus-within>.coachpop{opacity:1;visibility:visible;transform:none}
+.coachpop .ph{padding:5px 10px 7px;font-size:11.5px;color:var(--steel);border-bottom:1px solid var(--hairline);
+  margin-bottom:4px}
+.coachpop .cpick{display:flex;width:100%;align-items:baseline;gap:8px;text-align:start;
+  background:transparent;border:0;color:var(--ink);border-radius:var(--r-lg);
+  padding:7px 10px;font:inherit;font-size:13.5px;cursor:pointer}
+.coachpop .cpick:hover,.coachpop .cpick:focus-visible{background:var(--hairline)}
+.coachpop .cpick[aria-current="true"]{background:var(--ink-deep);color:var(--canvas)}
+.coachpop .cpick .nm{font-weight:700}
+.coachpop .cpick .sb{font-size:11.5px;opacity:.62;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.coachpop .cpick .pc{margin-inline-start:auto;font-variant-numeric:tabular-nums}
+.coachpop .none{padding:7px 10px;font-size:12.5px;color:var(--steel)}
+@media (hover:none){.coachpop{display:none}}
 .barline .nm .bdg{width:24px;height:24px;flex:none;border-radius:50%;
   background-size:cover;background-position:center;background-repeat:no-repeat}
 .cprof .cbdg{width:56px;height:56px;border-radius:50%;flex:none;
@@ -4752,12 +4775,8 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
 <script>
 /* وسيط طبقة Firebase — الوحدات مؤجَّلة والسكربت التالي يعمل أثناء التحليل،
    فنمرّر النداءات المبكّرة عبر وعد حتى تجهز الطبقة. */
-/* رسالة الإقلاع تبدأ مخفيّة وتظهر بعد ثانية ونصف فقط — الإقلاع الطبيعي
-   أسرع من ذلك، فلا يرى المستخدم وميضاً بين الدخول واللوحة. */
-setTimeout(function(){
-  var b = document.getElementById('bootmsg');
-  if (b) b.hidden = false;
-}, 1500);
+/* رسالة الإقلاع لا تُعرض أثناء التحميل إطلاقاً — يبقى السطح مخفيّاً
+   ولا يظهر إلا لخطأ حقيقي. وفشل الجلب يُعرض في بوّابة الدخول لا هنا. */
 window.__fmacReady = new Promise(function(res){ window.__fmacResolve = res; });
 window.__fmacApi = function(url, opts){
   return window.__fmacReady.then(function(f){ return f(url, opts); });
@@ -4910,6 +4929,21 @@ function planLabel(p){                       // اسم المدرب هو الع�
   const cat=(p.name===p.sport?'الخطة الأسبوعية':p.name.replace(p.sport+' — ',''));
   return { main: c? c.name : cat,
            sub : (c? cat : '') + (a.branch? (c?' · ':'')+a.branch : '') };
+}
+/* ألعاب النادي العشر — من هوية العلامة، فهي المرجع الثابت لا ما رُفعت له خطة.
+   وأي لعبة جاءت في الخطط ولم تكن في القائمة تُضاف حتى لا تختفي. */
+function ALL_TEN(){
+  const out=Object.keys(BRAND||{});
+  SPORTS.concat(SOON).forEach(s=>{ if(s && out.indexOf(s)<0) out.push(s); });
+  return out;
+}
+/* مدرّبو لعبة: صفّ لكلّ خطة، عنوانه اسم المدرب المُسنَد إن وُجد */
+function sportCoaches(s){
+  return view.filter(p=>p.sport===s).map(p=>{
+    const c=coachOf(p.id), L=planLabel(p);
+    return { id:p.id, name:(c?c.name:'بلا مدرب مُسنَد'),
+             sub:(c?L.sub:(L.main+(L.sub?' · '+L.sub:''))), pct:tally(p).score };
+  });
 }
 const weekOf=pid=>{ const p=PLANS.find(x=>x.id===pid); return (p&&p.week)||weekInfo().label; };
 const key=(p,d,s,i)=>weekOf(p)+'|'+p+'|'+d+'|'+s+'|'+i;
@@ -5237,9 +5271,7 @@ async function signIn(code){
   /* مهلة صريحة: لا تُترك الصفحة معلّقة إن تأخّر الخادم */
   const ac = (typeof AbortController!=='undefined') ? new AbortController() : null;
   const t = setTimeout(()=>{ try{ ac&&ac.abort(); }catch(e){} }, 25000);
-  const slow = setTimeout(()=>{ const b=$('bootmsg');
-    if(b) b.innerHTML='<b>ما زلنا نجلب بيانات النادي…</b><br>'+
-      'إن استمرّ فتحقّق من اتصالك بالإنترنت، أو حدّث الصفحة.'; }, 6000);
+  const slow = 0;   /* لا رسالة «ما زلنا نجلب» — المهلة وحدها تكفي، والفشل يظهر في البوّابة */
   try{
     const r=await __fmacApi(API+'?action=init&u='+encodeURIComponent(code),
       Object.assign({cache:'no-store'}, ac?{signal:ac.signal}:{}));
@@ -5366,19 +5398,33 @@ function renderTabs(){
     const on=view.filter(p=>p.sport===s).some(p=>{const t=tally(p);return (t.done+t.partial+t.missed)>0;});
     if(on) tracked++;
   });
-  setClub(gt?Math.round(gd/gt*100):0, '· متابعة '+tracked+' من '+SPORTS.length+' ألعاب');
+  /* المقام هو ألعاب النادي كلّها لا ما رُفعت له خطة — وإلا بدت التغطية أعلى مما هي */
+  setClub(gt?Math.round(gd/gt*100):0, '· متابعة '+tracked+' من '+ALL_TEN().length+' ألعاب');
 
-  $('sportTabs').innerHTML=SPORTS.map(s=>{
+  /* الألعاب العشر كلّها تظهر دائماً — وما لا خطة له يظهر باهتاً لا يختفي،
+     حتى يرى المدير القسم كاملاً لا ما رُفعت له خطة فقط. */
+  $('sportTabs').innerHTML=ALL_TEN().map(s=>{
     const ps=view.filter(p=>p.sport===s);
+    const has=ps.length>0;
     let t=0,d=0; ps.forEach(p=>{const x=tally(p);t+=x.total;d+=x.done+x.partial*.5;});
     const pct=t?Math.round(d/t*100):0;
-    return '<button class="tab" data-sport="'+esc(s)+'" aria-current="'+(s===curSport)+'">'+
+    const cs=sportCoaches(s);
+    const pop='<div class="coachpop" role="group" aria-label="مدرّبو '+esc(s)+'">'+
+      '<div class="ph">'+esc(s)+' — '+(cs.length?('اختر المدرب ('+cs.length+')'):'المدربون')+'</div>'+
+      (cs.length
+        ? cs.map(c=>'<button class="cpick" type="button" data-coachpick="'+esc(c.id)+'"'+
+            ' aria-current="'+(c.id===cur)+'">'+
+            '<span class="nm">'+esc(c.name)+'</span>'+
+            (c.sub?'<span class="sb">'+esc(c.sub)+'</span>':'')+
+            '<span class="sb pc">'+c.pct+'%</span></button>').join('')
+        : '<div class="none">لم تُرفع خطة لهذه اللعبة بعد.</div>')+
+      '</div>';
+    return '<span class="spwrap">'+
+      '<button class="tab'+(has?'':' soon')+'" type="button"'+
+      (has?' data-sport="'+esc(s)+'" aria-current="'+(s===curSport)+'"':'')+'>'+
       (BADGE[s]?'<span class="bdg" style="background-image:url('+BADGE[s]+')"></span>':'')+esc(s)+
-      '<span class="meta">'+pct+'%</span></button>';}).join('')
-    + (user.admin && PRO ? SOON.filter(s=>SPORTS.indexOf(s)<0).map(s=>
-        '<button class="tab soon" type="button" title="لم تُرفع خطة أسبوعية لهذه اللعبة بعد">'+
-        (BADGE[s]?'<span class="bdg" style="background-image:url('+BADGE[s]+')"></span>':'')+esc(s)+
-        '<span class="meta">لا توجد خطة</span></button>').join('') : '');
+      '<span class="meta">'+(has?pct+'%':'لا توجد خطة')+'</span></button>'+
+      pop+'</span>';}).join('');
 
   const ps=view.filter(p=>p.sport===curSport);
   $('planWrap').hidden = ps.length<2;
@@ -13582,8 +13628,14 @@ document.addEventListener('click',e=>{
   if(e.target.closest('#dropUp')){ openUpload(); return; }
   const fb=e.target.closest('[data-fil]');
   if(fb){ subFilter=fb.dataset.fil; renderHome(); return; }
+  const cpk=e.target.closest('[data-coachpick]');
+  if(cpk){ const pp=plan(cpk.dataset.coachpick);
+    if(pp){ curSport=pp.sport; cur=pp.id; curDay=0; render(); }
+    return; }
   const st=e.target.closest('[data-sport]');
-  if(st){ curSport=st.dataset.sport; cur=view.find(p=>p.sport===curSport).id; curDay=0; render(); return; }
+  if(st){ const f=view.find(p=>p.sport===st.dataset.sport);
+    if(f){ curSport=st.dataset.sport; cur=f.id; curDay=0; render(); }
+    return; }
   const pt=e.target.closest('[data-plan]');
   if(pt){ cur=pt.dataset.plan; curDay=0; render(); return; }
   const cl=e.target.closest('[data-cal]');
