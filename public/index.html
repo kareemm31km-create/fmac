@@ -5195,13 +5195,20 @@ function planCat(p){
 const countItems=p=>p.days.reduce((a,d)=>a+d.sections.reduce((b,s)=>b+s.items.length,0),0);
 const $=id=>document.getElementById(id);
 
+/* §24: النسبة تُعرض حين تُقاس فقط. na للقيم التي قد تكون null أصلاً. */
+const pctOf=(rated,score)=>(rated>0? (score+'%') : '—');
+const na=(v)=>(v===null||v===undefined)?'—':(v+'%');
+
 function tally(p,dayIdx){
   let t=0,c={done:0,partial:0,missed:0},cx=0;
   let list = dayIdx==null ? p.days.map((d,i)=>[d,i]) : [[p.days[dayIdx],dayIdx]];
   if(dayIdx==null){ const keep=list.filter(([,D])=>!canc(p.id,D)); cx=list.length-keep.length; list=keep; }
   list.forEach(([day,D])=>day.sections.forEach((sec,si)=>sec.items.forEach((_,ii)=>{
     t++; const v=state[key(p.id,D,si,ii)]; if(v&&v.s)c[v.s]++;})));
-  return {total:t,...c,cancelled:cx,
+  /* rated: ما رُصد فعلاً. score يبقى رقماً للحساب الداخلي، والعرض
+     هو من يقرّر «—» حين لا رصد (§24 — الصفر ليس غياب القياس). */
+  const rated=c.done+c.partial+c.missed;
+  return {total:t,...c,cancelled:cx,rated:rated,
           score:t?Math.round(((c.done+c.partial*.5)/t)*100):0};
 }
 function led(txt,cls){ $('ledTxt').textContent=txt; $('led').className='led '+(cls||''); }
@@ -5307,10 +5314,11 @@ function paintArena(p){
     else setTimeout(paint, 260+i*90);
     g.classList.toggle('sel', i===curDay);
     g.querySelector('.hit2').innerHTML='<title>'+esc(p.days[i].day||('اليوم '+(i+1)))+
-      ' — '+(cn?'ملغاة':t.score+'%')+'</title>';
+      ' — '+(cn?'ملغاة':pctOf(t.rated,t.score))+'</title>';
   }
   const tot=tally(p);
-  countTo($('kpiPct'),tot.score,'%');
+  if(tot.rated>0) countTo($('kpiPct'),tot.score,'%');
+  else $('kpiPct').textContent='—';
   const nm=$('arenaSport'); if(nm) nm.textContent=p.sport;
   $('kpiCnt').textContent=(p.name===p.sport?planCat(p)||p.sport:p.name.replace(p.sport+' — ',''))+' · '+p.week;
   const ab=$('arenaBadge'), ic=$('arenaIcon');
@@ -5321,14 +5329,21 @@ function paintArena(p){
       ic.style.setProperty('--m','url('+(MASK[p.sport]||'')+')'); ic.style.color=mixColor(tot.score); } }
   }
   $('daykey').innerHTML=p.days.map((d,i)=>{const t=tally(p,i), cn=canc(p.id,i);
-    return '<span><i style="background:'+(cn?'var(--stone)':mixColor(t.score))+'"></i>'+
+    return '<span><i style="background:'+(cn?'var(--stone)':(t.rated?mixColor(t.score):'var(--stone)'))+'"></i>'+
            esc(d.day||('اليوم '+(i+1)))+
-           ' <b style="color:var(--steel);font-weight:400">'+(cn?'ملغاة':t.score+'%')+'</b></span>';}).join('');
+           ' <b style="color:var(--steel);font-weight:400">'+(cn?'ملغاة':pctOf(t.rated,t.score))+'</b></span>';}).join('');
 }
 
 /* إجمالي النادي — وهو الذي يحدّد لون الصفحة */
 function setClub(pct,txt){
   const el=$('clubPct'); if(!el) return;
+  /* null ⇒ لم يُقَس: «—» ولون محايد، لا صفر أحمر يوهم بتقصير (§24) */
+  if(pct===null||pct===undefined){
+    el.textContent='—'; $('clubCnt').textContent=txt;
+    document.documentElement.style.setProperty('--live','var(--steel)');
+    el.style.color='var(--steel)';
+    return;
+  }
   countTo(el,pct,'%');
   $('clubCnt').textContent=txt;
   const col=mixColor(pct);
@@ -5623,21 +5638,25 @@ function start(){
 
 /* ---------------- render ---------------- */
 function renderTabs(){
-  let gt=0,gd=0; view.forEach(p=>{const t=tally(p);gt+=t.total;gd+=t.done+t.partial*.5;});
+  let gt=0,gd=0,gr=0;
+  view.forEach(p=>{const t=tally(p);gt+=t.total;gd+=t.done+t.partial*.5;gr+=t.rated;});
   let tracked=0;
   SPORTS.forEach(s=>{
     const on=view.filter(p=>p.sport===s).some(p=>{const t=tally(p);return (t.done+t.partial+t.missed)>0;});
     if(on) tracked++;
   });
   /* المقام هو ألعاب النادي كلّها لا ما رُفعت له خطة — وإلا بدت التغطية أعلى مما هي */
-  setClub(gt?Math.round(gd/gt*100):0, '· متابعة '+tracked+' من '+ALL_TEN().length+' ألعاب');
+  setClub(gr>0?Math.round(gd/gt*100):null,
+    gr>0 ? ('· متابعة '+tracked+' من '+ALL_TEN().length+' ألعاب')
+         : ('· لم يُرصد أي بند بعد — '+ALL_TEN().length+' ألعاب في القسم'));
 
   /* الألعاب العشر كلّها تظهر دائماً — وما لا خطة له يظهر باهتاً لا يختفي،
      حتى يرى المدير القسم كاملاً لا ما رُفعت له خطة فقط. */
   $('sportTabs').innerHTML=ALL_TEN().map(s=>{
     const ps=view.filter(p=>p.sport===s);
     const has=ps.length>0;
-    let t=0,d=0; ps.forEach(p=>{const x=tally(p);t+=x.total;d+=x.done+x.partial*.5;});
+    let t=0,d=0,r=0;
+    ps.forEach(p=>{const x=tally(p);t+=x.total;d+=x.done+x.partial*.5;r+=x.rated;});
     const pct=t?Math.round(d/t*100):0;
     const cs=sportCoaches(s);
     const pop='<div class="coachpop" role="group" aria-label="مدرّبو '+esc(s)+'">'+
@@ -5654,7 +5673,7 @@ function renderTabs(){
       '<button class="tab'+(has?'':' soon')+'" type="button"'+
       (has?' data-sport="'+esc(s)+'" aria-current="'+(s===curSport)+'"':'')+'>'+
       (BADGE[s]?'<span class="bdg" style="background-image:url('+BADGE[s]+')"></span>':'')+esc(s)+
-      '<span class="meta">'+(has?pct+'%':'لا توجد خطة')+'</span></button>'+
+      '<span class="meta">'+(has?(r>0?pct+'%':'لم يُرصد'):'لا توجد خطة')+'</span></button>'+
       pop+'</span>';}).join('');
 
   const ps=view.filter(p=>p.sport===curSport);
@@ -5665,7 +5684,7 @@ function renderTabs(){
     return '<button class="tab" data-plan="'+p.id+'" aria-current="'+(p.id===cur)+'">'+
       '<span class="tt"><span class="t1">'+esc(L.main)+'</span>'+
       (L.sub||multi?'<span class="t2">'+esc(L.sub+(multi?' · '+p.week:''))+'</span>':'')+'</span>'+
-      '<span class="meta">'+t.score+'%</span></button>';}).join('');
+      '<span class="meta">'+pctOf(t.rated,t.score)+'</span></button>';}).join('');
 }
 function renderMeter(p){
   const rows=[['الأسبوع كامل',tally(p)],['اليوم الحالي',tally(p,curDay)]];
@@ -5674,7 +5693,7 @@ function renderMeter(p){
     '<i style="background:var(--success);width:'+(t.total?t.done/t.total*100:0)+'%"></i>'+
     '<i style="background:var(--attention);width:'+(t.total?t.partial/t.total*100:0)+'%"></i>'+
     '<i style="background:var(--critical);width:'+(t.total?t.missed/t.total*100:0)+'%"></i>'+
-    '</span><span class="num">'+t.score+'%</span></div>').join('');
+    '</span><span class="num">'+pctOf(t.rated,t.score)+'</span></div>').join('');
 }
 function renderDay(p){
   const d=p.days[curDay], host=$('dayHost');
@@ -5831,7 +5850,7 @@ function render(){
   $('dayTabs').innerHTML=p.days.map((d,i)=>{
     const t=tally(p,i);
     return '<button class="tab" data-day="'+i+'" aria-current="'+(i===curDay)+'">'+esc(d.day||('يوم '+(i+1)))+
-      (d.date?'<span class="meta">'+esc(d.date)+'</span>':'')+'<span class="meta">'+t.score+'%</span></button>';}).join('');
+      (d.date?'<span class="meta">'+esc(d.date)+'</span>':'')+'<span class="meta">'+pctOf(t.rated,t.score)+'</span></button>';}).join('');
   $('src').textContent='المصدر: '+p.source+' · '+countItems(p)+' بند';
   const a=assign[p.id]||{}, tp=tally(p);
   $('planbar').innerHTML=
@@ -5844,7 +5863,7 @@ function render(){
     (a.branch?'<span class="badge">فرع '+esc(a.branch)+'</span>':'')+
     (slotOf(p.id)?'<span class="badge">'+esc(slotTxt(slotOf(p.id)))+'</span>':'')+
     (planCat(p)?'<span class="badge">الفئة: '+esc(planCat(p))+'</span>':'')+
-    '<span>'+countItems(p)+' بند · '+tp.score+'% منفّذ</span></div></div>';
+    '<span>'+countItems(p)+' بند · '+(tp.rated? tp.score+'% منفّذ' : 'لم يُرصد بعد')+'</span></div></div>';
   $('stgHost').innerHTML = stageBar(p);
   $('fitStrip').innerHTML = fitnessStrip(p);
   $('pvHost').innerHTML   = pvaBlock(p,curDay) + (user.admin?verPanel(p):'');
@@ -7590,7 +7609,8 @@ function clubMetrics(){
   const devN=(devs||[]).filter(d=>sameWeek(d.week,wi.label)).length;
 
   return {
-    exec:mix.score, execItems:mix.total, done:mix.done, part:mix.part, miss:mix.miss,
+    exec: mix.rated? mix.score : null, execItems:mix.total, ratedItems:mix.rated,
+    done:mix.done, part:mix.part, miss:mix.miss,
     received:sent, coaches:rows.length, approved:approved, plans:cw.length,
     rated:rated, days:days, cancelled:cancelled,
     volume:volume, volN:segN, intensity:intensity, intN:iN, goals:goals, goalN:gN,
@@ -10095,7 +10115,8 @@ function mixStats(){
       if(!v||!v.s) none++; else if(v.s==='done')done++; else if(v.s==='partial')part++; else miss++;
     }));
   }));
-  return {done:done,part:part,miss:miss,none:none,total:tot,
+  /* rated: البنود التي رُصدت فعلاً — بها يُعرف الفرق بين صفرٍ مقيس وغياب قياس */
+  return {done:done,part:part,miss:miss,none:none,total:tot,rated:done+part+miss,
           score:tot?Math.round((done+part*0.5)/tot*100):0};
 }
 function dial(pct,col,size){
@@ -10263,7 +10284,9 @@ function branchMetrics(){
     if(x.planned&&x.intensity){ iP+=x.planned; iA+=x.intensity; iN++; }
     if(x.goal){ gSum += x.goal==='yes'?100:x.goal==='part'?50:0; gN++; } });
   const sent=rows.filter(r=>r.sub).length;
-  return { exec: total?Math.round((done+part*.5)/total*100):0, execItems:total,
+  const ratedItems=done+part+miss;
+  return { exec: ratedItems?Math.round((done+part*.5)/total*100):null,
+    execItems:total, ratedItems:ratedItems,
     done:done, part:part, miss:miss,
     received:sent, coaches:rows.length, approved:approved, plans:cw.length,
     rated:rated, days:days, cancelled:cancelled,
@@ -12348,7 +12371,9 @@ function kcard(ic,lb,val,small,pct,sub,col){
 }
 /* حلقة نسبة — رقم واحد يُقرأ من بعيد */
 function ringSvg(pct,col,cap){
-  const R=48, C=2*Math.PI*R, p=Math.max(0,Math.min(100,Math.round(pct||0)));
+  /* null ⇒ لم يُقَس: حلقة فارغة و«—» بدل صفر كاذب */
+  const none = pct===null||pct===undefined;
+  const R=48, C=2*Math.PI*R, p=none?0:Math.max(0,Math.min(100,Math.round(pct)));
   const arc=C*0.75;                       /* مقياس مفتوح من الأسفل — لا دائرة مغلقة */
   return '<svg class="kring" viewBox="0 0 120 120" style="--c:'+col+'" role="img">'+
     '<circle class="tr" cx="60" cy="60" r="'+R+'" stroke-linecap="round" '+
@@ -12357,7 +12382,7 @@ function ringSvg(pct,col,cap){
     '<circle class="vl" cx="60" cy="60" r="'+R+'" '+
       'stroke-dasharray="'+(arc*p/100).toFixed(1)+' '+C.toFixed(1)+'" '+
       'transform="rotate(135 60 60)"/>'+
-    '<text class="n" x="60" y="'+(cap?60:69)+'" dir="ltr">'+p+'%</text>'+
+    '<text class="n" x="60" y="'+(cap?60:69)+'" dir="ltr">'+(none?'—':p+'%')+'</text>'+
     (cap?'<text class="c2" x="60" y="78">'+esc(cap)+'</text>':'')+'</svg>';
 }
 /* بطاقة مؤشّر — عنوان، رقم كبير في المنتصف، شريط، وسطر تفسير */
@@ -12385,7 +12410,9 @@ function renderKpis(){
         '<span class="soon" title="لم تُحدَّد أسس الحساب بعد">مؤقّت</span>'+
         '<span class="ic">'+di('shield')+'</span></div>'+
       '<div class="kb">'+ringSvg(M.exec,'var(--brand)','مستوى التنفيذ')+'</div>'+
-      '<div class="ft">محسوب من نسبة تنفيذ الخطط وحدها — يُعاد بناؤه حين تحدّد أسس التقييم'+
+      '<div class="ft">'+(M.exec===null
+        ? 'لم يُرصد أي بند بعد — تظهر النسبة بعد أوّل رصد.'
+        : 'محسوب من نسبة تنفيذ الخطط وحدها — يُعاد بناؤه حين تحدّد أسس التقييم')+
         (hist.length>1&&!dashBranch?' · <b class="'+(last>=0?'up':'dn')+'">'+
           (last>=0?'▲':'▼')+' '+Math.abs(last)+'%</b> عن الأسبوع الماضي':'')+
         (dashBranch?' · أرقام فرع '+esc(dashBranch)+' وحده':'')+'</div></div>'+
@@ -12395,9 +12422,10 @@ function renderKpis(){
     kcard4('stamp','الخطط المعتمدة',String(M.approved),'/ '+M.plans,
       (M.plans-M.approved)?nPlan(M.plans-M.approved)+' تنتظر اعتمادك':'اعتُمدت كلها',
       M.plans?M.approved/M.plans*100:0,'var(--ai)','','review')+
-    kcard4('clip','تنفيذ الخطط',M.exec+'%','',
-      'الحصص المرصودة '+M.rated+' من '+M.days,
-      M.exec,'var(--success)','','plan');
+    kcard4('clip','تنفيذ الخطط',na(M.exec),'',
+      M.exec===null ? 'لم يُرصد أي بند بعد'
+                    : 'الحصص المرصودة '+M.rated+' من '+M.days,
+      M.exec||0,'var(--success)','','plan');
   const wl=$('waitLine'); if(wl) wl.hidden=true;   /* انتقل إلى شارة الشريط العلوي */
 }
 /* أداء القسم الفني — ما يُقاس داخل الحصة نفسها */
