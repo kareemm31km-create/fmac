@@ -3879,6 +3879,22 @@ input::placeholder,textarea::placeholder{color:#64788B}
 .track,.progress-track,.mo-bar{background:#172738}
 .track > i:first-child{background:linear-gradient(90deg,var(--brand-dark),var(--cyan))}
 
+/* شريط الأقسام الفرعية — كان نصّاً بلا سطح فيذوب تحت الترويسة،
+   حتى لم يجد المستخدم «الخطط الشهرية» و«الإعداد البدني». صار شرائح
+   لها سطح وإطار، وشكل نشط واحد كبقية التبويبات (§12). */
+.vtabs{gap:8px;border-bottom:0;padding:10px 12px;margin-bottom:var(--s-lg);
+  background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-card)}
+.vtabs::before{content:'الأقسام';align-self:center;margin-inline-end:4px;
+  font-size:11.5px;letter-spacing:.06em;color:var(--stone)}
+.vtabs button{background:#0E1C2B;border:1px solid #23394E;color:#8296A9;
+  border-radius:var(--r-full);padding:9px 16px;font-weight:600}
+.vtabs button:hover{background:var(--surface-hover);color:var(--ink-deep);
+  border-color:var(--edge)}
+.vtabs button[aria-current="true"]{background:color-mix(in srgb,var(--brand) 14%,transparent);
+  border-color:var(--brand);color:#62B7FF}
+.vtabs button[aria-current="true"]::after{display:none}
+@media (max-width:640px){ .vtabs::before{display:none} }
+
 /* القوائم المنسدلة والنوافذ */
 .seapanel,.bellpanel,.qapanel,.fmenu,.coachpop{box-shadow:var(--shadow-pop)}
 </style>
