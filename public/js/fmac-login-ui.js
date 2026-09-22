@@ -89,16 +89,13 @@ export const STYLE = `
 /* الصورة إن وُجدت — وإن لم تُرفع بعد بقي التدرّج وحده ولم تظهر فجوة */
 #fmacLogin .side.hashero::before{content:'';position:absolute;inset:0;
   background-image:url(./img/hero.jpg);background-size:cover;background-position:center;
-  opacity:.55;z-index:0}
+  opacity:.72;z-index:0}
 #fmacLogin .side::after{content:'';position:absolute;inset:0;z-index:1;
-  background:linear-gradient(90deg,rgba(8,9,12,.72) 0%,rgba(8,9,12,.28) 45%,rgba(8,9,12,.80) 100%)}
+  background:linear-gradient(90deg,rgba(8,9,12,.50) 0%,rgba(8,9,12,.22) 42%,rgba(8,9,12,.86) 100%),
+             linear-gradient(0deg,rgba(8,9,12,.82) 0%,rgba(8,9,12,.10) 46%,rgba(8,9,12,.55) 100%)}
 #fmacLogin .side > *{position:relative;z-index:2}
-#fmacLogin .mark{display:inline-flex;flex-direction:column;gap:9px;align-items:stretch}
-#fmacLogin .logo{height:44px;width:auto;display:block}
-/* «قسم الإعداد الفني» بخطَّي الشعار الحمراوين — كما في شعار النادي المرسَل */
-#fmacLogin .unit{display:flex;align-items:center;gap:10px}
-#fmacLogin .unit i{flex:1;height:1.5px;background:#e8555c;opacity:.85}
-#fmacLogin .unit span{font-size:12.5px;font-weight:700;color:#e9ecf1;white-space:nowrap}
+/* الشعار يحمل اسم النادي والقسم معاً — النسخة الداكنة من ملفّ النادي */
+#fmacLogin .logo{height:96px;width:auto;display:block;align-self:flex-start}
 /* left لا inset-inline-start: اللوحة بصرية ثابتة مهما كان اتجاه النصّ */
 #fmacLogin .creed{position:absolute;left:34px;top:46%;transform:translateY(-50%);
   z-index:2;display:flex;flex-direction:column;gap:9px;pointer-events:none}
@@ -130,7 +127,8 @@ export const STYLE = `
 
 #fmacLogin .pane{flex:1 1 48%;display:flex;align-items:center;justify-content:center;
   padding:34px 28px;position:relative}
-#fmacLogin .langbtn{position:absolute;top:28px;inset-inline-end:32px;background:#ffffff08;
+/* right لا inset-inline-end: موضعه أعلى يمين الشاشة في اللغتين */
+#fmacLogin .langbtn{position:absolute;top:28px;right:32px;background:#ffffff08;
   color:#e9ecf1;border:1px solid #ffffff1c;border-radius:99px;padding:9px 16px;
   font:500 13px inherit;cursor:pointer;display:flex;align-items:center;gap:8px}
 #fmacLogin .langbtn:hover{background:#ffffff12}
@@ -180,10 +178,15 @@ export const STYLE = `
   #fmacLogin .side{flex:0 0 auto;min-height:auto;padding:22px 20px 26px}
   #fmacLogin .creed{display:none}
   #fmacLogin .slog{padding-inline-end:0}
-  #fmacLogin .sports{margin-top:18px}
-  #fmacLogin .sports a{min-width:60px;padding:6px}
-  #fmacLogin .pane{padding:22px 16px 40px}
-  #fmacLogin .langbtn{position:static;margin:0 0 16px auto}
+  #fmacLogin .logo{height:60px}
+  /* العمود لا يضيق تحت أعرض ابن له، فنسمح للصفّ بالالتفاف صراحةً */
+  #fmacLogin .side > div{min-width:0}
+  #fmacLogin .sports{flex-wrap:wrap;margin-top:18px}
+  #fmacLogin .sports a{flex:0 0 20%;padding:8px 2px}
+  /* اللوحة صفّ في العرض الواسع، فلو بقيت صفّاً جلس زرّ اللغة بجانب البطاقة */
+  #fmacLogin .pane{flex-direction:column;align-items:stretch;padding:22px 16px 40px}
+  #fmacLogin .box{margin:0 auto}
+  #fmacLogin .langbtn{position:static;align-self:flex-start;margin:0 0 16px}
   #fmacLogin .box{padding:24px 20px 20px}
 }
 `;
@@ -221,9 +224,8 @@ const setLang = (v) => { try { localStorage.setItem('fmac.lang', v); } catch (e)
 /* لوحة النادي — ثابتة في كل الحالات */
 function sidePanel(t) {
   return '<aside class="side">' +
-    '<div class="mark"><img class="logo" src="./img/fmac-logo.png" ' +
-    'alt="نادي الفجيرة للفنون القتالية">' +
-    '<div class="unit"><i></i><span>قسم الإعداد الفني</span><i></i></div></div>' +
+    '<img class="logo" src="./img/fmac-logo.png" ' +
+    'alt="نادي الفجيرة للفنون القتالية — قسم الإعداد الفني">' +
     '<div class="creed">' + t.creed.map((c) => '<span>' + c + '</span>').join('') + '</div>' +
     '<div><div class="slog"><h2>' + esc(t.slogan1) + '<br><i>' + esc(t.slogan2) + '</i></h2>' +
     '<p>' + esc(t.sloganEn1) + '<br>' + esc(t.sloganEn2) + '</p></div>' +
