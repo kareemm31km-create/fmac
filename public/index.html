@@ -1302,7 +1302,7 @@ html[dir="ltr"] .tdr:hover .tda{transform:translateX(3px)}
 .acn.uae::before{content:'';position:absolute;inset-inline-end:4px;top:0;bottom:0;width:4px;
   background:var(--uae-red)}
 .acn.uae .ic{background:color-mix(in srgb,var(--uae-green) 18%,transparent)}
-.acn.uae .ic svg{stroke:var(--uae-green)}
+.acn.uae .ic svg{stroke:var(--uae-ink)}
 .natl{margin-top:var(--s-base);padding:14px 15px;border-radius:var(--r-card);
   background:linear-gradient(135deg, color-mix(in srgb,var(--uae-green) 9%,var(--card-2)),
     var(--card-2) 55%);
@@ -1327,7 +1327,7 @@ html[dir="ltr"] .tdr:hover .tda{transform:translateX(3px)}
 .ntl{display:flex;flex-wrap:wrap;gap:7px}
 .ntp{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-deep);
   background:var(--surface);border:1px solid var(--edge);border-radius:99px;padding:5px 6px 5px 12px}
-.ntp .cat{font-size:11px;color:var(--uae-green);
+.ntp .cat{font-size:11px;color:var(--uae-ink);
   background:color-mix(in srgb,var(--uae-green) 14%,transparent);border-radius:99px;padding:2px 8px}
 .ntp .x{border:0;background:none;cursor:pointer;color:var(--stone);font-size:15px;line-height:1;
   padding:0 2px;border-radius:99px}
@@ -2327,8 +2327,6 @@ html[dir="ltr"] .sr:hover{transform:translateX(3px)}
   border-radius:3px;padding:0 2px}
 .sr .sm{font-size:12.5px;color:var(--stone)}
 .sr .sd{width:8px;height:8px;border-radius:50%;flex:none}
-#btnSearch{display:flex;align-items:center;gap:7px}
-#btnSearch svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 
 /* الاتجاه عبر الأسابيع */
 .spk{width:120px;height:34px;display:block;overflow:visible}
@@ -2345,7 +2343,7 @@ html[dir="ltr"] .sr:hover{transform:translateX(3px)}
 .acn.uae::before{content:'';position:absolute;inset-inline-end:4px;top:0;bottom:0;width:4px;
   background:var(--uae-red)}
 .acn.uae .ic{background:color-mix(in srgb,var(--uae-green) 18%,transparent)}
-.acn.uae .ic svg{stroke:var(--uae-green)}
+.acn.uae .ic svg{stroke:var(--uae-ink)}
 .natl{margin-top:var(--s-base);padding:14px 15px;border-radius:var(--r-card);
   background:linear-gradient(135deg, color-mix(in srgb,var(--uae-green) 9%,var(--card-2)),
     var(--card-2) 55%);
@@ -2370,7 +2368,7 @@ html[dir="ltr"] .sr:hover{transform:translateX(3px)}
 .ntl{display:flex;flex-wrap:wrap;gap:7px}
 .ntp{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-deep);
   background:var(--surface);border:1px solid var(--edge);border-radius:99px;padding:5px 6px 5px 12px}
-.ntp .cat{font-size:11px;color:var(--uae-green);
+.ntp .cat{font-size:11px;color:var(--uae-ink);
   background:color-mix(in srgb,var(--uae-green) 14%,transparent);border-radius:99px;padding:2px 8px}
 .ntp .x{border:0;background:none;cursor:pointer;color:var(--stone);font-size:15px;line-height:1;
   padding:0 2px;border-radius:99px}
@@ -3608,7 +3606,32 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
 .evmore{color:var(--brand);font-weight:600}
 .evmore.on{background:color-mix(in srgb,var(--brand) 12%,transparent)}
 
+/* ===== كرت لاعبي المنتخب: هويّة العلم لا كرتٌ عامّ =====
+   شريط العلم على الحافّة، ووهجٌ أخضر خافت، والعدد بالأحمر.
+   كلّه برموزٍ ومزجٍ فيعمل في الوضعين. */
+.natp{position:relative;overflow:hidden;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--uae-green) 10%,var(--surface)),
+    var(--surface) 58%);
+  border-color:color-mix(in srgb,var(--uae-green) 26%,var(--hairline))}
+/* شريط العلم: أخضر فأبيض فأسود، والأحمر عند السارية */
+.natp::before{content:'';position:absolute;inset-block:0;inset-inline-start:0;width:6px;
+  background:linear-gradient(180deg,var(--uae-green) 0 33.33%,var(--uae-white) 33.33% 66.66%,
+    var(--uae-black) 66.66% 100%)}
+.natp::after{content:'';position:absolute;inset-block:0;inset-inline-start:6px;width:3px;
+  background:var(--uae-red)}
+.natp > *{position:relative;z-index:1}
+.natp .ch{gap:9px}
+.natp .ch .flag{flex:none}
+.natp .ch .cnt{font-weight:800;color:var(--uae-red);
+  background:color-mix(in srgb,var(--uae-red) 13%,transparent);
+  border-radius:var(--r-full);padding:2px 10px}
 .natp .npg{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px}
+/* البطاقة الأولى — العدد الكلّي — تحمل الأخضر، وما بعدها فئاتٌ محايدة */
+.npc.lead{background:linear-gradient(160deg,
+    color-mix(in srgb,var(--uae-green) 16%,var(--card-2)),var(--card-2) 70%);
+  border-color:color-mix(in srgb,var(--uae-green) 38%,transparent)}
+.npc.lead b{color:var(--uae-ink)}
+.natp .ntl{gap:8px}
 .npc{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border-radius:13px;
   background:linear-gradient(160deg, rgba(0,115,47,.16), var(--card-2) 62%);
   border:1px solid color-mix(in srgb,var(--success) 26%,transparent);min-width:96px}
@@ -4039,7 +4062,7 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
   --hairline:#20364C; --hairline-soft:#17283A; --edge:#2A4965;
   /* النصّ — الثانوي فاتح بما يكفي فوق الكحلي (§25) */
   --ink-deep:#F4F8FC; --ink:#DCE8F2; --charcoal:#A9B8C8;
-  --steel:#93A7BA; --stone:#6F8295;
+  --steel:#93A7BA; --stone:#7A8DA0;   /* 6F8295 كان 4.25:1 فوق الكروت */
   --on-ink:#07111F; --ink-button:#F4F8FC;
   /* المنتج */
   --brand:#3B9DFF; --brand-dark:#2583F7; --cyan:#36C5F0; --turquoise:#22D3C5;
@@ -4074,6 +4097,9 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
   /* نصٌّ فوق تعبئةٍ ملوّنة — التعبئة لا تتغيّر، فلونه لا يتغيّر */
   --on-brand:#fff; --on-success:#04140C; --on-attention:#2B2412;
   --on-medal:#12181E;     /* فوق الذهب والفضّة والبرونز — لا يتغيّر */
+  /* أخضر العَلَم لونُ عَلَمٍ لا يُغيَّر؛ لكنّه نصّاً فوق الداكن 2.6:1.
+     فللنصّ رمزٌ ثانٍ يُفتَح في الداكن ويُغمَق في الفاتح. */
+  --uae-ink:#3FD98A;
   --on-critical-soft:#FECACA;
   --natgrad-a:#0C1411; --natgrad-b:#150F11;
   --mng:#5FD08A;
@@ -4227,6 +4253,7 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
   --on-brand:#FFFFFF; --on-success:#FFFFFF; --on-attention:#FFFFFF;
   --on-critical-soft:#7F1420;
   --natgrad-a:#EFF7F2; --natgrad-b:#F8F1F2; --mng:#0B7D48;
+  --uae-ink:#00662A;
   /* الظلّ الأسود فوق الأبيض وسخ — فهو كحليٌّ خافت */
   --shadow-card:0 1px 2px rgba(15,38,62,.05),0 8px 24px rgba(15,38,62,.06);
   --shadow-pop:0 16px 40px rgba(15,38,62,.16);
@@ -11360,13 +11387,15 @@ function spOverviewHtml(){
     const byCat={}; pl.forEach(function(x){ const c=x.cat||'بلا فئة';
       byCat[c]=(byCat[c]||0)+1; });
     const cats=Object.keys(byCat);
-    h+='<section class="panel natp"><div class="ch"><h3>لاعبو المنتخب الوطني</h3>'+
+    h+='<section class="panel natp"><div class="ch">'+
+      '<span class="flag"><i></i><i></i><i></i></span>'+
+      '<h3>لاعبو المنتخب الوطني</h3>'+
       '<span class="cnt">'+(pl.length||'—')+'</span><span class="grow"></span>'+
       '<button class="mini2" data-sptab="res">الإدارة والإضافة ←</button></div>'+
       '<div class="lede">لاعبو '+esc(spCur)+' في منتخب الإمارات لموسم '+esc(curSeason()||'')+'</div>'+
       (pl.length
         ? '<div class="npg">'+
-            '<div class="npc"><b>'+pl.length+'</b><span>لاعباً</span></div>'+
+            '<div class="npc lead"><b>'+pl.length+'</b><span>لاعباً</span></div>'+
             cats.map(function(c){ return '<div class="npc sub"><b>'+byCat[c]+'</b><span>'+
               esc(c)+'</span></div>'; }).join('')+
           '</div>'+
