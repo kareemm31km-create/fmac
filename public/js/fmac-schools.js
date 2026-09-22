@@ -200,40 +200,7 @@ export default { STATUS, visit, list, summary, bySport, byArea, schools,
    أعمدتها، وربط القراءة برقم عمود ثابت يكسرها عند أوّل تعديل.
    ════════════════════════════════════════════════════════════ */
 
-const norm = (v) => S(v)
-  .replace(/[\u064B-\u0652\u0640]/g, '')
-  .replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/[ىئ]/g, 'ي')
-  .replace(/\s+/g, ' ').toLowerCase();
-
-const ROSTER = {
-  no:     ['م', 'رقم', '#', 'no'],
-  name:   ['اسم اللاعب', 'الاسم', 'اللاعب', 'name'],
-  birth:  ['تاريخ الميلاد', 'الميلاد', 'سنه الميلاد', 'تاريخ الميلاد (سنه)', 'birth'],
-  nat:    ['الجنسيه', 'الجنسية', 'nationality'],
-  school: ['اسم المدرسه', 'المدرسه', 'school'],
-  phone:  ['رقم التليفون', 'التليفون', 'الهاتف', 'رقم الهاتف', 'الموبايل', 'phone'],
-  weight: ['الوزن', 'weight'],
-  grade:  ['الصف', 'الصفّ', 'grade', 'class'],
-};
-
-const isCol = (cell, names) => {
-  const n = norm(cell);
-  return !!n && names.some((w) => n === norm(w));
-};
-
-/** يرجع خريطة الأعمدة إن كان الصفّ ترويسةً، وإلا null */
-function headerRow(row) {
-  const idx = {};
-  for (let c = 0; c < (row || []).length; c++) {
-    for (const key of Object.keys(ROSTER)) {
-      if (idx[key] === undefined && isCol(row[c], ROSTER[key])) idx[key] = c;
-    }
-  }
-  /* الاسم وحده هو ما لا استمارة بدونه */
-  return idx.name === undefined ? null : idx;
-}
-
-/* سنة الميلاد: الخانة قد تحمل سنةً أو تاريخاً كاملاً أو رقم إكسل */
+/* سنة الميلاد: يقبل سنةً أو تاريخاً كاملاً أو رقم إكسل تسلسلياً */
 export function birthYear(v) {
   const t = S(v);
   if (!t) return '';
@@ -258,47 +225,6 @@ export function player(r) {
 }
 export const players = (rows) => (rows || [])
   .filter((r) => S(r.k) && S(r.name)).map(player);
-
-/**
- * يقرأ استمارة الاختيار من أوراق xlsx.
- * يرجع { ok, rows, skipped, error } — والصفوف بلا اسم تُعدّ ولا تُبتلع.
- */
-export function parseRoster(sheets) {
-  const names = Object.keys(sheets || {});
-  if (!names.length) return { ok: false, error: 'الملفّ بلا أوراق.', rows: [], skipped: 0 };
-  const out = [];
-  let skipped = 0, found = false;
-  for (const nm of names) {
-    const grid = sheets[nm] || [];
-    let idx = null;
-    for (let r = 0; r < grid.length; r++) {
-      const row = grid[r] || [];
-      if (!idx) { idx = headerRow(row); if (idx) { found = true; } continue; }
-      const get = (k) => (idx[k] === undefined ? '' : S(row[idx[k]]));
-      const name = get('name');
-      if (!name) {
-        /* صفّ فيه شيء لكن بلا اسم — يُعدّ ولا يُبتلع صمتاً */
-        if (row.some((c) => S(c) !== '')) skipped++;
-        continue;
-      }
-      out.push({
-        no: get('no'), name,
-        birth: birthYear(get('birth')), nat: get('nat'),
-        school: get('school'), phone: get('phone'),
-        weight: get('weight'), grade: get('grade'), sheet: nm,
-      });
-    }
-  }
-  if (!found) {
-    return { ok: false, rows: [], skipped: 0,
-      error: 'لم نجد صفّ ترويسة فيه «اسم اللاعب». استعمل القالب.' };
-  }
-  if (!out.length) {
-    return { ok: false, rows: [], skipped,
-      error: 'وُجدت الترويسة لكن بلا صفوف فيها أسماء.' };
-  }
-  return { ok: true, rows: out, skipped };
-}
 
 /** تجميع اللاعبين — بالمدرسة وباللعبة وبسنة الميلاد */
 export function rosterStats(rows) {
@@ -327,4 +253,12 @@ export function rosterCsv(rows) {
   const body = rows.map((p, i) => [i + 1, p.name, p.birth, p.nat, p.school,
     p.phone, p.weight, p.grade, p.sport, p.season]);
   return '\uFEFF' + [head, ...body].map((r) => r.map(cell).join(',')).join('\r\n');
+}
+
+/** أسماء المدارس المعروفة — من الزيارات ومن اللاعبين، بلا تكرار */
+export function schoolNames(visits, playerRows) {
+  const set = new Set();
+  (visits || []).forEach((v) => { if (S(v.school)) set.add(S(v.school)); });
+  (playerRows || []).forEach((p) => { if (S(p.school)) set.add(S(p.school)); });
+  return [...set].sort((x, y) => x.localeCompare(y, 'ar'));
 }

@@ -2,7 +2,6 @@
    الأصناف بسابقة sv- تفادياً لتصادم الأسماء.
    المنطق كلّه في fmac-schools.js؛ هنا العرض والتحرير فقط. */
 import * as M from './fmac-schools.js';
-import { readXlsx } from './fmac-xlsx.js';
 
 const S = M.S;
 const esc = (s) => S(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -80,6 +79,10 @@ const STYLE = `
 .sv-sp{display:grid;grid-template-columns:1fr 90px 90px;gap:8px;align-items:center;
   margin-top:7px;font-size:13px}
 .sv-msg{font-size:12.5px;min-height:18px;margin-top:10px}
+.sv-more{margin-top:10px}
+.sv-more summary{cursor:pointer;font-size:12.5px;color:var(--steel);padding:6px 0}
+.sv-scroll{overflow-x:auto}
+.sv-scroll table{min-width:720px}
 .sv-log{display:flex;flex-direction:column;gap:6px;margin-top:6px;max-height:150px;overflow:auto;
   background:var(--surface-soft);border:1px solid var(--hairline);border-radius:var(--r-lg);
   padding:10px 12px}
@@ -93,9 +96,11 @@ let TAB = 'over';
 let CAL = '';            /* شهر التقويم YYYY-MM */
 let OPEN = null;         /* الزيارة قيد التحرير */
 let SCHOOL = '';         /* ملفّ مدرسة مفتوح */
-let ROSTER = null;       /* معاينة استمارة مرفوعة قبل الحفظ */
-let RSPORT = '';         /* اللعبة المختارة للاستمارة */
+/* ما يبقى بين لاعب وآخر: المدرسة واللعبة والجنسية — فالمدرب
+   يُدخل عشرين لاعباً من مدرسة واحدة، فلا يعيد اختيارها كل مرّة. */
+let STICKY = { school: '', other: '', sport: '', nat: 'إمارات' };
 let PFILTER = '';        /* ترشيح قائمة اللاعبين بالمدرسة */
+let TOUCHED = false;     /* هل اختار المستخدم تبويباً بنفسه */
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const AR_M = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو',
@@ -268,36 +273,52 @@ function rosterTab(ctx, season, sports) {
   const mine = all.filter((p) => !season || p.season === season);
   const shown = PFILTER ? mine.filter((p) => p.school === PFILTER) : mine;
   const st = M.rosterStats(mine);
+  const admin = !!(ctx.user && ctx.user.admin);
+  const known = M.schoolNames(ctx.visits || [], all);
+  const other = STICKY.school === '__other';
 
-  const upload =
+  const form =
     '<div class="sv-card"><div class="sv-head"><div>' +
-      '<h3 class="sv-t">رفع استمارة اختيار</h3>' +
-      '<p class="sv-sub">إكسل بأعمدة: اسم اللاعب · تاريخ الميلاد · الجنسية · ' +
-      'اسم المدرسة · رقم التليفون · الوزن · الصف. ' +
-      'تُقرأ الأعمدة بمسمّياتها لا بمواضعها، والخانة الفارغة تبقى فارغة.</p></div>' +
-      '<a class="sv-btn ghost" href="./templates/FMAC-استمارة-لاعبي-المدارس.xlsx" ' +
-      'download>تنزيل القالب</a></div>' +
-    '<div class="sv-row" style="margin-top:12px">' +
-      '<label class="sv-sub" for="rsSport">اللعبة</label>' +
-      '<select id="rsSport" class="sv-in" style="width:auto">' +
-      '<option value="">— اختر اللعبة —</option>' +
-      sports.map((sp) => '<option' + (RSPORT === sp ? ' selected' : '') + '>' +
-        esc(sp) + '</option>').join('') + '</select>' +
-      '<input type="file" id="rsFile" accept=".xlsx" class="sv-in" style="width:auto">' +
-    '</div><div class="sv-msg" id="rsMsg"></div></div>';
-
-  const preview = ROSTER
-    ? '<div class="sv-card"><h3 class="sv-t">معاينة قبل الحفظ — ' +
-      ROSTER.rows.length + ' لاعباً</h3>' +
-      (ROSTER.skipped ? '<p class="sv-sub">تُخطّي ' + ROSTER.skipped +
-        ' صفّاً بلا اسم.</p>' : '') +
-      playerTable(ROSTER.rows.slice(0, 40)) +
-      (ROSTER.rows.length > 40 ? '<p class="sv-sub">عُرض أوّل 40 صفّاً.</p>' : '') +
-      '<div class="sv-row" style="margin-top:12px">' +
-        '<button class="sv-btn" id="rsSave">احفظ ' + ROSTER.rows.length + ' لاعباً</button>' +
-        '<button class="sv-btn ghost" id="rsCancel">إلغاء</button>' +
-        '<span class="sv-msg" id="rsSaveMsg"></span></div></div>'
-    : '';
+      '<h3 class="sv-t">إضافة لاعب مختار</h3>' +
+      '<p class="sv-sub">أضِف لاعباً لاعباً وأنت في المدرسة. ' +
+      'المدرسة واللعبة تبقيان بين لاعب وآخر، فلا تعيد اختيارهما. ' +
+      'الوزن والصف اختياريان.</p></div></div>' +
+    '<div class="sv-grid">' +
+      '<span><label class="sv-l">المدرسة</label>' +
+        '<select class="sv-in" id="rpSchool">' +
+        '<option value="">— اختر المدرسة —</option>' +
+        known.map((n) => '<option' + (STICKY.school === n ? ' selected' : '') + '>' +
+          esc(n) + '</option>').join('') +
+        '<option value="__other"' + (other ? ' selected' : '') + '>— مدرسة أخرى —</option>' +
+        '</select></span>' +
+      '<span' + (other ? '' : ' hidden') + ' id="rpOtherWrap">' +
+        '<label class="sv-l">اسم المدرسة الجديدة</label>' +
+        '<input class="sv-in" id="rpOther" value="' + esc(STICKY.other) + '"></span>' +
+      '<span><label class="sv-l">اللعبة</label>' +
+        '<select class="sv-in" id="rpSport"><option value="">— اختر اللعبة —</option>' +
+        sports.map((sp) => '<option' + (STICKY.sport === sp ? ' selected' : '') + '>' +
+          esc(sp) + '</option>').join('') + '</select></span>' +
+    '</div>' +
+    '<div class="sv-grid">' +
+      '<span><label class="sv-l">اسم اللاعب</label>' +
+        '<input class="sv-in" id="rpName" autocomplete="off"></span>' +
+      '<span><label class="sv-l">سنة الميلاد</label>' +
+        '<input class="sv-in" id="rpBirth" inputmode="numeric" placeholder="2017"></span>' +
+      '<span><label class="sv-l">الجنسية</label>' +
+        '<input class="sv-in" id="rpNat" value="' + esc(STICKY.nat) + '"></span>' +
+      '<span><label class="sv-l">رقم التليفون</label>' +
+        '<input class="sv-in" id="rpPhone" inputmode="tel" autocomplete="off"></span>' +
+    '</div>' +
+    '<details class="sv-more"><summary>حقول اختيارية — الوزن والصف</summary>' +
+      '<div class="sv-grid">' +
+        '<span><label class="sv-l">الوزن</label>' +
+          '<input class="sv-in" id="rpWeight" inputmode="decimal"></span>' +
+        '<span><label class="sv-l">الصف</label>' +
+          '<input class="sv-in" id="rpGrade"></span>' +
+      '</div></details>' +
+    '<div class="sv-row" style="margin-top:14px">' +
+      '<button class="sv-btn" id="rpAdd">أضِف اللاعب</button>' +
+      '<span class="sv-msg" id="rpMsg"></span></div></div>';
 
   const chips = st.schools.length > 1
     ? '<div class="sv-chips" style="margin-bottom:10px">' +
@@ -323,20 +344,20 @@ function rosterTab(ctx, season, sports) {
       '</div>'
     : '';
 
-  return upload + preview +
+  return form +
     '<div class="sv-card"><div class="sv-head"><h3 class="sv-t">اللاعبون المختارون</h3>' +
-      (mine.length ? '<button class="sv-btn ghost" id="rsCsv">تصدير القائمة</button>' : '') +
+      (admin && mine.length
+        ? '<button class="sv-btn ghost" id="rsCsv">تصدير Excel</button>' : '') +
     '</div>' + stats + chips +
-    (shown.length ? playerTable(shown, true)
-      : '<div class="sv-empty">لا لاعبين مسجَّلين بعد — ارفع الاستمارة أعلاه.</div>') +
+    (shown.length ? playerTable(shown, admin)
+      : '<div class="sv-empty">لا لاعبين مسجَّلين بعد — أضِفهم من النموذج أعلاه.</div>') +
     '</div>';
 }
 
 function playerTable(rows, withDel) {
-  return '<table class="sv-tbl"><tr><th class="n">م</th><th>اسم اللاعب</th>' +
-    '<th class="n">الميلاد</th><th>الجنسية</th><th>المدرسة</th>' +
-    '<th class="n">الهاتف</th><th class="n">الوزن</th><th>الصف</th>' +
-    (rows[0] && rows[0].sport !== undefined ? '<th>اللعبة</th>' : '') +
+  return '<div class="sv-scroll"><table class="sv-tbl"><tr><th class="n">م</th>' +
+    '<th>اسم اللاعب</th><th class="n">الميلاد</th><th>الجنسية</th><th>المدرسة</th>' +
+    '<th class="n">الهاتف</th><th class="n">الوزن</th><th>الصف</th><th>اللعبة</th>' +
     (withDel ? '<th></th>' : '') + '</tr>' +
     rows.map((p, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
       '<td><b>' + esc(p.name) + '</b></td>' +
@@ -346,67 +367,68 @@ function playerTable(rows, withDel) {
       '<td class="n">' + esc(p.phone || '—') + '</td>' +
       '<td class="n">' + esc(p.weight || '—') + '</td>' +
       '<td>' + esc(p.grade || '—') + '</td>' +
-      (p.sport !== undefined ? '<td>' + esc(p.sport || '—') + '</td>' : '') +
+      '<td>' + esc(p.sport || '—') + '</td>' +
       (withDel ? '<td><button class="sv-btn ghost" data-pdel="' + esc(p.k) +
-        '">حذف</button></td>' : '') + '</tr>').join('') + '</table>';
+        '">حذف</button></td>' : '') + '</tr>').join('') + '</table></div>';
 }
 
 function wireRoster(host, ctx, go, season) {
   const $ = (id) => host.querySelector('#' + id);
-  const sp = $('rsSport');
-  if (sp) sp.addEventListener('change', () => { RSPORT = sp.value; });
 
   host.querySelectorAll('[data-pfil]').forEach((b) => b.addEventListener('click', () => {
     PFILTER = b.getAttribute('data-pfil'); go();
   }));
 
-  const file = $('rsFile');
-  if (file) file.addEventListener('change', async () => {
-    const f = file.files && file.files[0];
-    const msg = $('rsMsg');
-    if (!f) return;
-    msg.style.color = 'var(--steel)';
-    msg.textContent = 'جارٍ قراءة الملف…';
+  const sc = $('rpSchool');
+  if (sc) sc.addEventListener('change', () => {
+    STICKY.school = sc.value;
+    const w = $('rpOtherWrap');
+    if (w) w.hidden = sc.value !== '__other';
+  });
+
+  const add = $('rpAdd');
+  if (!add) return;
+
+  add.addEventListener('click', async () => {
+    const g = (id) => { const e = $(id); return e ? S(e.value) : ''; };
+    const msg = $('rpMsg');
+    const say = (t, c) => { msg.style.color = c; msg.textContent = t; };
+
+    const schoolSel = g('rpSchool');
+    const school = schoolSel === '__other' ? g('rpOther') : schoolSel;
+    const sport = g('rpSport');
+    const name = g('rpName');
+    if (!name) { say('اكتب اسم اللاعب.', 'var(--critical)'); $('rpName').focus(); return; }
+    if (!school) { say('اختر المدرسة.', 'var(--critical)'); return; }
+    if (!sport) { say('اختر اللعبة — بها تُبنى التقارير.', 'var(--critical)'); return; }
+
+    /* اسم مكرّر في المدرسة نفسها — نسأل قبل الإضافة لا بعدها */
+    const dup = M.players(ctx.players || []).some((p) =>
+      p.season === season && p.school === school && p.name === name);
+    if (dup && !window.confirm(name + ' مسجَّل في ' + school + ' بالفعل. أضيفه مرّةً أخرى؟')) return;
+
+    add.disabled = true;
+    say('جارٍ الحفظ…', 'var(--steel)');
     try {
-      const sheets = await readXlsx(await f.arrayBuffer());
-      const r = M.parseRoster(sheets);
-      if (!r.ok) { msg.style.color = 'var(--critical)'; msg.textContent = r.error; return; }
-      ROSTER = r;
-      msg.style.color = 'var(--steel)';
-      msg.textContent = 'قُرئ ' + r.rows.length + ' لاعباً — راجع ثم احفظ.';
-      go();
+      await ctx.savePlayers([{
+        season, sport, school, name,
+        birth: M.birthYear(g('rpBirth')), nat: g('rpNat'),
+        phone: g('rpPhone'), weight: g('rpWeight'), grade: g('rpGrade'),
+      }]);
+      /* ما يبقى للّاعب التالي: المدرسة واللعبة والجنسية */
+      STICKY = { school: schoolSel, other: schoolSel === '__other' ? school : '',
+        sport, nat: g('rpNat') };
+      say('أُضيف ' + name + ' ✓', 'var(--success)');
+      if (ctx.onSaved) ctx.onSaved();
     } catch (e) {
-      msg.style.color = 'var(--critical)';
-      msg.textContent = 'تعذّرت القراءة: ' + S(e && e.message);
+      add.disabled = false;
+      say('تعذّر الحفظ: ' + S(e && e.message), 'var(--critical)');
     }
   });
 
-  if ($('rsCancel')) $('rsCancel').addEventListener('click', () => { ROSTER = null; go(); });
-
-  if ($('rsSave')) $('rsSave').addEventListener('click', async () => {
-    const btn = $('rsSave'), m = $('rsSaveMsg');
-    if (!RSPORT) {
-      m.style.color = 'var(--attention)';
-      m.textContent = 'اختر اللعبة أوّلاً — بها تُبنى التقارير.';
-      return;
-    }
-    btn.disabled = true;
-    m.style.color = 'var(--steel)';
-    m.textContent = 'جارٍ الحفظ…';
-    try {
-      await ctx.savePlayers(ROSTER.rows.map((p) => ({
-        season, sport: RSPORT, name: p.name, birth: p.birth, nat: p.nat,
-        school: p.school, phone: p.phone, weight: p.weight, grade: p.grade,
-      })));
-      ROSTER = null;
-      m.style.color = 'var(--success)';
-      m.textContent = 'حُفظت.';
-      if (ctx.onSaved) ctx.onSaved();
-    } catch (e) {
-      btn.disabled = false;
-      m.style.color = 'var(--critical)';
-      m.textContent = 'تعذّر الحفظ: ' + S(e && e.message);
-    }
+  ['rpName', 'rpBirth', 'rpPhone'].forEach((id) => {
+    const e = $(id);
+    if (e) e.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') add.click(); });
   });
 
   host.querySelectorAll('[data-pdel]').forEach((b) => b.addEventListener('click', async () => {
@@ -531,6 +553,8 @@ export function render(host, ctx) {
   const areas = [...new Set(rows.map((v) => v.area).filter(Boolean))].sort();
   const names = [...new Set(rows.map((v) => v.school).filter(Boolean))].sort();
   const admin = !!(ctx.user && ctx.user.admin);
+  /* المدرب يأتي ليُدخل لاعبيه، فيفتح على تبويبهم لا على النظرة العامة */
+  if (!admin && !TOUCHED) { TAB = 'players'; TOUCHED = true; }
 
   const TABS = [['over', 'نظرة عامة'], ['cal', 'التقويم'], ['schools', 'المدارس'],
     ['visits', 'الزيارات'], ['players', 'اللاعبون'], ['stats', 'التحليلات']];
@@ -562,7 +586,7 @@ export function render(host, ctx) {
   const go = () => render(host, ctx);
 
   host.querySelectorAll('[data-svtab]').forEach((b) => b.addEventListener('click', () => {
-    TAB = b.dataset.svtab; SCHOOL = ''; go();
+    TAB = b.dataset.svtab; SCHOOL = ''; TOUCHED = true; go();
   }));
   host.querySelectorAll('[data-svmv]').forEach((b) => b.addEventListener('click', () => {
     const [y, m] = CAL.split('-').map(Number);
