@@ -240,6 +240,10 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   .creedbar::after{background:linear-gradient(270deg,rgba(7,9,12,.96) 0%,
                    rgba(7,9,12,.88) 55%,rgba(7,9,12,.55) 100%)}
 }
+.kgrid.k1{grid-template-columns:minmax(0,1fr)}
+/* عنوان مجموعة داخل لوحة أداء الخطط */
+.pfh{font-size:11.5px;letter-spacing:.06em;color:var(--stone);margin:2px 0 6px}
+.pfh:not(:first-child){margin-top:10px}
 /* ===== تقدّم الخطط + آخر التحديثات ===== */
 .stgwrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
 .stgring{position:relative;flex:none;width:150px;height:150px}
@@ -4589,7 +4593,7 @@ input::placeholder,textarea::placeholder{color:#64788B}
           </div>
         </section>
                 <section class="panel" id="perfPanel">
-          <div class="ch"><h3>أداء القسم الفني</h3><span class="ci" id="perfIco"></span></div>
+          <div class="ch"><h3>أداء الخطط</h3><span class="cnt" id="perfSub">من التسليم إلى التنفيذ</span><span class="ci" id="perfIco"></span></div>
           <div class="pfl" id="perfBody"></div>
           <div class="pmore"><button class="mini2" data-view="reports">عرض التحليلات ←</button></div>
         </section>
@@ -12701,6 +12705,7 @@ function renderGreet(){
 }
 function renderKpis(){
   const h=$('kgrid'); if(!h) return;
+  h.className='kgrid k1';   /* بقيت الحلقة وحدها بعد نقل بطاقات الخطط */
   refreshTasks();
   const M=branchMetrics();
   const hist=(history||[]).slice(-12).map(x=>x.score||0);
@@ -12717,17 +12722,7 @@ function renderKpis(){
         : 'محسوب من نسبة تنفيذ الخطط وحدها — يُعاد بناؤه حين تحدّد أسس التقييم')+
         (hist.length>1&&!dashBranch?' · <b class="'+(last>=0?'up':'dn')+'">'+
           (last>=0?'▲':'▼')+' '+Math.abs(last)+'%</b> عن الأسبوع الماضي':'')+
-        (dashBranch?' · أرقام فرع '+esc(dashBranch)+' وحده':'')+'</div></div>'+
-    kcard4('inbox','الخطط المستلمة',String(M.received),'/ '+M.coaches,
-      M.late?nCoach(M.late)+' لم يسلّم':'وصلت كل الخطط',
-      M.coaches?M.received/M.coaches*100:0,'var(--blue)','','reports')+
-    kcard4('stamp','الخطط المعتمدة',String(M.approved),'/ '+M.plans,
-      (M.plans-M.approved)?nPlan(M.plans-M.approved)+' تنتظر اعتمادك':'اعتُمدت كلها',
-      M.plans?M.approved/M.plans*100:0,'var(--ai)','','review')+
-    kcard4('clip','تنفيذ الخطط',na(M.exec),'',
-      M.exec===null ? 'لم يُرصد أي بند بعد'
-                    : 'الحصص المرصودة '+M.rated+' من '+M.days,
-      M.exec||0,'var(--success)','','plan');
+        (dashBranch?' · أرقام فرع '+esc(dashBranch)+' وحده':'')+'</div></div>';
   const wl=$('waitLine'); if(wl) wl.hidden=true;   /* انتقل إلى شارة الشريط العلوي */
 }
 /* أداء القسم الفني — ما يُقاس داخل الحصة نفسها */
@@ -12736,6 +12731,20 @@ function renderPerf(){
   const ic=$('perfIco'); if(ic) ic.innerHTML=di('trend');
   const M=branchMetrics();
   const na=v=>v===null||v===undefined?'—':v+'%';
+  /* دورة الخطة — نِسَبها من مقامات حقيقية، و«—» حين لا مقام (§24) */
+  const pc=(a,b)=>b?Math.round(a/b*100):null;
+  const cyc=[
+    ['inbox','الخطط المستلمة','var(--blue)',pc(M.received,M.coaches),
+      M.coaches ? (M.received+' من '+M.coaches+(M.late?' · '+nCoach(M.late)+' لم يسلّم':''))
+                : 'لا مدربين مسجَّلين'],
+    ['stamp','الخطط المعتمدة','var(--review)',pc(M.approved,M.plans),
+      M.plans ? (M.approved+' من '+M.plans+
+        ((M.plans-M.approved)?' · '+nPlan(M.plans-M.approved)+' تنتظر اعتمادك':''))
+              : 'لا خطط مرفوعة بعد'],
+    ['clip','تنفيذ الخطط','var(--success)',M.exec,
+      M.exec===null ? 'لم يُرصد أي بند بعد'
+                    : ('الحصص المرصودة '+M.rated+' من '+M.days)]
+  ];
   const rows=[
     ['medal','الحجم التدريبي','var(--gold)',M.volume,
       M.volN?'من '+nPart(M.volN)+' مقيسة':'يُقاس في متابعة الحصة'],
@@ -12751,11 +12760,18 @@ function renderPerf(){
     ['clip','حصص ملغاة','var(--stone)',String(M.cancelled),
       M.cancelled?'بأسباب مسجَّلة':'لا إلغاءات هذا الأسبوع']
   ];
-  h.innerHTML=rows.map(function(r){
+  const line=function(r,txt){
+    return '<div class="pfr" style="--c:'+r[2]+'"><span class="ic">'+di(r[0])+'</span>'+
+      '<span class="t"><b>'+esc(r[1])+'</b><span>'+esc(r[4])+'</span></span>'+
+      '<span class="n" dir="ltr">'+txt+'</span></div>'; };
+  h.innerHTML='<div class="pfh">دورة الخطة</div>'+
+    cyc.map(function(r){ return line(r,na(r[3])); }).join('')+
+    '<div class="pfsep"></div><div class="pfh">ما يُقاس داخل الحصة</div>'+
+    rows.map(function(r){
     return '<div class="pfr" style="--c:'+r[2]+'"><span class="ic">'+di(r[0])+'</span>'+
       '<span class="t"><b>'+esc(r[1])+'</b><span>'+esc(r[4])+'</span></span>'+
       '<span class="n" dir="ltr">'+na(r[3])+'</span></div>'; }).join('')+
-    '<div class="pfsep"></div>'+
+    '<div class="pfsep"></div><div class="pfh">عدّ الأسبوع</div>'+
     extra.map(function(r){
       return '<div class="pfr" style="--c:'+r[2]+'"><span class="ic">'+di(r[0])+'</span>'+
         '<span class="t"><b>'+esc(r[1])+'</b><span>'+esc(r[4])+'</span></span>'+
