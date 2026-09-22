@@ -344,14 +344,20 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   transform:skewX(-12deg);padding-left:14px;pointer-events:none}
 .natk2 .nslat i{flex:0 1 92px;min-width:64px;height:78%;border-radius:16px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
-  background:rgba(59,157,255,.08);border:1px solid rgba(59,157,255,.18);
+  /* الشريحة عند الحافّة اليسرى حيث الحجاب أضعفه (.30)، فلا يكفيها
+     تلوينٌ بـ8% — تحتاج قاعدةً داكنةً خاصّة بها وإلّا نفذت الصورة. */
+  background:linear-gradient(180deg,rgba(8,20,33,.78),rgba(8,20,33,.66)),
+             linear-gradient(0deg,rgba(59,157,255,.10),rgba(59,157,255,.10));
+  border:1px solid rgba(59,157,255,.30);
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+  box-shadow:0 8px 22px -12px rgba(0,0,0,.6);
   padding:10px 6px;font-style:normal}
 /* المحتوى يُعاد اعتداله: الشريحة مائلة وما فيها قائم */
 .natk2 .nslat i > *{transform:skewX(12deg)}
-.natk2 .nslat .ico{width:24px;height:24px;color:#6FC0FF;opacity:.9}
-.natk2 .nslat b{font-size:17px;font-weight:800;color:var(--ink);line-height:1;
+.natk2 .nslat .ico{width:24px;height:24px;color:#6FC0FF;opacity:1}
+.natk2 .nslat b{font-size:18px;font-weight:800;color:#F1F6FB;line-height:1;
   font-variant-numeric:tabular-nums}
-.natk2 .nslat u{text-decoration:none;font-size:9.5px;color:var(--steel);text-align:center;
+.natk2 .nslat u{text-decoration:none;font-size:10.5px;color:#C3D5E6;text-align:center;
   line-height:1.3;max-width:100%}
 .natk2 .nin{position:relative;z-index:2;display:flex;flex-direction:column;gap:14px;
   padding:18px 20px}
@@ -4132,6 +4138,12 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
 
 /* القوائم المنسدلة والنوافذ */
 .seapanel,.bellpanel,.qapanel,.fmenu,.coachpop{box-shadow:var(--shadow-pop)}
+/* حالة الحفظ: نقطةٌ وكلمة في الشريط — كانت مدفونةً في لوحة الإجراءات */
+.tstate{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--steel);
+  padding:6px 11px;border:1px solid var(--hairline);border-radius:var(--r-full);
+  background:var(--surface);white-space:nowrap}
+.tstate b{font-weight:600}
+@media (max-width:1100px){ .tstate b{display:none} .tstate{padding:6px 8px} }
 
 /* ======================================================================
    الوضع الفاتح — اشتقاقٌ من Ocean لا قلبٌ آليّ لها.
@@ -4224,21 +4236,6 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
   <div class="navlbl" id="sideLbl">الأقسام</div>
   <nav id="sideNav"></nav>
   <div class="sfoot" id="sideFoot">
-    <span class="qawrap">
-      <button class="pill qabtn" id="btnQuick" title="إجراءات سريعة">
-        <svg viewBox="0 0 24 24"><path d="M13.4 3 6.6 13.4h4.8L10.6 21l6.8-10.4h-4.8z"/></svg>
-        إجراءات سريعة</button>
-      <div class="qapanel" id="quickPanel" hidden>
-        <button class="qi" id="btnLive" hidden>ابدأ متابعة الحصة</button>
-        <button class="qi" id="btnUpload">ارفع خطتك</button>
-        <button class="qi" id="btnExport">تصدير CSV</button>
-        <button class="qi" id="btnSearch">بحث في الموقع</button>
-        <button class="qi" id="btnLang">English</button>
-        <button class="qi" id="btnInstall" hidden>تثبيت التطبيق</button>
-        <span class="qsep"></span>
-        <span class="qstate"><span class="led" id="led"></span><span id="ledTxt">محفوظ</span></span>
-      </div>
-    </span>
     <div class="uchip" id="sideUser" hidden></div>
     <button class="pill" id="signout2">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
@@ -4278,6 +4275,23 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
         <circle cx="12" cy="10.6" r="2.3"/></svg></button>
     <div class="seapanel" id="brTopMenu" hidden></div>
   </span>
+  <button class="icobtn" id="btnSearch" title="بحث في الموقع" aria-label="بحث في الموقع">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+      stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m15.6 15.6 4.4 4.4"/></svg></button>
+  <button class="icobtn" id="btnUpload" title="ارفع خطتك" aria-label="ارفع خطتك">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+      stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.4V4.2"/>
+      <path d="M8 8.2 12 4.2l4 4"/><path d="M4.4 15v3.2a1.8 1.8 0 0 0 1.8 1.8h11.6a1.8 1.8 0 0 0 1.8-1.8V15"/></svg></button>
+  <button class="icobtn" id="btnExport" title="تصدير CSV" aria-label="تصدير CSV">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+      stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2v11.2"/>
+      <path d="m8 11.4 4 4 4-4"/><path d="M4.4 18.2v.6a1.8 1.8 0 0 0 1.8 1.8h11.6a1.8 1.8 0 0 0 1.8-1.8v-.6"/></svg></button>
+  <button class="icobtn" id="btnInstall" title="تثبيت التطبيق" aria-label="تثبيت التطبيق" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+      stroke-linecap="round" stroke-linejoin="round"><rect x="6.4" y="2.8" width="11.2" height="18.4" rx="2.2"/>
+      <path d="M10.6 18.4h2.8"/></svg></button>
+  <span class="tstate" id="tState" title="حالة الحفظ">
+    <span class="led" id="led"></span><b id="ledTxt">محفوظ</b></span>
   <button class="icobtn lang" id="btnLangTop" title="العربية / English" aria-label="تبديل اللغة">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
       <circle cx="12" cy="12" r="8.6"/>
@@ -4285,8 +4299,7 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
     <b id="langTag">EN</b></button>
   <button class="icobtn theme" id="btnTheme" title="المظهر: تلقائي / فاتح / داكن"
     aria-label="تبديل المظهر"><svg id="themeIco" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></svg>
-    <b id="themeTag">تلقائي</b></button>
+      stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></svg></button>
   <span class="bellwrap"><button class="icobtn" id="btnBell" title="التنبيهات" aria-label="التنبيهات">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
         stroke-linecap="round"><path d="M18 8.6a6 6 0 1 0-12 0c0 6-2.2 7.4-2.2 7.4h16.4S18 14.6 18 8.6z"/>
@@ -5963,7 +5976,6 @@ function start(){
     ? 'اختر اللعبة، ثم اليوم، وارصد حالة كل بند: نُفذ، نُفذ جزئياً، أو لم يُنفذ. كل تقييم يُسجَّل في سجل النادي فوراً ويظهر لباقي الإدارة.'
     : 'هذه متابعة تنفيذ خطتك كما رصدها قسم الإعداد الفني. لرفع خطة الأسبوع القادم اضغط «ارفع خطتك» بالأعلى.';
   buildView();
-  const lb=$('btnLive'); if(lb) lb.hidden = !(user.admin && view.length);
   const eb=$('btnExport'); if(eb) eb.hidden = !user.admin;
   buildSide();
   setLang(LANG); startLangWatch();
@@ -7766,7 +7778,6 @@ function setLang(l){
   if(typeof user!=='undefined' && user && user.admin && $('wkChart')) drawTrendMulti('wkChart');
   try{ renderPageHead(); }catch(e){}
   applyLang();
-  const lb=$('btnLang'); if(lb) lb.textContent = LANG==='en' ? 'العربية' : 'English';
   /* الوسم يقول اللغة التي سينتقل إليها، لا التي أنت فيها */
   const lt=$('langTag'); if(lt) lt.textContent = LANG==='en' ? 'ع' : 'EN';
   const lp=$('btnLangTop');
@@ -12874,7 +12885,7 @@ function renderLivePill(){
 }
 /* فتح قائمة واحدة وإغلاق ما عداها */
 function openMenu(id){
-  ['brMenu','seMenu','wkMenu','topSeasonMenu','quickPanel','brTopMenu','wkTopMenu']
+  ['brMenu','seMenu','wkMenu','topSeasonMenu','brTopMenu','wkTopMenu']
   .forEach(function(m){
     const el=$(m); if(!el) return;
     el.hidden = m!==id ? true : !el.hidden;
@@ -14358,7 +14369,7 @@ document.addEventListener('click',e=>{
     return; }
   if(e.target.id==='btnUpload'){ openUpload(); return; }
   if(e.target.closest('#btnTheme')){ cycleTheme(); return; }
-  if(e.target.id==='btnLang'||e.target.closest('#btnLangTop')){
+  if(e.target.closest('#btnLangTop')){
     setLang(LANG==='en'?'ar':'en'); return; }
   if(e.target.closest('#btnSearch')){ openSearch(); return; }
   if(e.target.closest('#btnBell')){ const bp=$('bellPanel');
@@ -14509,8 +14520,6 @@ document.addEventListener('click',e=>{
     toast('تعرض الآن موسم '+curSeason()); return; }
   if(e.target.closest('#seSel')){ openMenu('seMenu'); return; }
   if(e.target.closest('#topSeason')){ openMenu('topSeasonMenu'); return; }
-  if(e.target.closest('#btnQuick')){ openMenu('quickPanel'); return; }
-  if(e.target.closest('#quickPanel')){ /* أزرار الإجراءات لها معالجاتها */ }
   const wg=e.target.closest('[data-wkgo]');
   if(wg){ const w=wg.dataset.wkgo; openMenu('');
     if(w){ setView('archive'); arcOpen(w); }
@@ -15289,7 +15298,6 @@ async function keepAwake(on){
 
 /* ---------- أحداث الوضع ---------- */
 document.addEventListener('click',e=>{
-  if(e.target.id==='btnLive'){ livePick(); return; }
   const pks=e.target.closest('[data-pks]');
   if(pks){ PK.sport=pks.dataset.pks; const ps=view.filter(x=>x.sport===PK.sport);
     PK.plan=(ps[0]||{}).id||''; PK.day=PK.plan?todayIdx(plan(PK.plan)):-1; pickRender(); return; }
