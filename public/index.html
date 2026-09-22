@@ -242,6 +242,14 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   padding:5px 16px;border-radius:99px;color:var(--brand);
   border:1px solid color-mix(in srgb,var(--brand) 45%,transparent);
   background:color-mix(in srgb,var(--brand) 12%,transparent);margin-bottom:16px}
+/* §23 — سجلّ تغييرات المشاركة داخل نافذة التحرير */
+.callog{display:flex;flex-direction:column;gap:6px;margin-top:6px;max-height:160px;
+  overflow:auto;background:var(--surface-soft);border:1px solid var(--hairline);
+  border-radius:var(--r-lg);padding:10px 12px}
+.callog > div{display:flex;gap:9px;align-items:baseline;font-size:12.5px;color:var(--ink)}
+.callog b{font-variant-numeric:tabular-nums;color:var(--steel);font-weight:600;flex:none}
+.callog i{font-style:normal;color:var(--stone);font-size:11.5px;margin-inline-start:auto}
+.sc-why{display:block;font-size:11.5px;color:var(--steel);margin-top:4px}
 .soonbox h3{margin:0 0 8px;font-size:20px}
 .soonbox p{margin:0 auto;max-width:460px;color:var(--steel);font-size:13.5px;line-height:1.9}
 .barline .nm .bdg{width:24px;height:24px;flex:none;border-radius:50%;
@@ -4116,14 +4124,22 @@ input::placeholder,textarea::placeholder{color:#64788B}
     <div class="fchips" id="calStatus"></div>
     <div id="calPostpone" hidden>
       <div class="vgrid">
-        <span><label class="fl2">التاريخ الجديد</label>
+        <span><label class="fl2" id="calNewDateL">التاريخ الجديد</label>
           <input id="calNewDate" class="inp" type="date"></span>
-        <span><label class="fl2">سبب التأجيل</label>
+        <span><label class="fl2" id="calReasonL">سبب التأجيل</label>
           <input id="calReason" class="inp" type="text"
                  placeholder="قرار الاتحاد · تعارض مواعيد …"></span>
       </div>
-      <div class="fldhint">اترك التاريخ الجديد فارغاً إن لم يُحدَّد بعد — تُعرض «مؤجّلة بلا تاريخ».</div>
+      <div class="fldhint" id="calMoveHint">اترك التاريخ الجديد فارغاً إن لم يُحدَّد بعد — تُعرض «مؤجّلة بلا تاريخ».</div>
     </div>
+    <!-- §23.3 — الإلغاء لا يحذف السجلّ: يُوثَّق بسببه ووقته وصاحبه -->
+    <div id="calCancel" hidden>
+      <label class="fl2">سبب الإلغاء</label>
+      <input id="calOffReason" class="inp" type="text"
+             placeholder="إلغاء من الاتحاد · عدم اكتمال العدد …">
+      <div class="fldhint">البطولة الملغاة تبقى في الكشف للتقارير والتاريخ، ولا تُحذف.</div>
+    </div>
+    <div id="calLog"></div>
     <label class="fl2">ملاحظة</label>
     <input id="calNote" class="inp" type="text" placeholder="اختياري">
     <div class="upmsg" id="calMsg"></div>
@@ -7064,6 +7080,10 @@ const DICT={
   'Federation schedules for the season — and the status of every event',
 'حالات البطولة:':'Event status:',
 'قادمة':'Upcoming','مؤكدة':'Confirmed','مؤجّلة':'Postponed','ملغاة':'Cancelled',
+'تغيّر التاريخ':'Date changed','تغيّر الموعد':'Date changed','تغيّر موعدها':'date changed',
+'سبب الإلغاء':'Cancellation reason','سجلّ التغييرات':'Change log',
+'التاريخ بعد التغيير':'Date after the change','سبب تغيير الموعد':'Reason for the change',
+
 'انتهت':'Finished','مؤجلة':'postponed','هذا الشهر':'this month','اتحادات':'Federations',
 'تم التأجيل':'Postponed','بلا تاريخ بعد':'no new date yet','بلا تاريخ':'No date',
 'بطولات الموسم':'Season events','+ بطولة':'+ Event',
@@ -10593,7 +10613,7 @@ function renderMonthReport(){
           ? rows(D.cal.slice().sort(function(a,b){
               return String(a.date||a.date0).localeCompare(String(b.date||b.date0)); })
             .map(function(c){
-              const moved = c.status==='مؤجّلة' && c.date0;
+              const moved = calMoved(c.status) && c.date0;
               return '<tr><td dir="ltr">'+esc(c.date||c.date0||'—')+'</td>'+
                 '<td class="tt">'+esc(c.name||'')+'</td><td>'+esc(c.sport||'—')+'</td>'+
                 '<td>'+esc(c.scope||'—')+'</td><td>'+esc(c.fed||'—')+'</td>'+
@@ -11520,11 +11540,16 @@ function agnList(day){
 }
 /* ==================== جدول مشاركات الموسم ====================
    كشوفات الاتحادات لمشاركات الموسم — وحالة كل بطولة، بما فيها التأجيل. */
+/* §23 — الحالات الخمس المطلوبة و«قادمة» قبلها. «انتهت» هي «مكتملة».
+   اللون من نظام التصميم؛ أمّا الحالة فقيمة تُخزَّن وتُرشَّح ويُبنى عليها تقرير. */
 const CAL_ST=[
   ['قادمة','var(--blue)'],['مؤكدة','var(--success)'],['مؤجّلة','var(--attention)'],
+  ['تغيّر التاريخ','var(--review)'],
   ['ملغاة','var(--critical)'],['انتهت','var(--stone)']
 ];
 const calCol = st => (CAL_ST.find(x=>x[0]===st)||CAL_ST[0])[1];
+/* الحالتان اللتان يتغيّر فيهما الموعد — تُعامَلان معاً في الحفظ والعرض */
+const calMoved = st => st==='مؤجّلة' || st==='تغيّر التاريخ';
 let calSeasonSel='', calMonth='', calStatFilter='', calSportF='', calFedF='';
 /* المواسم الموجودة في الكشف — قد تسبق مواسم النتائج (كشف الموسم القادم) */
 function calSeasons(){
@@ -11573,13 +11598,13 @@ function calCounts(y){
   return { all:rows.length,
     month:rows.filter(c=>calYM(c)===ym).length,
     feds:[...new Set(rows.map(c=>c.fed).filter(Boolean))].length,
-    late:rows.filter(c=>c.status==='مؤجّلة').length,
+    late:rows.filter(c=>calMoved(c.status)).length,
     off:rows.filter(c=>c.status==='ملغاة').length };
 }
 function calCardHtml(c,hot){
   const col=calCol(c.status||'قادمة');
   const scCol = c.scope==='دولي'?'var(--ai)':c.scope==='منتخب'?'var(--success)':'var(--attention)';
-  const late = c.status==='مؤجّلة';
+  const late = calMoved(c.status);
   return '<div class="sc-card'+(hot?' hot':'')+'" style="--c:'+col+';--s:'+scCol+'" '+
     'role="button" tabindex="0" data-calk="'+esc(c.k||'')+'"><span class="sc-in">'+
     '<span class="sc-hd"><b class="sc-d">'+
@@ -11588,11 +11613,14 @@ function calCardHtml(c,hot){
     '<span class="sc-row"><span class="sc-t"><b data-raw>'+esc(c.name)+'</b>'+
       (c.scope?'<span class="sc-scope">'+esc(c.scope)+'</span>':'')+'</span>'+
       (c.sport?spBadge(c.sport,30):'')+'</span>'+
-    (late?'<span class="sc-pb">تم التأجيل</span>'+
+    (late?'<span class="sc-pb">'+(c.status==='مؤجّلة'?'تم التأجيل':'تغيّر الموعد')+'</span>'+
       '<span class="sc-nd">'+di('cal')+
         (c.date?'<span dir="auto">'+esc(calShortDay(c.date))+'</span>':'<span>بلا تاريخ بعد</span>')+
-        (c.date0?'<s dir="auto">'+esc(calShortDay(c.date0))+'</s>':'')+'</span>'
-     :'<span class="sc-st">'+esc(c.status||'قادمة')+'</span>')+
+        (c.date0?'<s dir="auto">'+esc(calShortDay(c.date0))+'</s>':'')+'</span>'+
+      (c.reason?'<span class="sc-why" data-raw>'+esc(c.reason)+'</span>':'')
+     :'<span class="sc-st">'+esc(c.status||'قادمة')+
+        (c.status==='ملغاة'&&c.offReason?' — <span data-raw>'+esc(c.offReason)+'</span>':'')+
+        '</span>')+
     '<span class="sc-fed"><span data-raw>'+esc(c.fed||c.place||'—')+'</span>'+
       '<span class="sc-go">'+di('chev')+'</span></span>'+
   '</span></div>';
@@ -11611,7 +11639,7 @@ function renderCalPanel(){
   if(t) t.textContent = y ? ('جدول مشاركات الموسم '+y) : 'جدول مشاركات الموسم';
   const st=$('calStats');
   if(st) st.innerHTML = rows.length ? [
-      ['late','var(--attention)',C.late,'مؤجلة'],
+      ['late','var(--attention)',C.late,'تغيّر موعدها'],
       ['month','var(--blue)',C.month,'هذا الشهر'],
       ['feds','var(--ai)',C.feds,'اتحادات'],
       ['all','var(--success)',C.all,'بطولة']
@@ -11725,10 +11753,19 @@ function openCal(k){
   const feds=[...new Set((calendar||[]).map(x=>x.fed).filter(Boolean))].sort();
   $('calFeds').innerHTML=feds.map(x=>'<option value="'+esc(x)+'">').join('');
   $('calFed').value=c.fed||'';
-  $('calDate').value = (c.status==='مؤجّلة' && c.date0) ? c.date0 : (c.date||'');
+  /* خانة «التاريخ» هي الأصلي دائماً متى سُجّل — فلا يُستبدل بالتحرير */
+  $('calDate').value = c.date0 || c.date || '';
   $('calPlace').value=c.place||'';
-  $('calNewDate').value = c.status==='مؤجّلة' ? (c.date||'') : '';
+  $('calNewDate').value = calMoved(c.status) ? (c.date||'') : '';
   $('calReason').value=c.reason||'';
+  const oc=$('calOffReason'); if(oc) oc.value=c.offReason||'';
+  const lg=$('calLog');
+  if(lg) lg.innerHTML = (c.log&&c.log.length)
+    ? '<div class="fl2" style="margin-top:12px">سجلّ التغييرات</div>'+
+      '<div class="callog">'+c.log.slice().reverse().map(function(x){
+        return '<div><b dir="ltr">'+esc(String(x.at||'').slice(0,10))+'</b>'+
+          esc(x.text)+(x.by?'<i>'+esc(x.by)+'</i>':'')+'</div>'; }).join('')+'</div>'
+    : '';
   $('calNote').value=c.note||'';
   calSetStatus(c.status||'قادمة');
   $('calDrop').hidden=!k;
@@ -11740,7 +11777,14 @@ function calSetStatus(st){
   $('calStatus').innerHTML=CAL_ST.map(function(x){
     return '<button class="fchip" data-calst="'+esc(x[0])+'" aria-current="'+
       (x[0]===st)+'" style="--c:'+x[1]+'">'+esc(x[0])+'</button>'; }).join('');
-  $('calPostpone').hidden = st!=='مؤجّلة';
+  $('calPostpone').hidden = !calMoved(st);
+  const lb=$('calNewDateL'); if(lb) lb.textContent = st==='مؤجّلة' ? 'التاريخ الجديد' : 'التاريخ بعد التغيير';
+  const rl=$('calReasonL'); if(rl) rl.textContent = st==='مؤجّلة' ? 'سبب التأجيل' : 'سبب تغيير الموعد';
+  const hn=$('calMoveHint');
+  if(hn) hn.textContent = st==='مؤجّلة'
+    ? 'اترك التاريخ الجديد فارغاً إن لم يُحدَّد بعد — تُعرض «مؤجّلة بلا تاريخ».'
+    : 'التاريخ الأصلي يُحفظ ولا يُستبدل، ويظهر مع الجديد.';
+  const off=$('calCancel'); if(off) off.hidden = st!=='ملغاة';
 }
 const calStatusNow = () => {
   const b=document.querySelector('#calStatus .fchip[aria-current="true"]');
@@ -11755,12 +11799,39 @@ async function saveCal(){
     $('calSeason').focus(); return; }
   const st=calStatusNow();
   const base=$('calDate').value, nd=$('calNewDate').value;
+  const old=(calendar||[]).find(x=>String(x.k)===String(calCur))||{};
+  const now=new Date().toISOString();
+  const moved=calMoved(st);
+  /* التاريخ الحالي: المنقول إن نُقل، وإلا ما في خانة التاريخ */
+  const dateNow = moved ? nd : base;
+  /* §23 — الأصلي يُكتب مرّة واحدة ولا يُستبدل بعدها أبداً */
+  const date0 = S(old.date0) || (moved ? base : '');
+  const prevDate = S(old.date);
+  const log=(old.log||[]).slice();
+  const push=(text)=>{ if(text) log.push({at:now,by:S(user.name),text:text}); };
+  if(!calCur) push('أُنشئت المشاركة'+(base?' بتاريخ '+base:''));
+  if(calCur && S(old.status)!==st) push('الحالة: '+(S(old.status)||'—')+' ← '+st);
+  if(calCur && prevDate!==S(dateNow)){
+    push('الموعد: '+(prevDate||'بلا تاريخ')+' ← '+(dateNow||'لم يحدد بعد'));
+  }
+  const reason = moved ? $('calReason').value.trim() : S(old.reason);
+  if(moved && reason && reason!==S(old.reason)) push('السبب: '+reason);
+  const offR = st==='ملغاة'
+    ? (($('calOffReason')||{}).value||'').trim() : S(old.offReason);
+  if(st==='ملغاة' && S(old.status)!=='ملغاة') push('أُلغيت'+(offR?' — '+offR:''));
+
   const c={ k:calCur||'', season:season, name:name, sport:$('calSport').value,
     scope:$('calScope').value, fed:$('calFed').value.trim(),
     place:$('calPlace').value.trim(), status:st, note:$('calNote').value.trim(),
-    reason: st==='مؤجّلة' ? $('calReason').value.trim() : '',
-    date:  st==='مؤجّلة' ? nd   : base,
-    date0: st==='مؤجّلة' ? base : '' };
+    reason: reason,
+    date: dateNow,
+    date0: date0,
+    datePrev: (calCur && prevDate!==S(dateNow)) ? prevDate : S(old.datePrev),
+    movedAt: (calCur && prevDate!==S(dateNow)) ? now : S(old.movedAt),
+    offAt: st==='ملغاة' ? (S(old.offAt)||now) : '',
+    offReason: st==='ملغاة' ? offR : '',
+    offBy: st==='ملغاة' ? (S(old.offBy)||S(user.name)) : '',
+    log: log.slice(-40) };
   msg.textContent='جارٍ الحفظ…'; msg.className='upmsg';
   const ok=await calPost({action:'cal',cal:c},function(j){
     c.k = c.k || (j&&j.k) || ('CLlocal'+Date.now());

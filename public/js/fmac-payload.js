@@ -427,10 +427,18 @@ export function shields(rows) {
 }
 
 /* ── قوائم بسيطة ──────────────────────────────────────────── */
+/* §23 — حالة المشاركة قيمة في قاعدة البيانات لا لون في الواجهة.
+   date0 هو التاريخ الأصلي ولا يُستبدل أبداً بعد أوّل تغيير،
+   datePrev هو التاريخ السابق مباشرةً، وlog سجلّ التغييرات. */
 export const calendarList = (rows) => rows.filter((r) => S(r.k)).map((r) => ({
   k: S(r.k), season: S(r.season), date: S(r.date), name: S(r.name), sport: S(r.sport),
   scope: S(r.scope) || 'محلي', fed: S(r.fed), place: S(r.place),
-  status: S(r.status) || 'قادمة', date0: S(r.date0), reason: S(r.reason),
+  status: S(r.status) || 'قادمة',
+  date0: S(r.date0), datePrev: S(r.datePrev), movedAt: S(r.movedAt),
+  reason: S(r.reason),
+  offAt: S(r.offAt), offReason: S(r.offReason), offBy: S(r.offBy),
+  log: Array.isArray(r.log) ? r.log.filter((x) => x && S(x.text)).map((x) => ({
+    at: S(x.at), by: S(x.by), text: S(x.text) })) : [],
   note: S(r.note), by: S(r.by), at: S(r.at),
 }));
 
