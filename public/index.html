@@ -14076,7 +14076,7 @@ function setView(v){
     if(h && window.__fmacSchoolsUI){
       window.__fmacSchoolsUI.render(h,{
         user:user, season:curSeason(), sports:ALL_TEN(), visits:schoolVisits,
-        players:schoolPlayers,
+        players:schoolPlayers, coaches:coaches,
         savePlayers:(rows)=>svPost('schoolp',{rows:rows}),
         dropPlayers:(keys)=>svPost('schoolpDrop',{keys:keys}),
         save:(payload)=>svPost('schoolv',{schoolv:payload}),

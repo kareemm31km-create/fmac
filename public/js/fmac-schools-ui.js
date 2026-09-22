@@ -74,6 +74,7 @@ const STYLE = `
 .sv-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
 .sv-chips button{background:#0E1C2B;border:1px solid #23394E;color:#8296A9;
   border-radius:99px;padding:6px 13px;font:inherit;font-size:12px;cursor:pointer}
+.sv-chips button em{font-style:normal;opacity:.6;font-size:11px}
 .sv-chips button[aria-pressed="true"],.sv-chips button[aria-current="true"]{
   background:color-mix(in srgb,var(--brand) 14%,transparent);border-color:var(--brand);color:#62B7FF}
 .sv-sp{display:grid;grid-template-columns:1fr 90px 90px;gap:8px;align-items:center;
@@ -220,13 +221,14 @@ function schoolsTab(rows, season) {
 function visitTable(vs) {
   if (!vs.length) return '<div class="sv-empty">لا زيارات.</div>';
   return '<table class="sv-tbl"><tr><th>التاريخ</th><th>المدرسة</th><th>المنطقة</th>' +
-    '<th>الألعاب</th><th>الحالة</th><th class="n">مشاركون</th><th class="n">مختارون</th></tr>' +
+    '<th>الألعاب</th><th>المسؤولون</th><th>الحالة</th><th class="n">مشاركون</th><th class="n">مختارون</th></tr>' +
     vs.map((v) => '<tr class="clik" data-svopen="' + esc(v.k) + '">' +
       '<td class="n">' + esc(dayLabel(v.date)) +
         (v.date0 ? '<br><s style="color:var(--stone);font-size:11px">' +
           esc(dayLabel(v.date0)) + '</s>' : '') + '</td>' +
       '<td><b>' + esc(v.school) + '</b></td><td>' + esc(v.area || '—') + '</td>' +
       '<td>' + esc(v.sports.join(' · ') || '—') + '</td>' +
+      '<td>' + esc(M.teamOf(v) || '—') + '</td>' +
       '<td><span class="sv-tag" style="--c:' + col(v.status) + '">' + esc(v.status) + '</span>' +
         (v.status === M.OFF && v.offReason
           ? '<div class="sv-sub">' + esc(v.offReason) + '</div>' : '') + '</td>' +
@@ -451,7 +453,7 @@ function wireRoster(host, ctx, go, season) {
 }
 
 /* ── النافذة ───────────────────────────────────────────── */
-function dialog(v, sports, areas, schoolNames) {
+function dialog(v, sports, areas, schoolNames, coachList) {
   const isNew = !S(v.k);
   const sel = (sp) => v.sports.indexOf(sp) >= 0;
   const b = (sp) => v.bySport[sp] || { joined: null, picked: null };
@@ -474,13 +476,23 @@ function dialog(v, sports, areas, schoolNames) {
       '<span><label class="sv-l">الوقت</label>' +
         '<input class="sv-in" id="svTime" type="time" value="' + esc(v.time) + '"></span>' +
     '</div>' +
+    '<label class="sv-l">المدربون المسؤولون</label>' +
+    (coachList.length
+      ? '<div class="sv-chips" id="svCoaches">' + coachList.map((c) =>
+        '<button type="button" data-svco="' + esc(c.code) + '" data-svcon="' +
+        esc(c.name) + '" aria-pressed="' +
+        v.coaches.some((x) => x.code === S(c.code)) + '">' + esc(c.name) +
+        (c.sport ? '<em> · ' + esc(c.sport) + '</em>' : '') + '</button>').join('') +
+        '</div>'
+      : '<p class="sv-sub">لا مدربون مسجَّلون في النادي بعد.</p>') +
     '<label class="sv-l">الألعاب المستهدفة</label>' +
     '<div class="sv-chips" id="svSports">' + sports.map((sp) =>
       '<button type="button" data-svsp="' + esc(sp) + '" aria-pressed="' + sel(sp) + '">' +
       esc(sp) + '</button>').join('') + '</div>' +
     '<div class="sv-grid">' +
-      '<span><label class="sv-l">الفريق المسؤول</label>' +
-        '<input class="sv-in" id="svTeam" value="' + esc(v.team) + '"></span>' +
+      '<span><label class="sv-l">أسماء أخرى (اختياري)</label>' +
+        '<input class="sv-in" id="svTeam" placeholder="من ليس في القائمة" ' +
+        'value="' + esc(v.team) + '"></span>' +
       '<span><label class="sv-l">الهدف من الزيارة</label>' +
         '<input class="sv-in" id="svGoal" value="' + esc(v.goal) + '"></span>' +
     '</div>' +
@@ -552,6 +564,7 @@ export function render(host, ctx) {
   const inSeason = rows.filter((v) => !season || v.season === season);
   const areas = [...new Set(rows.map((v) => v.area).filter(Boolean))].sort();
   const names = [...new Set(rows.map((v) => v.school).filter(Boolean))].sort();
+  const coachList = (ctx.coaches || []).filter((c) => S(c.name));
   const admin = !!(ctx.user && ctx.user.admin);
   /* المدرب يأتي ليُدخل لاعبيه، فيفتح على تبويبهم لا على النظرة العامة */
   if (!admin && !TOUCHED) { TAB = 'players'; TOUCHED = true; }
@@ -580,7 +593,7 @@ export function render(host, ctx) {
         (admin ? '<button class="sv-btn" id="svAdd">+ زيارة جديدة</button>' : '') +
       '</div></div></div>' +
     body + '</div>' +
-    (OPEN ? dialog(OPEN, sports, areas, names) : '');
+    (OPEN ? dialog(OPEN, sports, areas, names, coachList) : '');
 
   const $ = (id) => host.querySelector('#' + id);
   const go = () => render(host, ctx);
@@ -640,6 +653,13 @@ function wireDialog(host, ctx, go) {
     const sp = b.dataset.svsp;
     const i = v.sports.indexOf(sp);
     if (i >= 0) v.sports.splice(i, 1); else v.sports.push(sp);
+    collect(host, v);
+    go();
+  }));
+  host.querySelectorAll('[data-svco]').forEach((b) => b.addEventListener('click', () => {
+    const code = b.dataset.svco, nm = b.dataset.svcon;
+    const i = v.coaches.findIndex((x) => x.code === code);
+    if (i >= 0) v.coaches.splice(i, 1); else v.coaches.push({ code, name: nm });
     collect(host, v);
     go();
   }));
@@ -751,7 +771,8 @@ function buildPayload(v, ctx, files) {
   return {
     k: v.k, season: v.season, school: v.school, area: v.area,
     date: dateNow, time: v.time, sports: v.sports.slice(),
-    team: v.team, goal: v.goal, note: v.note, status: v.status,
+    coaches: v.coaches.slice(), team: v.team, goal: v.goal, note: v.note,
+    status: v.status,
     date0, datePrev: (prev && prevDate !== dateNow) ? prevDate : (prev ? prev.datePrev : ''),
     movedAt: (prev && prevDate !== dateNow) ? now : (prev ? prev.movedAt : ''),
     reason: moved ? v.reason : (prev ? prev.reason : ''),

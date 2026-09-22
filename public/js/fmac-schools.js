@@ -25,6 +25,11 @@ export function visit(r) {
     school: S(o.school), area: S(o.area),
     date: S(o.date), time: S(o.time),
     sports: Array.isArray(o.sports) ? o.sports.map(S).filter(Boolean) : [],
+    /* المدربون المسؤولون: كلٌّ بكوده واسمه معاً — فلو غُيّر اسمه لاحقاً
+       بقي سجلّ الزيارة صحيحاً، ولو حُذف حسابه بقي اسمه. */
+    coaches: Array.isArray(o.coaches) ? o.coaches
+      .filter((c) => c && (S(c.code) || S(c.name)))
+      .map((c) => ({ code: S(c.code), name: S(c.name) })) : [],
     team: S(o.team), goal: S(o.goal), note: S(o.note),
     status: STATUS.indexOf(S(o.status)) >= 0 ? S(o.status) : 'مخططة',
     /* نقل الموعد — التاريخ الأصلي يُكتب مرّة ولا يُستبدل */
@@ -182,7 +187,7 @@ export function csv(rows) {
     'الألعاب', 'الفريق', 'المشاركون', 'المختارون', 'النتيجة', 'ملاحظة فنية'];
   const body = rows.map((v) => [
     v.school, v.area, v.date, v.time, v.status, v.date0,
-    v.sports.join(' · '), v.team,
+    v.sports.join(' · '), teamOf(v),
     students(v) === null ? '—' : students(v),
     picked(v) === null ? '—' : picked(v),
     v.outcome, v.techNote,
@@ -261,4 +266,11 @@ export function schoolNames(visits, playerRows) {
   (visits || []).forEach((v) => { if (S(v.school)) set.add(S(v.school)); });
   (playerRows || []).forEach((p) => { if (S(p.school)) set.add(S(p.school)); });
   return [...set].sort((x, y) => x.localeCompare(y, 'ar'));
+}
+
+/** أسماء من قام بالزيارة: المختارون ثم ما كُتب نصّاً */
+export function teamOf(v) {
+  const names = (v.coaches || []).map((c) => S(c.name) || S(c.code)).filter(Boolean);
+  const extra = S(v.team);
+  return names.concat(extra ? [extra] : []).join(' · ');
 }
