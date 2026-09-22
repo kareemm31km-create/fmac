@@ -56,6 +56,26 @@ service cloud.firestore {
     match /users/{uid} {
       allow read:  if signedIn() && (request.auth.uid == uid || isAdmin());
       allow write: if isAdmin();
+      /* لصاحب الحساب أن يُطفئ إلزام تغيير كلمة المرور بعد أن يغيّرها فعلاً —
+         هذا الحقل وحده وإلى false وحدها، فلا يرفع نفسه إدارةً بهذا الباب. */
+      allow update: if signedIn() && request.auth.uid == uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mustChange']) &&
+        request.resource.data.mustChange == false;
+    }
+
+    /* طلبات فتح حساب — يكتبها من لم يدخل بعد، وتقرؤها الإدارة وحدها.
+       الحقول محدودة بأسمائها وأطوالها، فالباب مفتوح للطلب لا لغيره. */
+    match /signupRequests/{id} {
+      allow create: if request.resource.data.keys().hasOnly(
+                         ['name','email','sport','phone','note','at','state']) &&
+                    request.resource.data.keys().hasAll(['name','email','state']) &&
+                    request.resource.data.name is string &&
+                    request.resource.data.name.size() >= 2 &&
+                    request.resource.data.name.size() <= 60 &&
+                    request.resource.data.email is string &&
+                    request.resource.data.email.size() <= 120 &&
+                    request.resource.data.state == 'جديد';
+      allow read, update, delete: if isAdmin();
     }
 
     match /{col}/{doc} {

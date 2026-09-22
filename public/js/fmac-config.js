@@ -40,6 +40,7 @@ export const COL = {
   monthly:    'monthlyPlans',   // الخطط الشهرية
   reviews:    'monthlyReviews', // تقييمات الخطط الشهرية
   fitness:    'fitness',        // الخطط البدنية الأسبوعية
+  signups:    'signupRequests', // طلبات فتح حساب — تراجعها الإدارة
   fitnotes:   'fitnessNotes',   // ملاحظات الإدارة على الخطط البدنية
 };
 
@@ -54,7 +55,11 @@ export const COACH_WRITABLE = [
    ليست في COACH_WRITABLE — مدرب اللعبة يقرؤها ولا يكتبها. */
 export const FITNESS_WRITABLE = [COL.fitness];
 
-export const BUILD = 8;
+/* كلمة المرور الموحّدة عند فتح الحسابات — تُطلب مرّة ثم يُلزم صاحبها بتغييرها.
+   ليست سرّاً: قيمتها معروفة للجميع أصلاً، وحمايتها في الإلزام لا في الإخفاء. */
+export const SHARED_PASSWORD = '12345678';
+
+export const BUILD = 9;
 
 /* حساب الإدارة الأوّل — يُنشأ ملفّه تلقائياً عند أوّل دخول.
    ليس سرّاً: القواعد تعترف بهذا المعرّف وحده، ومن يملكه يملك الحساب أصلاً. */

@@ -38,6 +38,7 @@ export const ROUTES = [
   { path: 'plan',      view: 'plan',     label: 'متابعة التنفيذ', param: 'sport' },
   { path: 'monthly',   view: 'monthly',  label: 'الخطط الشهرية' },
   { path: 'fitness',   view: 'fitness',  label: 'الإعداد البدني' },
+  { path: 'physio',    view: 'physio',   label: 'وحدة العلاج الطبيعي' },
   { path: 'calendar',  view: 'calendar', label: 'تقويم الأسبوع' },
   { path: 'sports',    view: 'sport',    label: 'الألعاب', param: 'sport' },
   { path: 'visits',    view: 'visit',    label: 'المتابعة الفنية' },

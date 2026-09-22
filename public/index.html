@@ -202,6 +202,14 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .fitstrip .fs-m{font-size:12px;color:var(--steel)}
 .fitstrip .fs-p{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .fitstrip .fs-ro{color:var(--live,#7fb3ff)}
+/* بطاقة قسم محجوز — تقول إنّه فارغ صراحةً ولا توهم بمحتوى */
+.soonbox{text-align:center;padding:52px 24px}
+.soonbox .soon-badge{display:inline-block;font-size:12px;letter-spacing:.14em;
+  padding:5px 16px;border-radius:99px;color:var(--brand);
+  border:1px solid color-mix(in srgb,var(--brand) 45%,transparent);
+  background:color-mix(in srgb,var(--brand) 12%,transparent);margin-bottom:16px}
+.soonbox h3{margin:0 0 8px;font-size:20px}
+.soonbox p{margin:0 auto;max-width:460px;color:var(--steel);font-size:13.5px;line-height:1.9}
 .barline .nm .bdg{width:24px;height:24px;flex:none;border-radius:50%;
   background-size:cover;background-position:center;background-repeat:no-repeat}
 .cprof .cbdg{width:56px;height:56px;border-radius:50%;flex:none;
@@ -4661,6 +4669,17 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
     <div id="monthlyHost"></div>
   </section>
 
+  <section id="physioView" hidden>
+    <header class="dashhead"><div><h1>وحدة العلاج الطبيعي</h1>
+      <div class="sub">القسم محجوز ولم يُبنَ محتواه بعد.</div></div></header>
+    <div class="card soonbox">
+      <div class="soon-badge">قريباً</div>
+      <h3>وحدة العلاج الطبيعي</h3>
+      <p>هذا القسم موجود ومحجوز في التنقّل، ولا بيانات فيه بعد.
+         حين تُحدَّد محتوياته تُبنى هنا.</p>
+    </div>
+  </section>
+
   <section id="fitnessView" hidden>
     <header class="dashhead"><div><h1>الإعداد البدني</h1>
       <div class="sub">اللياقة البدنية تخصّص يخدم الألعاب كلّها — يضع مدربها خطة
@@ -5009,7 +5028,7 @@ function tally(p,dayIdx){
 }
 function led(txt,cls){ $('ledTxt').textContent=txt; $('led').className='led '+(cls||''); }
 /* شريط أحمر عريض حين لا يُحفَظ شيء فعلاً — لا يجوز أن يفشل الحفظ بصمت */
-const NEED_BUILD = 8;
+const NEED_BUILD = 9;
 function warnBar(html){
   let el=$('warnBar');
   if(!html){ if(el) el.remove(); return; }
@@ -9766,6 +9785,7 @@ const NAV_BASE=[
   {k:'plans',   ic:'plan',    label:'الخطط',    views:[
       ['plan','متابعة التنفيذ'],['monthly','الخطط الشهرية'],['fitness','الإعداد البدني'],['calendar','تقويم الأسبوع']]},
   {k:'visits',  ic:'visit',   label:'المتابعة الفنية', views:[['visit','']]},
+  {k:'physio',  ic:'review',  label:'العلاج الطبيعي', views:[['physio','']]},
   {k:'season',  ic:'calendar',label:'كالندر الموسم', views:[['season','']]},
   {k:'reports', ic:'reports', label:'التقارير', views:[['reports','التقرير'],['archive','الأرشيف']]},
   {k:'review',  ic:'review',  label:'المراجعة', views:[
@@ -9778,6 +9798,7 @@ const NAV_PRO=[
   {k:'plans',   ic:'plan',    label:'الخطط',    views:[
       ['plan','متابعة التنفيذ'],['monthly','الخطط الشهرية'],['fitness','الإعداد البدني'],['calendar','تقويم الأسبوع']]},
   {k:'visits',  ic:'visit',   label:'المتابعة الفنية', views:[['visit','']]},
+  {k:'physio',  ic:'review',  label:'العلاج الطبيعي', views:[['physio','']]},
   {k:'season',  ic:'calendar',label:'كالندر الموسم', views:[['season','']]},
   {k:'reports', ic:'reports', label:'التقارير', views:[
       ['reports','الأداء'],['coaches','المدربون'],['archive','الأرشيف'],
@@ -9786,7 +9807,13 @@ const NAV_PRO=[
       ['todo','ما يحتاج تدخلك'],['review','اعتماد الخطط']]},
   {k:'settings',ic:'settings',label:'الإعدادات',views:[['settings','']]}
 ];
-const navGroups = () => !user.admin ? NAV_COACH : (PRO ? NAV_PRO : NAV_BASE);
+/* المعالج الطبيعي لا يرى غير وحدته — لا خطط ولا تقارير ولا ألعاب */
+const NAV_PHYSIO=[
+  {k:'physio',  ic:'review',  label:'وحدة العلاج الطبيعي', views:[['physio','']]},
+  {k:'settings',ic:'settings',label:'الإعدادات',views:[['settings','']]}
+];
+const navGroups = () => user.admin ? (PRO ? NAV_PRO : NAV_BASE)
+  : (user.physio ? NAV_PHYSIO : NAV_COACH);
 function groupOf(v){
   const g=navGroups().find(x=>x.views.some(([n])=>n===v));
   return g?g.k:'home';
@@ -13347,7 +13374,7 @@ const VIEWS={home:'homeView',todo:'todoView',plan:'planView',calendar:'calendarV
              sport:'sportView',visit:'visitView',season:'seasonView',
              coaches:'coachesView',reports:'reportsView',settings:'settingsView',
              review:'reviewView',audit:'auditView',archive:'archiveView',
-             monthly:'monthlyView', fitness:'fitnessView'};
+             monthly:'monthlyView', fitness:'fitnessView', physio:'physioView'};
 /* في العرض المبسّط لكل صفحة موسّعة بديل يؤدّي الغرض نفسه — لا نُرجع المستخدم لصفحة فارغة */
 const PRO_FALL={review:'plan', calendar:'plan', coaches:'home', audit:'reports'};
 /* صفحة اللعبة متاحة في العرضين — هي قلب قسم الإعداد الفني */
@@ -13355,6 +13382,10 @@ let focusSubs=false;
 function setView(v){
   if(!VIEWS[v]) v='home';
   if(!user.admin && (v==='coaches'||v==='reports'||v==='calendar'||v==='review'||v==='audit')) v='home';
+  /* وحدة العلاج الطبيعي: الإدارة والمعالجون وحدهم.
+     والمعالج لا يفتح غيرها وغير إعداداته — والقواعد تحرس البيانات لا هذا السطر. */
+  if(v==='physio' && !(user.admin || user.physio)) v='home';
+  if(user.physio && !user.admin && v!=='physio' && v!=='settings') v='physio';
   /* الصفحات الموسّعة لا تُفتح في العرض المبسّط — نفتح بديلها بدل الرجوع للرئيسية */
   if(user.admin && !PRO && ['coaches','audit'].indexOf(v)>=0){
     const alt=PRO_FALL[v]||'home';
@@ -13405,6 +13436,7 @@ function setView(v){
     }
     requestAnimationFrame(()=>revealAll($('fitnessView')));
   }
+  else if(v==='physio'){ requestAnimationFrame(()=>revealAll($('physioView'))); }
   else if(v==='settings'){ renderSettings(); requestAnimationFrame(()=>revealAll($('settingsView'))); }
   else if(v==='todo'){ renderTodoPage(); requestAnimationFrame(()=>revealAll($('todoView'))); }
   else if(v==='calendar'){ renderCalendar(); renderAgendaWeek();

@@ -53,6 +53,7 @@ async function initPayload() {
   const user = {
     code: S(me.code || me.uid), name: S(me.name), admin: !!me.admin,
     fitness: !!me.fitness,             // مدرب اللياقة: يكتب الخطط البدنية وحدها
+    physio: !!me.physio,               // المعالج الطبيعي: وحدته وحدها
     sport: S(me.sport), branch: S(me.branch), phone: S(me.phone),
     photo: S(me.photo), email: S(me.email), uid: S(me.uid),
   };

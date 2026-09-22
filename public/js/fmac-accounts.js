@@ -7,9 +7,9 @@ import {
   sendPasswordResetEmail,
 } from '../vendor/firebase-auth.js';
 import {
-  collection, getDocs, doc, setDoc, deleteDoc, getDoc,
+  collection, getDocs, doc, setDoc, deleteDoc, getDoc, updateDoc,
 } from '../vendor/firebase-firestore.js';
-import { FIREBASE_CONFIG, COL } from './fmac-config.js';
+import { FIREBASE_CONFIG, COL, SHARED_PASSWORD } from './fmac-config.js';
 import { db, auth } from './fmac-auth.js';
 
 const S = (v) => (v === null || v === undefined) ? '' : String(v).trim();
@@ -75,6 +75,9 @@ export async function createAccount(opts) {
     role: S(opts.role) || (legacy && legacy.role) || 'مدرب',
     admin: !!opts.admin,
     fitness: !!opts.fitness,
+    physio: !!opts.physio,
+    /* كلمة المرور الموحّدة لا تبقى: أوّل دخول يطالب بتغييرها */
+    mustChange: opts.mustChange !== false && password === SHARED_PASSWORD,
     sport: S(opts.sport) || (legacy && legacy.sport) || '',
     branch: S(opts.branch) || (legacy && legacy.branch) || '',
     phone: S(opts.phone) || (legacy && legacy.phone) || '',
@@ -119,3 +122,68 @@ export async function revoke(uid) {
 }
 
 export const resetPassword = (email) => sendPasswordResetEmail(auth, S(email));
+
+/* ── إنشاء جماعي من جدول ملصوق ──────────────────────────────
+   كل سطر: الاسم <tab> البريد <tab> اللعبة [<tab> الفرع] [<tab> الموبايل]
+   والفاصل قد يكون tab أو فاصلة أو فاصلة منقوطة. كلمة المرور موحّدة،
+   وكل حساب يُعلَّم mustChange فيُطالب صاحبه بتغييرها أوّل دخول. */
+export function parseRoster(text) {
+  const rows = [];
+  const errs = [];
+  const lines = S(text).split(/\r?\n/);
+  lines.forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line) return;
+    const c = line.split(/\t|,|;|\s{2,}/).map((x) => x.trim()).filter((x) => x !== '');
+    if (c.length < 2) { errs.push('سطر ' + (i + 1) + ': ناقص — الاسم والبريد مطلوبان.'); return; }
+    /* البريد قد يأتي أوّلاً أو ثانياً — نأخذه من موضعه لا من ترتيبه */
+    const ei = c.findIndex((x) => x.indexOf('@') > 0);
+    if (ei < 0) { errs.push('سطر ' + (i + 1) + ': لا بريد في السطر.'); return; }
+    const email = c[ei];
+    const rest = c.filter((_, k) => k !== ei);
+    if (!rest.length) { errs.push('سطر ' + (i + 1) + ': لا اسم مع البريد.'); return; }
+    rows.push({
+      name: rest[0], email,
+      sport: rest[1] || '', branch: rest[2] || '', phone: rest[3] || '',
+      line: i + 1,
+    });
+  });
+  /* تكرار البريد داخل اللصقة نفسها يُقال قبل المحاولة لا بعدها */
+  const seen = {};
+  for (const r of rows) {
+    const k = r.email.toLowerCase();
+    if (seen[k]) errs.push('البريد ' + r.email + ' مكرّر (سطر ' + seen[k] + ' و' + r.line + ').');
+    else seen[k] = r.line;
+  }
+  return { rows, errs };
+}
+
+/** ينشئ الصفوف واحداً بعد واحد ويُبلّغ بعد كلّ واحد عبر onStep */
+export async function createRoster(rows, opts, onStep) {
+  const password = S((opts || {}).password) || SHARED_PASSWORD;
+  const role = S((opts || {}).role) || 'مدرب';
+  const out = [];
+  for (const r of rows) {
+    const res = await createAccount({
+      email: r.email, password, name: r.name,
+      sport: r.sport, branch: r.branch, phone: r.phone,
+      role, admin: role === 'إدارة', fitness: role === 'مدرب لياقة بدنية',
+      physio: role === 'معالج طبيعي',
+    });
+    out.push(Object.assign({}, r, res));
+    if (onStep) onStep(out[out.length - 1], out.length, rows.length);
+  }
+  return out;
+}
+
+/* ── طلبات فتح الحساب ─────────────────────────────────────── */
+export async function listSignups() {
+  const snap = await getDocs(collection(db, COL.signups));
+  const out = [];
+  snap.forEach((d) => out.push(Object.assign({ id: d.id }, d.data())));
+  out.sort((a, b) => S(b.at).localeCompare(S(a.at)));
+  return out;
+}
+export const markSignup = (id, state) =>
+  updateDoc(doc(db, COL.signups, S(id)), { state: S(state) });
+export const dropSignup = (id) => deleteDoc(doc(db, COL.signups, S(id)));
