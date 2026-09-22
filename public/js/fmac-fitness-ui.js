@@ -14,52 +14,52 @@ const esc = (s) => S(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
 
 const STYLE = `
 .fb-wrap{display:flex;flex-direction:column;gap:16px}
-.fb-card{background:var(--surface,#0D1A29);border:1px solid var(--hairline,#20364C);
+.fb-card{background:var(--surface,var(--surface));border:1px solid var(--hairline,var(--hairline));
   border-radius:18px;padding:18px}
 .fb-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .fb-title{font-size:16px;font-weight:700;margin:0}
-.fb-sub{color:var(--steel,#93A7BA);font-size:12.5px;margin:4px 0 0;line-height:1.7}
+.fb-sub{color:var(--steel,var(--steel));font-size:12.5px;margin:4px 0 0;line-height:1.7}
 .fb-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.fb-btn{background:var(--brand,#3B9DFF);color:#fff;border:0;border-radius:12px;
+.fb-btn{background:var(--brand,var(--brand));color:var(--on-brand);border:0;border-radius:12px;
   padding:10px 18px;font:700 13.5px inherit;cursor:pointer}
-.fb-btn.ghost{background:var(--surface-soft,#112235);color:var(--ink,#F4F8FC);
-  border:1px solid var(--hairline,#20364C);font-weight:400}
+.fb-btn.ghost{background:var(--surface-soft,var(--surface-soft));color:var(--ink,var(--ink-deep));
+  border:1px solid var(--hairline,var(--hairline));font-weight:400}
 .fb-btn:disabled{opacity:.5;cursor:default}
 .fb-pill{font-size:11.5px;padding:3px 10px;border-radius:99px;
-  background:var(--surface-soft,#112235);border:1px solid var(--hairline,#20364C);
+  background:var(--surface-soft,var(--surface-soft));border:1px solid var(--hairline,var(--hairline));
   white-space:nowrap}
-.fb-pill.ok{color:#21C77A;border-color:#21C77A55;background:#21C77A18}
-.fb-pill.warn{color:#F2A93B;border-color:#F2A93B55;background:#F2A93B18}
-.fb-pill.bad{color:#EF4D5A;border-color:#EF4D5A55;background:#EF4D5A18}
-.fb-pill.read{color:#3B9DFF;border-color:#3B9DFF55;background:#3B9DFF14}
+.fb-pill.ok{color:var(--success);border-color:color-mix(in srgb,var(--success) 33%,transparent);background:color-mix(in srgb,var(--success) 9%,transparent)}
+.fb-pill.warn{color:var(--attention);border-color:color-mix(in srgb,var(--attention) 33%,transparent);background:color-mix(in srgb,var(--attention) 9%,transparent)}
+.fb-pill.bad{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 33%,transparent);background:color-mix(in srgb,var(--critical) 9%,transparent)}
+.fb-pill.read{color:var(--brand);border-color:color-mix(in srgb,var(--brand) 33%,transparent);background:color-mix(in srgb,var(--brand) 8%,transparent)}
 button.fb-pill{cursor:pointer;font:inherit;font-size:11.5px}
-.fb-pill.on{color:#62B7FF;border-color:#3B9DFF;background:rgba(59,157,255,.14)}
+.fb-pill.on{color:var(--brand-soft);border-color:var(--brand);background:rgba(59,157,255,.14)}
 .fb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
-.fb-item{background:var(--surface-soft,#112235);border:1px solid var(--hairline,#20364C);
+.fb-item{background:var(--surface-soft,var(--surface-soft));border:1px solid var(--hairline,var(--hairline));
   border-radius:14px;padding:14px;cursor:pointer;transition:border-color .15s}
-.fb-item:hover{border-color:var(--brand,#3B9DFF)}
+.fb-item:hover{border-color:var(--brand,var(--brand))}
 .fb-item b{font-size:14.5px}
-.fb-sess{border:1px solid var(--hairline,#20364C);border-radius:14px;padding:14px;
-  margin-top:12px;background:var(--surface-soft,#0F1E2E)}
+.fb-sess{border:1px solid var(--hairline,var(--hairline));border-radius:14px;padding:14px;
+  margin-top:12px;background:var(--surface-soft,var(--card-2))}
 .fb-sess h4{margin:0 0 2px;font-size:14.5px}
 .fb-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
-.fb-tbl th,.fb-tbl td{text-align:right;padding:8px;border-bottom:1px solid #17283A;
+.fb-tbl th,.fb-tbl td{text-align:right;padding:8px;border-bottom:1px solid var(--hairline-soft);
   vertical-align:top}
-.fb-tbl th{color:var(--steel,#93A7BA);font-size:11.5px;font-weight:600}
+.fb-tbl th{color:var(--steel,var(--steel));font-size:11.5px;font-weight:600}
 /* لا direction:ltr — التكرارات والراحة نصّ عربي مختلط، وقلبها يعكس ترتيبه */
 .fb-tbl td.n{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
-.fb-drop{border:1.5px dashed var(--hairline,#20364C);border-radius:14px;padding:22px;
-  text-align:center;color:var(--steel,#93A7BA);font-size:13px}
-.fb-drop.on{border-color:var(--brand,#3B9DFF);color:var(--ink,#F4F8FC)}
+.fb-drop{border:1.5px dashed var(--hairline,var(--hairline));border-radius:14px;padding:22px;
+  text-align:center;color:var(--steel,var(--steel));font-size:13px}
+.fb-drop.on{border-color:var(--brand,var(--brand));color:var(--ink,var(--ink-deep))}
 .fb-msg{font-size:13px;min-height:20px;margin-top:10px;line-height:1.7}
-.fb-empty{color:var(--steel,#93A7BA);font-size:13.5px;text-align:center;padding:24px}
-.fb-note{background:var(--surface-soft,#112235);border:1px solid var(--hairline,#20364C);
+.fb-empty{color:var(--steel,var(--steel));font-size:13.5px;text-align:center;padding:24px}
+.fb-note{background:var(--surface-soft,var(--surface-soft));border:1px solid var(--hairline,var(--hairline));
   border-radius:12px;padding:12px;font-size:13px;line-height:1.8;white-space:pre-wrap}
-.fb-ta{width:100%;min-height:90px;background:var(--surface-soft,#112235);
-  color:var(--ink,#F4F8FC);border:1px solid var(--hairline,#20364C);border-radius:12px;
+.fb-ta{width:100%;min-height:90px;background:var(--surface-soft,var(--surface-soft));
+  color:var(--ink,var(--ink-deep));border:1px solid var(--hairline,var(--hairline));border-radius:12px;
   padding:10px 12px;font:13.5px/1.7 inherit;resize:vertical}
-.fb-sel{background:var(--surface-soft,#112235);color:var(--ink,#F4F8FC);
-  border:1px solid var(--hairline,#20364C);border-radius:10px;padding:9px 12px;
+.fb-sel{background:var(--surface-soft,var(--surface-soft));color:var(--ink,var(--ink-deep));
+  border:1px solid var(--hairline,var(--hairline));border-radius:10px;padding:9px 12px;
   font:13.5px inherit}
 `;
 
@@ -225,7 +225,7 @@ export function render(host, ctx) {
       '</option>').join('') +
     '</select></div>' +
     '<div class="fb-drop" id="fbDrop" style="margin-top:14px">' +
-    'اسحب ملف الخطة هنا أو <b style="color:var(--brand,#3B9DFF);cursor:pointer" ' +
+    'اسحب ملف الخطة هنا أو <b style="color:var(--brand,var(--brand));cursor:pointer" ' +
     'id="fbPick">اختر ملفاً</b>' +
     '<input type="file" id="fbFile" accept=".xlsx,.pdf,.docx" hidden></div>' +
     '<div class="fb-msg" id="fbMsg"></div></div>'
@@ -278,15 +278,15 @@ export function render(host, ctx) {
       const ta = box.querySelector('#fbNote');
       const msg = box.querySelector('#fbNoteMsg');
       btn.disabled = true;
-      msg.style.color = 'var(--steel,#93A7BA)';
+      msg.style.color = 'var(--steel,var(--steel))';
       msg.textContent = 'جارٍ الحفظ…';
       try {
         await post(ctx, { action: 'fitnote', fitnote: { k, text: S(ta.value) } });
-        msg.style.color = '#21C77A';
+        msg.style.color = 'var(--success)';
         msg.textContent = 'حُفظت.';
         if (ctx.onSaved) ctx.onSaved();
       } catch (e) {
-        msg.style.color = '#EF4D5A';
+        msg.style.color = 'var(--critical)';
         msg.textContent = explain(e);
       }
       btn.disabled = false;
@@ -315,13 +315,13 @@ export function render(host, ctx) {
   });
 
   async function handle(file) {
-    msg.style.color = 'var(--steel,#93A7BA)';
+    msg.style.color = 'var(--steel,var(--steel))';
     msg.textContent = 'جارٍ قراءة الملف…';
     $('fbPreview').innerHTML = '';
 
     let buf;
     try { buf = await file.arrayBuffer(); }
-    catch (e) { msg.style.color = '#EF4D5A'; msg.textContent = 'تعذّرت قراءة الملف.'; return; }
+    catch (e) { msg.style.color = 'var(--critical)'; msg.textContent = 'تعذّرت قراءة الملف.'; return; }
 
     let parsed = { ok: false, error: '' };
     if (isXlsx(file.name)) {
@@ -332,7 +332,7 @@ export function render(host, ctx) {
 
     /* الملفّ غير الإكسل يُحفظ للتنزيل، ونقول صراحةً أنّ محتواه لا يُقرأ هنا */
     if (!parsed.ok) {
-      msg.style.color = isXlsx(file.name) ? '#EF4D5A' : '#F2A93B';
+      msg.style.color = isXlsx(file.name) ? 'var(--critical)' : 'var(--attention)';
       msg.textContent = isXlsx(file.name)
         ? parsed.error
         : 'هذا ليس ملف إكسل، فلن تظهر جداول التمارين داخل الموقع — ' +
@@ -349,7 +349,7 @@ export function render(host, ctx) {
     const sportFinal = matchSport(hdr.sport, sports) || sport;
     const weekFinal = looksLikeWeek(hdr.week) ? S(hdr.week) : week;
     if (parsed.ok && sportFinal !== sport) {
-      msg.style.color = '#F2A93B';
+      msg.style.color = 'var(--attention)';
       msg.textContent = 'اللعبة في الملف «' + sportFinal + '» وتختلف عن المختارة — ' +
         'ستُحفظ بلعبة الملف.';
     }
@@ -374,7 +374,7 @@ export function render(host, ctx) {
       const btn = host.querySelector('#fbSave');
       const sm = host.querySelector('#fbSaveMsg');
       btn.disabled = true;
-      sm.style.color = 'var(--steel,#93A7BA)';
+      sm.style.color = 'var(--steel,var(--steel))';
       sm.textContent = 'جارٍ الحفظ…';
       try {
         await post(ctx, {
@@ -388,12 +388,12 @@ export function render(host, ctx) {
             sessions, readable: parsed.ok,
           },
         });
-        sm.style.color = '#21C77A';
+        sm.style.color = 'var(--success)';
         sm.textContent = 'حُفظت.';
         if (ctx.onSaved) ctx.onSaved();
       } catch (e) {
         btn.disabled = false;
-        sm.style.color = '#EF4D5A';
+        sm.style.color = 'var(--critical)';
         sm.textContent = explain(e);
       }
     });

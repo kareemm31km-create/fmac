@@ -10,49 +10,49 @@ const esc = (s) => S(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
 
 const STYLE = `
 .mo-wrap{display:flex;flex-direction:column;gap:16px}
-.mo-card{background:var(--surface,#0D1A29);border:1px solid var(--line,#20364C);
+.mo-card{background:var(--surface,var(--surface));border:1px solid var(--line,var(--hairline));
   border-radius:18px;padding:18px}
 .mo-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .mo-title{font-size:16px;font-weight:700;margin:0}
-.mo-sub{color:var(--steel,#93A7BA);font-size:12.5px;margin:4px 0 0}
+.mo-sub{color:var(--steel,var(--steel));font-size:12.5px;margin:4px 0 0}
 .mo-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.mo-btn{background:var(--brand,#3B9DFF);color:#fff;border:0;border-radius:12px;
+.mo-btn{background:var(--brand,var(--brand));color:var(--on-brand);border:0;border-radius:12px;
   padding:10px 18px;font:700 13.5px inherit;cursor:pointer}
-.mo-btn.ghost{background:var(--surface-soft,#112235);color:#F4F8FC;
-  border:1px solid #20364C;font-weight:400}
+.mo-btn.ghost{background:var(--surface-soft,var(--surface-soft));color:var(--ink-deep);
+  border:1px solid var(--hairline);font-weight:400}
 .mo-btn:disabled{opacity:.5;cursor:default}
 .mo-pill{font-size:11.5px;padding:3px 10px;border-radius:99px;
-  background:var(--surface-soft,#112235);border:1px solid #20364C;white-space:nowrap}
-.mo-pill.ok{color:#21C77A;border-color:#21C77A55;background:#21C77A18}
-.mo-pill.late{color:#F2A93B;border-color:#F2A93B55;background:#F2A93B18}
-.mo-pill.bad{color:#EF4D5A;border-color:#EF4D5A55;background:#EF4D5A18}
+  background:var(--surface-soft,var(--surface-soft));border:1px solid var(--hairline);white-space:nowrap}
+.mo-pill.ok{color:var(--success);border-color:color-mix(in srgb,var(--success) 33%,transparent);background:color-mix(in srgb,var(--success) 9%,transparent)}
+.mo-pill.late{color:var(--attention);border-color:color-mix(in srgb,var(--attention) 33%,transparent);background:color-mix(in srgb,var(--attention) 9%,transparent)}
+.mo-pill.bad{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 33%,transparent);background:color-mix(in srgb,var(--critical) 9%,transparent)}
 button.mo-pill{cursor:pointer;font:inherit;font-size:11.5px}
-.mo-pill.on{color:#62B7FF;border-color:#3B9DFF;background:rgba(59,157,255,.14)}
+.mo-pill.on{color:var(--brand-soft);border-color:var(--brand);background:rgba(59,157,255,.14)}
 .mo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-.mo-item{background:var(--surface-soft,#112235);border:1px solid #20364C;
+.mo-item{background:var(--surface-soft,var(--surface-soft));border:1px solid var(--hairline);
   border-radius:14px;padding:14px;cursor:pointer;transition:border-color .15s}
-.mo-item:hover{border-color:var(--brand,#3B9DFF)}
+.mo-item:hover{border-color:var(--brand,var(--brand))}
 .mo-score{font-size:30px;font-weight:800;line-height:1;direction:ltr;
   font-variant-numeric:tabular-nums}
 .mo-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
-.mo-tbl th,.mo-tbl td{text-align:right;padding:9px 8px;border-bottom:1px solid #17283A;
+.mo-tbl th,.mo-tbl td{text-align:right;padding:9px 8px;border-bottom:1px solid var(--hairline-soft);
   vertical-align:top}
-.mo-tbl th{color:var(--steel,#93A7BA);font-size:11.5px;font-weight:600}
+.mo-tbl th{color:var(--steel,var(--steel));font-size:11.5px;font-weight:600}
 .mo-tbl td.n{direction:ltr;text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap}
-.mo-bar{height:5px;border-radius:99px;background:#20364C;overflow:hidden;margin-top:6px}
+.mo-bar{height:5px;border-radius:99px;background:var(--hairline);overflow:hidden;margin-top:6px}
 .mo-bar i{display:block;height:100%}
-.mo-ev{color:var(--steel,#93A7BA);font-size:12px;margin-top:3px;line-height:1.6}
-.mo-req{color:#A9B8C8;font-size:12px;margin-top:3px}
-.mo-drop{border:1.5px dashed #20364C;border-radius:14px;padding:22px;text-align:center;
-  color:var(--steel,#93A7BA);font-size:13px}
-.mo-drop.on{border-color:var(--brand,#3B9DFF);color:#F4F8FC}
+.mo-ev{color:var(--steel,var(--steel));font-size:12px;margin-top:3px;line-height:1.6}
+.mo-req{color:var(--charcoal);font-size:12px;margin-top:3px}
+.mo-drop{border:1.5px dashed var(--hairline);border-radius:14px;padding:22px;text-align:center;
+  color:var(--steel,var(--steel));font-size:13px}
+.mo-drop.on{border-color:var(--brand,var(--brand));color:var(--ink-deep)}
 .mo-msg{font-size:13px;min-height:20px;margin-top:10px}
-.mo-empty{color:var(--steel,#93A7BA);font-size:13.5px;text-align:center;padding:24px}
+.mo-empty{color:var(--steel,var(--steel));font-size:13.5px;text-align:center;padding:24px}
 `;
 
-const COLOR = (s) => s === null ? '#93A7BA'
-  : s >= 90 ? '#21C77A' : s >= 80 ? '#21C77A' : s >= 70 ? '#F2A93B'
-    : s >= 60 ? '#F2A93B' : '#EF4D5A';
+const COLOR = (s) => s === null ? 'var(--steel)'
+  : s >= 90 ? 'var(--success)' : s >= 80 ? 'var(--success)' : s >= 70 ? 'var(--attention)'
+    : s >= 60 ? 'var(--attention)' : 'var(--critical)';
 
 const PRIO_CLS = { 'عالية': 'bad', 'متوسطة': 'late', 'منخفضة': 'ok' };
 
@@ -167,7 +167,7 @@ export function render(host, ctx) {
     opts.map((o) => '<option value="' + o.key + '">' + esc(o.label) + '</option>').join('') +
     '</select><span class="mo-pill" id="moDue"></span></div>' +
     '<div class="mo-drop" id="moDrop" style="margin-top:14px">' +
-    'اسحب ملف الخطة هنا أو <b style="color:var(--brand,#3B9DFF);cursor:pointer" id="moPick">اختر ملفاً</b>' +
+    'اسحب ملف الخطة هنا أو <b style="color:var(--brand,var(--brand));cursor:pointer" id="moPick">اختر ملفاً</b>' +
     '<input type="file" id="moFile" accept=".xlsx" hidden></div>' +
     '<div class="mo-msg" id="moMsg"></div></div>' +
     '<div id="moPreview"></div>' +
@@ -229,24 +229,24 @@ export function render(host, ctx) {
     $('moPreview').innerHTML = '';
     let buf;
     try { buf = await file.arrayBuffer(); }
-    catch (e) { msg.className = 'mo-msg'; msg.style.color = '#EF4D5A';
+    catch (e) { msg.className = 'mo-msg'; msg.style.color = 'var(--critical)';
       msg.textContent = 'تعذّرت قراءة الملف.'; return; }
 
     const r = await evaluateCoachFile(buf, readXlsx);
     if (!r.ok) {
-      msg.style.color = '#EF4D5A';
+      msg.style.color = 'var(--critical)';
       msg.textContent = r.error;
       return;
     }
     const monthFromFile = M.monthKey((r.plan.header || {})['الشهر']);
     if (monthFromFile && monthFromFile !== sel.value) {
-      msg.style.color = '#F2A93B';
+      msg.style.color = 'var(--attention)';
       msg.textContent = 'تنبيه: الشهر في الملف «' + M.monthLabel(monthFromFile) +
         '» ويختلف عن المختار. سيُحفظ بشهر الملف.';
       sel.value = monthFromFile;
       showDue();
     } else {
-      msg.style.color = '#93A7BA';
+      msg.style.color = 'var(--steel)';
       msg.textContent = 'تمّ التقييم — راجع النتيجة ثم احفظ.';
     }
 
@@ -293,12 +293,12 @@ export function render(host, ctx) {
         });
         const j = await res.json();
         if (!j || !j.ok) throw new Error((j && j.error) || 'فشل الحفظ');
-        sm.style.color = '#21C77A';
+        sm.style.color = 'var(--success)';
         sm.textContent = 'حُفظت.';
         if (ctx.onSaved) ctx.onSaved();
       } catch (e) {
         btn.disabled = false;
-        sm.style.color = '#EF4D5A';
+        sm.style.color = 'var(--critical)';
         const t = S(e && e.message);
         /* أشهر سببين: قواعد لم تُنشر بعد — نقولها صراحةً بدل نصّ Firebase الخام */
         if (t.indexOf('storage/unauthorized') >= 0 || t.indexOf('permission to access') >= 0) {

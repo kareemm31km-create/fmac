@@ -22,16 +22,16 @@ const STYLE = `
 .sv-t{font-size:15px;font-weight:700;margin:0}
 .sv-sub{color:var(--steel);font-size:12.5px;margin:4px 0 0;line-height:1.8}
 .sv-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.sv-btn{background:linear-gradient(135deg,var(--brand-dark),var(--cyan));color:#fff;border:0;
+.sv-btn{background:linear-gradient(135deg,var(--brand-dark),var(--cyan));color:var(--on-brand);border:0;
   border-radius:var(--r-control,12px);padding:10px 18px;font:700 13.5px inherit;cursor:pointer}
 .sv-btn.ghost{background:var(--surface-soft);color:var(--ink);
   border:1px solid var(--hairline);font-weight:400;padding:8px 14px;font-size:12.5px}
 .sv-btn:disabled{opacity:.5;cursor:default}
 .sv-tabs{display:flex;gap:8px;flex-wrap:wrap}
-.sv-tabs button{background:#0E1C2B;border:1px solid #23394E;color:#8296A9;
+.sv-tabs button{background:var(--chip-bg);border:1px solid var(--chip-edge);color:var(--chip-ink);
   border-radius:var(--r-full);padding:9px 16px;font:600 13px inherit;cursor:pointer}
 .sv-tabs button[aria-current="true"]{background:color-mix(in srgb,var(--brand) 14%,transparent);
-  border-color:var(--brand);color:#62B7FF}
+  border-color:var(--brand);color:var(--brand-soft)}
 .sv-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .sv-k{background:var(--surface-soft);border:1px solid var(--hairline);
   border-radius:var(--r-lg);padding:14px}
@@ -49,7 +49,7 @@ const STYLE = `
 .sv-tag{font-size:11px;padding:2px 10px;border-radius:99px;white-space:nowrap;
   color:var(--c);border:1px solid color-mix(in srgb,var(--c) 42%,transparent);
   background:color-mix(in srgb,var(--c) 13%,transparent)}
-.sv-bar{height:6px;border-radius:99px;background:#172738;overflow:hidden;margin-top:6px}
+.sv-bar{height:6px;border-radius:99px;background:var(--track);overflow:hidden;margin-top:6px}
 .sv-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--brand-dark),var(--cyan))}
 .sv-empty{color:var(--steel);font-size:13.5px;text-align:center;padding:26px}
 .sv-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:12px}
@@ -68,21 +68,21 @@ const STYLE = `
   border-radius:var(--r-xxl);padding:22px;box-shadow:var(--shadow-pop)}
 .sv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0 14px}
 .sv-l{display:block;font-size:12px;color:var(--charcoal);margin:12px 0 5px}
-.sv-in{width:100%;background:#0A1725;color:var(--ink-deep);border:1px solid #263D53;
+.sv-in{width:100%;background:var(--field-bg);color:var(--ink-deep);border:1px solid var(--field-edge);
   border-radius:var(--r-control,12px);padding:10px 12px;font:14px inherit}
 .sv-in:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(59,157,255,.13)}
 .sv-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
-.sv-chips button{background:#0E1C2B;border:1px solid #23394E;color:#8296A9;
+.sv-chips button{background:var(--chip-bg);border:1px solid var(--chip-edge);color:var(--chip-ink);
   border-radius:99px;padding:6px 13px;font:inherit;font-size:12px;cursor:pointer}
 .sv-picked{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
 .sv-picked span{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;
-  color:#62B7FF;background:color-mix(in srgb,var(--brand) 14%,transparent);
+  color:var(--brand-soft);background:color-mix(in srgb,var(--brand) 14%,transparent);
   border:1px solid var(--brand);border-radius:99px;padding:5px 7px 5px 12px}
 .sv-picked button{background:transparent;border:0;color:inherit;cursor:pointer;
   font:inherit;font-size:15px;line-height:1;opacity:.75;padding:0 2px}
 .sv-picked button:hover{opacity:1}
 .sv-chips button[aria-pressed="true"],.sv-chips button[aria-current="true"]{
-  background:color-mix(in srgb,var(--brand) 14%,transparent);border-color:var(--brand);color:#62B7FF}
+  background:color-mix(in srgb,var(--brand) 14%,transparent);border-color:var(--brand);color:var(--brand-soft)}
 .sv-sp{display:grid;grid-template-columns:1fr 90px 90px;gap:8px;align-items:center;
   margin-top:7px;font-size:13px}
 .sv-msg{font-size:12.5px;min-height:18px;margin-top:10px}
