@@ -30,7 +30,7 @@ Nabil Ali Al Ali	nabilalali@fmac.fujairah.ae	السباحة	الفجيرة
 Mohsen Al Ali	MohsinAlAli@fmac.fujairah.ae	الترياثلون	الفجيرة
 Sabri mohamed Fathy	Sabri.mohammed@fmac.fujairah.ae	السباحة	الفجيرة
 Mohamed Rabie Hussain	m.rabie@fmac.fujairah.ae	الجودو	البدية
-عبدالله عمر	abdullah.o@fmac.fujairah.ae	القوس والسهم	
+عبدالله عمر	abdullah.o@fmac.fujairah.ae	القوس والسهم	الفجيرة
 
 ================================================================
 معالج طبيعي — 5
@@ -52,8 +52,3 @@ Ahmed banna	AhmadBanna@fmac.fujairah.ae		الفجيرة
 ================================================================
 Anas Jalal	Anas.jalal@fmac.fujairah.ae		الفجيرة
 Kareem Zaaher	Kareem@fmac.fujairah.ae		الفجيرة
-
-================================================================
-ملاحظات
-================================================================
-عبدالله عمر — بلا فرع في الجدول، يُضبط من الإعدادات
