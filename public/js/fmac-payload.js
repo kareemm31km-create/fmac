@@ -383,9 +383,17 @@ export function results(rows) {
   }
   return out;
 }
+/* وثائق قديمة كُتبت بحقولها متداخلة تحت player — القارئ كان يقرأ
+   الجذر وحده فيتخطّاها صامتاً، فتختفي بيانات أُدخلت فعلاً.
+   نتحمّل الشكلين هنا، وتُسوَّى الوثائق نفسها بأداة الإصلاح. */
+const flat = (r) => (r && r.player && typeof r.player === 'object' && !Array.isArray(r.player))
+  ? Object.assign({}, r.player, { k: r.k, by: r.by, at: r.at })
+  : r;
+
 export function national(rows) {
   const out = {};
-  for (const r of rows) {
+  for (const raw of rows) {
+    const r = flat(raw);
     const sp = S(r.sport), y = S(r.season), nm = S(r.name);
     if (!sp || !y || !nm) continue;
     if (!out[sp]) out[sp] = {};

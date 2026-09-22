@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FMAC — إصلاح سجلّ المنتخب</title>
+<style>
+:root{--brand:#3B9DFF;--ok:#21C77A;--warn:#F2A93B;--bad:#EF4D5A;--steel:#93A7BA}
+*{box-sizing:border-box}
+body{background:#050B14;color:#F4F8FC;font:14px/1.7 Tajawal,'Segoe UI',system-ui,sans-serif;
+  padding:22px;max-width:1000px;margin:0 auto;direction:rtl}
+h1{font-size:20px;margin:0 0 4px}
+p.sub{color:var(--steel);font-size:12.5px;margin:0 0 6px;line-height:1.8}
+.card{background:#0D1A29;border:1px solid #20364C;border-radius:16px;padding:18px;margin:14px 0}
+.danger{border-color:#EF4D5A55}
+h3{font-size:15px;margin:0 0 10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{text-align:right;padding:7px 8px;border-bottom:1px solid #17283A;vertical-align:top}
+th{color:var(--steel);font-size:11.5px;font-weight:600}
+td.n{direction:ltr;text-align:left;font-variant-numeric:tabular-nums;font-size:11.5px;color:var(--steel)}
+button{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px 18px;
+  font:700 14px inherit;cursor:pointer}
+button.ghost{background:#112235;color:#F4F8FC;border:1px solid #20364C;font-weight:400;
+  padding:7px 13px;font-size:12.5px}
+button:disabled{opacity:.45;cursor:default}
+.tag{font-size:11px;padding:2px 9px;border-radius:99px;white-space:nowrap;
+  border:1px solid #20364C;background:#112235}
+.tag.fix{color:var(--warn);border-color:#F2A93B55;background:#F2A93B18}
+.tag.ok{color:var(--ok);border-color:#21C77A55;background:#21C77A18}
+.tag.test{color:var(--bad);border-color:#EF4D5A55;background:#EF4D5A18}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.msg{margin-top:12px;font-size:13px;min-height:20px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+#log{font:12px/1.6 ui-monospace,monospace;max-height:280px;overflow:auto;white-space:pre-wrap}
+code{background:#112235;padding:1px 5px;border-radius:5px;font-size:12px}
+</style></head><body>
+
+<h1>إصلاح سجلّ المنتخب الوطني</h1>
+<p class="sub">وثائق قديمة كُتبت بحقولها متداخلة تحت <code>player</code> بدل الجذر.
+  القارئ صار يتحمّل الشكلين، لكن تسوية الوثائق نفسها تمنع تكرار الالتباس
+  عند التحرير. لا شيء يُكتب قبل أن تضغط، ولا شيء يُحذف إلا بطلب صريح.</p>
+
+<div class="card" id="authCard">جارٍ التحقّق…</div>
+
+<div id="app" hidden>
+  <div class="card">
+    <h3>ما في السجلّ الآن</h3>
+    <div id="list">جارٍ القراءة…</div>
+  </div>
+
+  <div class="card">
+    <h3>١ — تسوية الوثائق المتداخلة</h3>
+    <p class="sub">تُرفع حقول <code>player</code> إلى الجذر ويُحذف المفتاح المتداخل.
+      لا يُمسّ محتوى الحقول، ولا تُحذف وثيقة.</p>
+    <div class="row">
+      <button id="fix" disabled>سوِّ المتداخلة</button>
+      <span class="msg" id="fixMsg"></span>
+    </div>
+  </div>
+
+  <div class="card danger">
+    <h3 class="bad">٢ — حذف السجلّات التجريبية</h3>
+    <p class="sub">السجلّات التي لعبتها <code>تشخيص</code> أو اسمها
+      «لاعب اختبار». الحذف نهائي — اكتب <b>امسح</b> ثم اضغط.</p>
+    <div class="row">
+      <input type="text" id="confirm" autocomplete="off" placeholder="امسح"
+        style="background:#112235;color:#F4F8FC;border:1px solid #20364C;border-radius:10px;
+               padding:9px 12px;font:14px inherit;width:150px">
+      <button id="drop" disabled>احذف التجريبية</button>
+      <span class="msg" id="dropMsg"></span>
+    </div>
+  </div>
+
+  <div class="card" id="logCard" hidden><h3>التنفيذ</h3><div id="log"></div></div>
+</div>
+
+<script type="module">
+import { ready, db } from './js/fmac-auth.js';
+import { COL } from './js/fmac-config.js';
+import { collection, getDocs, doc, setDoc, deleteDoc, deleteField }
+  from './vendor/firebase-firestore.js';
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const S = (v) => (v === null || v === undefined) ? '' : String(v).trim();
+
+let rows = [];
+const isNested = (r) => !(S(r.name) && S(r.sport) && S(r.season)) &&
+  r.player && typeof r.player === 'object';
+const view = (r) => isNested(r) ? r.player : r;
+const isTest = (r) => {
+  const v = view(r);
+  return S(v.sport) === 'تشخيص' || S(v.name) === 'لاعب اختبار';
+};
+
+async function build() {
+  try {
+    const snap = await getDocs(collection(db, COL.national));
+    rows = [];
+    snap.forEach((d) => rows.push(Object.assign({ k: d.id }, d.data())));
+  } catch (e) {
+    $('list').innerHTML = '<span class="bad">تعذّرت القراءة: ' + esc(e.message) + '</span>';
+    return;
+  }
+  const nested = rows.filter(isNested);
+  const tests = rows.filter(isTest);
+  $('list').innerHTML =
+    '<p class="sub">المجموع <b>' + rows.length + '</b> · متداخلة <b class="warn">' +
+      nested.length + '</b> · تجريبية <b class="bad">' + tests.length + '</b></p>' +
+    '<table><tr><th>الحالة</th><th>اللاعب</th><th>اللعبة</th><th>الموسم</th>' +
+    '<th>الفئة</th><th>المعرّف</th></tr>' +
+    rows.slice().sort((a, b) => S(view(a).name).localeCompare(S(view(b).name), 'ar'))
+      .map((r) => {
+        const v = view(r);
+        const tg = isTest(r) ? '<span class="tag test">تجريبية</span>'
+          : isNested(r) ? '<span class="tag fix">متداخلة</span>'
+            : '<span class="tag ok">سليمة</span>';
+        return '<tr><td>' + tg + '</td><td>' + esc(v.name || '—') + '</td>' +
+          '<td>' + esc(v.sport || '—') + '</td><td class="n">' + esc(v.season || '—') + '</td>' +
+          '<td>' + esc(v.cat || '—') + '</td><td class="n">' + esc(r.k) + '</td></tr>';
+      }).join('') + '</table>';
+  $('fix').disabled = !nested.length;
+  refreshDrop();
+}
+
+const log = (m, cls) => {
+  $('logCard').hidden = false;
+  const d = document.createElement('div');
+  if (cls) d.className = cls;
+  d.textContent = m;
+  $('log').appendChild(d);
+  $('log').scrollTop = $('log').scrollHeight;
+};
+
+$('fix').addEventListener('click', async () => {
+  const nested = rows.filter(isNested);
+  if (!nested.length) return;
+  $('fix').disabled = true;
+  $('fixMsg').textContent = 'جارٍ التسوية…';
+  let done = 0, failed = 0;
+  for (const r of nested) {
+    const v = r.player || {};
+    /* الحقول كما هي — لا تفسير ولا استنتاج، ثم يُحذف المفتاح المتداخل */
+    const patch = {
+      name: S(v.name), sport: S(v.sport), season: S(v.season),
+      cat: S(v.cat), note: S(v.note),
+      by: S(r.by) || S(v.by), at: S(r.at) || S(v.at),
+      player: deleteField(),
+    };
+    try {
+      await setDoc(doc(db, COL.national, r.k), patch, { merge: true });
+      done++;
+      log('✓ ' + (v.name || r.k) + ' — ' + (v.sport || '') + ' ' + (v.season || ''), 'ok');
+    } catch (e) {
+      failed++;
+      log('✗ ' + (v.name || r.k) + ' — ' + e.message, 'bad');
+    }
+  }
+  $('fixMsg').className = 'msg ' + (failed ? 'bad' : 'ok');
+  $('fixMsg').textContent = 'سُوِّي ' + done + (failed ? ('، وفشل ' + failed) : '') + '.';
+  await build();
+});
+
+function refreshDrop() {
+  const tests = rows.filter(isTest);
+  $('drop').disabled = !(tests.length && $('confirm').value.trim() === 'امسح');
+}
+$('confirm').addEventListener('input', refreshDrop);
+
+$('drop').addEventListener('click', async () => {
+  const tests = rows.filter(isTest);
+  if (!tests.length) return;
+  $('drop').disabled = true;
+  $('dropMsg').textContent = 'جارٍ الحذف…';
+  let done = 0, failed = 0;
+  for (const r of tests) {
+    try { await deleteDoc(doc(db, COL.national, r.k)); done++;
+      log('✓ حُذف ' + (view(r).name || r.k), 'ok'); }
+    catch (e) { failed++; log('✗ ' + r.k + ' — ' + e.message, 'bad'); }
+  }
+  $('dropMsg').className = 'msg ' + (failed ? 'bad' : 'ok');
+  $('dropMsg').textContent = 'حُذف ' + done + (failed ? ('، وفشل ' + failed) : '') + '.';
+  $('confirm').value = '';
+  await build();
+});
+/* الإقلاع في الذيل: كل ما يستعمله مُعرَّف قبله */
+const me = await ready();
+if (!me.admin) {
+  $('authCard').innerHTML = '<span class="bad">هذا الحساب ليس حساب إدارة.</span>';
+} else {
+  $('authCard').innerHTML = 'الدخول: <b>' + esc(me.name || me.email) + '</b> · إدارة ✓';
+  $('app').hidden = false;
+  await build();
+}
+</script></body></html>
