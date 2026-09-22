@@ -399,6 +399,8 @@ export function national(rows) {
     if (!out[sp]) out[sp] = {};
     if (!out[sp][y]) out[sp][y] = { players: [] };
     out[sp][y].players.push({ k: S(r.k), name: nm, cat: S(r.cat),
+      /* الجنس حقل صريح لا يُستنتَج من لفظ الفئة — وما لم يُسجَّل يبقى فارغاً */
+      gender: S(r.gender),
       note: S(r.note), by: S(r.by), at: S(r.at) });
   }
   return out;

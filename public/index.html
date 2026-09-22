@@ -236,6 +236,81 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   .creedbar::after{background:linear-gradient(270deg,rgba(7,9,12,.96) 0%,
                    rgba(7,9,12,.88) 55%,rgba(7,9,12,.55) 100%)}
 }
+/* ===== كرت المنتخب الوطني ===== */
+.natk2{position:relative;overflow:hidden;display:block;width:100%;text-align:start;
+  border:1px solid var(--hairline);border-radius:var(--r-xxl);background:#081421;
+  cursor:pointer;transition:border-color .2s var(--ease,ease),transform .2s var(--ease,ease)}
+.natk2:hover{border-color:var(--edge);transform:translateY(-2px)}
+.natk2 .nbg{position:absolute;inset:0;background:url(./img/banner.jpg) left 60% / cover no-repeat;
+  opacity:.5}
+.natk2 .nsc{position:absolute;inset:0;
+  background:linear-gradient(270deg,rgba(8,20,33,.97) 0%,rgba(8,20,33,.86) 42%,
+             rgba(8,20,33,.30) 100%)}
+/* الشرائح: مائلة، ومتدرّجة الشفافية، وأيقوناتها بلون المنتج */
+/* left لا inset-inline-start: الشرائح جزء من الصورة لا من النصّ */
+.natk2 .nslat{position:absolute;inset-block:0;left:0;width:52%;
+  display:flex;gap:10px;align-items:center;justify-content:flex-start;
+  transform:skewX(-12deg);padding-left:14px;pointer-events:none}
+.natk2 .nslat i{flex:1;max-width:76px;height:76%;border-radius:16px;display:grid;
+  place-items:center;background:rgba(59,157,255,.07);border:1px solid rgba(59,157,255,.16)}
+.natk2 .nslat img{width:26px;height:26px;object-fit:contain;transform:skewX(12deg);
+  filter:brightness(0) saturate(100%) invert(62%) sepia(60%) saturate(1400%)
+         hue-rotate(185deg) brightness(101%) contrast(101%);opacity:.75}
+.natk2 .nin{position:relative;z-index:2;display:flex;flex-direction:column;gap:14px;
+  padding:18px 20px}
+.natk2 .nhd{display:flex;align-items:flex-start;gap:14px}
+.natk2 .nico{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;
+  background:rgba(59,157,255,.12);border:1px solid rgba(59,157,255,.32)}
+.natk2 .nico svg{width:21px;height:21px;stroke:var(--brand);fill:none;stroke-width:1.7}
+.natk2 .nttl{display:flex;flex-direction:column;gap:4px;min-width:0}
+.natk2 .nttl b{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:800;
+  color:var(--ink-deep);letter-spacing:-.3px}
+.natk2 .nttl > span{font-size:12.5px;color:var(--steel)}
+.natk2 .nfl{display:inline-flex;flex-direction:column;width:26px;height:18px;flex:none;
+  border-radius:3px;overflow:hidden;position:relative;border:1px solid #ffffff1a}
+.natk2 .nfl i{flex:1}
+.natk2 .nfl i:nth-child(1){background:#00732F}
+.natk2 .nfl i:nth-child(2){background:#F4F6F7}
+.natk2 .nfl i:nth-child(3){background:#111214}
+.natk2 .nfl u{position:absolute;inset-block:0;inset-inline-start:0;width:8px;background:#EF3340}
+.natk2 .nrule{width:120px;height:3px;border-radius:3px;margin-top:6px;
+  background:linear-gradient(90deg,var(--brand),transparent)}
+.natk2 .ngo{margin-inline-start:auto;flex:none;display:inline-flex;align-items:center;gap:7px;
+  font-size:12.5px;color:var(--ink);background:var(--surface-soft);
+  border:1px solid var(--hairline);border-radius:99px;padding:8px 14px}
+.natk2 .ngo svg{width:15px;height:15px}
+.natk2 .nbody{display:flex;align-items:center;gap:22px;padding:6px 0 2px}
+.natk2 .ncreed{display:flex;flex-direction:column;gap:10px;padding-inline-end:18px;
+  border-inline-end:1px solid var(--hairline);flex:none}
+.natk2 .ncreed > span:first-child{font-size:12.5px;color:var(--charcoal);line-height:1.7}
+.natk2 .nv{font:600 10.5px/1.9 'Segoe UI',system-ui,sans-serif;letter-spacing:.24em;
+  color:var(--stone);direction:ltr}
+.natk2 .nnum{display:flex;flex-direction:column;align-items:center;gap:4px}
+.natk2 .nnum b{font-size:clamp(44px,5.5vw,70px);font-weight:800;line-height:1;
+  color:#fff;letter-spacing:-3px;font-variant-numeric:tabular-nums}
+.natk2 .ncap{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink)}
+.natk2 .ncap i{width:7px;height:7px;border-radius:99px;background:var(--brand);flex:none}
+.natk2 .nstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;
+  background:var(--surface-soft);border:1px solid var(--hairline);border-radius:var(--r-card);
+  padding:12px 6px}
+.natk2 .nq{display:flex;align-items:center;gap:10px;justify-content:center;min-width:0;
+  border-inline-start:1px solid var(--hairline)}
+.natk2 .nq:last-child{border-inline-start:0}
+.natk2 .nq i{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+  background:color-mix(in srgb,var(--c) 14%,transparent);
+  border:1px solid color-mix(in srgb,var(--c) 34%,transparent)}
+.natk2 .nq i svg{width:17px;height:17px;stroke:var(--c);fill:none;stroke-width:1.7}
+.natk2 .nq b{font-size:20px;font-weight:800;color:var(--ink-deep);font-variant-numeric:tabular-nums}
+.natk2 .nq > span{font-size:11.5px;color:var(--steel);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.natk2 .nnote{font-size:11.5px;color:var(--stone);text-align:center}
+@media (max-width:1080px){
+  .natk2 .nslat{display:none}
+  .natk2 .ncreed{display:none}
+  .natk2 .nstats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 0}
+  .natk2 .nq:nth-child(odd){border-inline-start:0}
+  .natk2 .ngo{display:none}
+}
 /* بطاقة قسم محجوز — تقول إنّه فارغ صراحةً ولا توهم بمحتوى */
 .soonbox{text-align:center;padding:52px 24px}
 .soonbox .soon-badge{display:inline-block;font-size:12px;letter-spacing:.14em;
@@ -4240,6 +4315,9 @@ input::placeholder,textarea::placeholder{color:#64788B}
     </div>
     <div class="vgrid">
       <span><label class="fl2">الموسم</label><select id="natYear" class="inp"></select></span>
+      <span><label class="fl2">الجنس</label><select id="natGender" class="inp">
+        <option value="">— غير محدَّد —</option><option value="ذكر">ذكر</option>
+        <option value="أنثى">أنثى</option></select></span>
       <span><label class="fl2">الفئة</label>
         <input id="natCat" class="inp" type="text" list="natCats" placeholder="كبار · شباب · ناشئين"
           autocomplete="off">
@@ -4473,13 +4551,13 @@ input::placeholder,textarea::placeholder{color:#64788B}
         </section>
       </div>
 
-            <div class="hrow2">
-        <section class="panel" id="medPanel">
+            <div id="natHost"></div>
+
+      <!-- كرت المنتخب بعرض الصفّ: التصميم عريض لا عمودياً -->
+      <section class="panel" id="medPanel">
           <div class="ch"><h3 id="medTitle">الميداليات</h3><span class="ci" id="medIco"></span></div>
           <div class="medwrap" id="medBody"></div>
         </section>
-        <div id="natHost"></div>
-      </div>
 
       <!-- ١٠ — التقارير والمعلومات المرجعية -->
             <section class="panel" id="visStrip">
@@ -5165,6 +5243,8 @@ function mergePlans(extra){
 }
 mergePlans([]);
 const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+/* نصّ آمن من null — تُستعمل في المقارنات والحفظ */
+const S=v=>(v===null||v===undefined)?'':String(v).trim();
 const plan=id=>PLANS.find(p=>p.id===id);
 function coachOf(pid){
   const a=assign[pid]||{};
@@ -11287,35 +11367,61 @@ const UAE_WAVE = (function(){
       band(4,38,'#00732F')+band(42,38,'#F4F6F7')+band(80,38,'#111214')+
     '</g></svg>';
 })();
+/* شرائح زجاجية في خلفية الكرت، في كلّ واحدة أيقونة لعبة —
+   مرسومة من أيقونات الألعاب نفسها لا صوراً جديدة. */
+const NAT_SLATS = (function(){
+  const order=['boxing','archery','fencing','judo','swimming','triathlon'];
+  return order.map(function(sl,i){
+    return '<i style="--i:'+i+'"><img src="./img/sports/'+sl+'.png" alt=""></i>';
+  }).join('');
+})();
 function natCardHtml(){
   const y=curSeason(), list=natlAll(y);
   const by={}; list.forEach(function(p){ by[p.sport]=(by[p.sport]||0)+1; });
   const names=Object.keys(by).sort(function(a2,b2){ return by[b2]-by[a2]; });
-  /* لعبتان أو أقلّ: بطاقتان كبيرتان — وأكثر: شرائح تلتفّ بلا أن يختلّ الشكل */
-  const foot = names.length===0
-    ? '<div class="ntempty2">لا لاعبين مسجَّلين بعد — يُضافون من صفحة كل لعبة</div>'
-    : (names.length<=2
-        ? '<div class="spcards">'+names.map(function(x){
-            return '<div class="spc">'+spBadge(x,34)+
-              '<span class="t"><b>'+esc(x)+'</b><span>'+by[x]+'</span></span>'+
-              '<i class="ac"></i></div>'; }).join('')+'</div>'
-        : '<div class="spchips">'+names.slice(0,6).map(function(x){
-            return '<span class="spq">'+spBadge(x,16)+esc(x)+'<b>'+by[x]+'</b></span>';
-          }).join('')+
-          (names.length>6?'<span class="spq more">+'+(names.length-6)+'</span>':'')+'</div>');
-  return '<button class="natk'+(list.length?'':' empty')+'" id="natBanner">'+
-    UAE_WAVE+'<span class="sc"></span>'+
-    '<span class="ico">'+di('users')+'</span>'+
-    '<span class="hd"><span class="fl"><i></i><i></i><i></i><b></b></span>'+
-      '<span class="ttl">منتخب الإمارات الوطني</span></span>'+
-    '<span class="rule"></span>'+
-    '<span class="nm"><b id="natBanN">'+(list.length||'—')+'</b></span>'+
-    '<span class="cap"><i></i>لاعبين في المنتخب الوطني<i></i></span>'+
-    foot+
-    '<span class="ft">'+di('users')+
-      '<span>من '+ar(names.length,'لعبة واحدة','لعبتين','ألعاب','لعبة')+'</span>'+
-      '<i class="dot"></i><span class="mng">إضافة وإزالة ←</span></span>'+
-  '</button>';
+
+  /* §24 — الجنس حقل صريح. ما لم يُسجَّل لا يُستنتَج من لفظ الفئة،
+     والعدّاد يقول «—» مع ذكر التغطية بدل رقمٍ ناقص يوهم بأنّه كامل. */
+  const known=list.filter(function(p){ return S(p.gender)==='ذكر'||S(p.gender)==='أنثى'; });
+  const men  = known.filter(function(p){ return S(p.gender)==='ذكر'; }).length;
+  const women= known.filter(function(p){ return S(p.gender)==='أنثى'; }).length;
+  const gN   = known.length;
+
+  const stat=function(ic,col,val,lab){
+    return '<span class="nq"><i style="--c:'+col+'">'+di(ic)+'</i>'+
+      '<b>'+esc(val)+'</b><span>'+esc(lab)+'</span></span>'; };
+
+  const slats='<span class="nslat">'+NAT_SLATS+'</span>';
+
+  return '<div class="natk2'+(list.length?'':' empty')+'" id="natBanner" '+
+    'role="button" tabindex="0">'+
+    '<span class="nbg"></span>'+slats+'<span class="nsc"></span>'+
+    '<span class="nin">'+
+      '<span class="nhd">'+
+        '<span class="nico">'+di('users')+'</span>'+
+        '<span class="nttl"><b>منتخب الإمارات الوطني'+
+          '<span class="nfl"><i></i><i></i><i></i><u></u></span></b>'+
+          '<span>مواهب اليوم … إنجازات الغد</span>'+
+          '<span class="nrule"></span></span>'+
+        '<span class="ngo">عرض التفاصيل'+di('chev')+'</span>'+
+      '</span>'+
+      '<span class="nbody">'+
+        '<span class="ncreed"><span>رياضة وطنية<br>مستقبل واعد</span>'+
+          '<span class="nv">DISCIPLINE<br>UNITY<br>EXCELLENCE</span></span>'+
+        '<span class="nnum"><b id="natBanN">'+(list.length||'—')+'</b>'+
+          '<span class="ncap"><i></i>لاعبين في المنتخب الوطني</span></span>'+
+      '</span>'+
+      '<span class="nstats">'+
+        stat('users','var(--brand)', (names.length||'—'), 'الألعاب المختلفة')+
+        stat('medal','var(--attention)', (list.length||'—'), 'إجمالي اللاعبين')+
+        stat('users','var(--blue)', (gN?men:'—'), 'ذكور')+
+        stat('users','var(--review)', (gN?women:'—'), 'إناث')+
+      '</span>'+
+      (list.length && gN<list.length
+        ? '<span class="nnote">الجنس مسجَّل لـ'+gN+' من '+list.length+
+          ' — يُسجَّل عند إضافة اللاعب</span>'
+        : (list.length?'':'<span class="nnote">لا لاعبين مسجَّلين بعد — يُضافون من صفحة كل لعبة</span>'))+
+    '</span></div>';
 }
 function renderNatBanner(){
   const h=$('natHost'); if(h) h.innerHTML=natCardHtml();
@@ -11371,10 +11477,11 @@ async function saveNatl(){
   if(w && !w.hidden){ const sel=$('natSport2'); if(sel&&sel.value) spCur=sel.value; }
   const y=$('natYear').value, name=$('natName').value.trim();
   const cat=$('natCat').value.trim(), note=$('natNote').value.trim();
+  const gender=($('natGender')||{}).value||'';
   if(!name){ $('natMsg').textContent='اكتب اسم اللاعب.';
     $('natMsg').className='upmsg bad'; $('natName').focus(); return; }
   $('natMsg').textContent='جارٍ الحفظ…'; $('natMsg').className='upmsg';
-  const rec={k:'local'+Date.now(),name:name,cat:cat,note:note,by:user.name,at:'—'};
+  const rec={k:'local'+Date.now(),name:name,cat:cat,gender:gender,note:note,by:user.name,at:'—'};
   national[spCur]=national[spCur]||{};
   national[spCur][y]=national[spCur][y]||{players:[]};
   national[spCur][y].players.push(rec);
@@ -11386,7 +11493,7 @@ async function saveNatl(){
     const r=await __fmacApi(API,{method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify({u:user.code,action:'natl',
-        player:{sport:spCur,season:y,name:name,cat:cat,note:note}})});
+        player:{sport:spCur,season:y,name:name,cat:cat,gender:gender,note:note}})});
     const j=await r.json();
     if(j&&j.ok){ rec.k=j.k||rec.k; rec.at=j.at||rec.at;
       $('natDlg').hidden=true;
