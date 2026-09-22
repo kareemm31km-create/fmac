@@ -220,7 +220,11 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   font:600 12px/1 'Segoe UI',system-ui,sans-serif;letter-spacing:.42em;
   color:#dfe4ea;direction:ltr;flex-direction:row-reverse}
 .creedbar .cb-k i{flex:1;max-width:96px;height:1.5px;background:var(--brand);display:block}
-.creedbar .cb-h{margin:16px 0 0;display:flex;flex-direction:column;gap:4px;
+.creedbar .cb-hi{display:flex;flex-direction:column;gap:3px;margin:14px 0 0}
+.creedbar .cb-hi b{font-size:clamp(17px,2vw,23px);font-weight:800;color:var(--ink-deep);
+  letter-spacing:-.3px}
+.creedbar .cb-hi span{font-size:12.5px;color:var(--steel)}
+.creedbar .cb-h{margin:12px 0 0;display:flex;flex-direction:column;gap:4px;
   font-size:clamp(21px,2.9vw,36px);font-weight:800;line-height:1.28;letter-spacing:-.4px}
 .creedbar .cb-h span{color:#f4f6f8}
 .creedbar .cb-h em{font-style:normal;color:var(--brand)}
@@ -236,6 +240,38 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   .creedbar::after{background:linear-gradient(270deg,rgba(7,9,12,.96) 0%,
                    rgba(7,9,12,.88) 55%,rgba(7,9,12,.55) 100%)}
 }
+/* ===== تقدّم الخطط + آخر التحديثات ===== */
+.stgwrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.stgring{position:relative;flex:none;width:150px;height:150px}
+.stgring svg{width:100%;height:100%}
+.stgring .tr{fill:none;stroke:#172738;stroke-width:12}
+.stgring .sg{fill:none;stroke-width:12;stroke-linecap:butt}
+.stgring .v{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:2px;pointer-events:none}
+.stgring .v b{font-size:26px;font-weight:800;color:var(--ink-deep);
+  font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.stgring .v i{font-style:normal;font-size:11px;color:var(--steel)}
+.stglg{display:flex;flex-direction:column;gap:9px;flex:1;min-width:190px}
+.sg1{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink)}
+.sg1 i{width:9px;height:9px;border-radius:99px;flex:none}
+.sg1 b{margin-inline-start:auto;font-weight:800;color:var(--ink-deep);
+  font-variant-numeric:tabular-nums}
+.feed{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+.fdr{display:flex;align-items:center;gap:11px;width:100%;text-align:start;cursor:pointer;
+  background:var(--surface-soft);border:1px solid var(--hairline);border-radius:var(--r-lg);
+  padding:10px 12px;font:inherit;color:var(--ink);
+  transition:background .15s var(--ease,ease),border-color .15s}
+.fdr:hover{background:var(--surface-hover);border-color:var(--edge)}
+.fdr .fk{flex:none;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
+  background:color-mix(in srgb,var(--c) 14%,transparent);
+  border:1px solid color-mix(in srgb,var(--c) 30%,transparent)}
+.fdr .fk svg{width:15px;height:15px;stroke:var(--c);fill:none;stroke-width:1.7}
+.fdr .fb{display:flex;flex-direction:column;gap:2px;min-width:0}
+.fdr .fb b{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fdr .fb i{font-style:normal;font-size:11.5px;color:var(--steel)}
+.fdr .fg{margin-inline-start:auto;color:var(--steel);display:flex}
+.fdr .fg svg{width:15px;height:15px}
+@media (max-width:760px){ .stgwrap{justify-content:center} }
 /* ===== كرت المنتخب الوطني ===== */
 .natk2{position:relative;overflow:hidden;display:block;width:100%;text-align:start;
   border:1px solid var(--hairline);border-radius:var(--r-xxl);background:#081421;
@@ -4481,6 +4517,7 @@ input::placeholder,textarea::placeholder{color:#64788B}
          aria-label="من هنا تبدأ القوة… ومن هنا يُصنع الأبطال — Where strength begins, and champions are made">
       <div class="cb-in">
         <span class="cb-k">MORE THAN A CLUB<i></i></span>
+        <p class="cb-hi" id="cbHi" hidden></p>
         <h2 class="cb-h"><span>من هنا تبدأ القوة…</span><em>ومن هنا يُصنع الأبطال</em></h2>
         <p class="cb-v">DISCIPLINE<i>|</i>UNITY<i>|</i>EXCELLENCE</p>
       </div>
@@ -4524,6 +4561,13 @@ input::placeholder,textarea::placeholder{color:#64788B}
           <div id="agnBody"></div>
         </section>
 
+      <!-- ٦ — الخطط التدريبية: أين وصلت خطط الأسبوع -->
+      <section class="panel" id="stagePanel">
+        <div class="ch"><h3>تقدّم الخطط التدريبية</h3>
+          <span class="hact"><button class="link" data-view="review">عرض التفاصيل</button></span></div>
+        <div class="stgwrap" id="stageBody"></div>
+      </section>
+
       <!-- ٨ — المؤشرات الرئيسية -->
       <div class="kgrid k4" id="kgrid"></div>
       <button class="waitline" id="waitLine" hidden></button>
@@ -4558,6 +4602,15 @@ input::placeholder,textarea::placeholder{color:#64788B}
           <div class="ch"><h3 id="medTitle">الميداليات</h3><span class="ci" id="medIco"></span></div>
           <div class="medwrap" id="medBody"></div>
         </section>
+
+      <!-- ١٠ — آخر ما جرى في السجلّ -->
+      <section class="panel" id="feedPanel">
+        <div class="ch"><h3>آخر التحديثات</h3>
+          <span class="hact"><button class="link" data-view="audit">عرض الكل</button></span></div>
+        <div class="fchips" id="feedChips"></div>
+        <div class="feed" id="feed"></div>
+        <div class="pmore"><button class="mini2" id="feedMore" hidden>عرض المزيد</button></div>
+      </section>
 
       <!-- ١٠ — التقارير والمعلومات المرجعية -->
             <section class="panel" id="visStrip">
@@ -12589,6 +12642,63 @@ function kcard4(ic,lb,val,small,cap,pct,col,foot,go){
     '<span class="pb"><i style="width:'+Math.max(0,Math.min(100,pct))+'%"></i></span>'+
     (foot?'<div class="ft">'+foot+'</div>':'')+'</div>';
 }
+/* أين وصلت خطط الأسبوع — أربع حالات لا تتداخل، ومجموعها كلّ ما يُنتظر.
+   «غير مستلمة» ليست خطةً بلا مرحلة، بل مدرّب لم يسلّم أصلاً. */
+function stageBuckets(){
+  const cw=curWeekPlans().filter(inBranch);
+  const b={approved:0,review:0,fix:0,none:0};
+  cw.forEach(function(p){
+    const st=autoStage(p);
+    if(AUTO_STAGES.indexOf(st)>=0) b.approved++;
+    else if(st==='تحتاج تعديل') b.fix++;
+    else b.review++;                       /* مسودة · مرفوعة · تحت المراجعة */
+  });
+  b.none=branchCoachRows().filter(function(r){ return !r.sub; }).length;
+  b.total=b.approved+b.review+b.fix+b.none;
+  return b;
+}
+function renderStages(){
+  const host=$('stageBody'); if(!host) return;
+  const b=stageBuckets();
+  const rows=[
+    ['تم الاعتماد', b.approved, 'var(--success)'],
+    ['قيد المراجعة', b.review,  'var(--attention)'],
+    ['بحاجة تحديث', b.fix,      'var(--review)'],
+    ['غير مستلمة',  b.none,     'var(--critical)'],
+  ];
+  /* §24 — بلا شيء يُنتظر لا نسبة: «—» لا صفر */
+  const pct = b.total ? Math.round(b.approved/b.total*100) : null;
+  const R=52, C=2*Math.PI*R;
+  let off=0;
+  const arcs=rows.map(function(r){
+    const len = b.total ? C*r[1]/b.total : 0;
+    const seg='<circle class="sg" cx="60" cy="60" r="'+R+'" stroke="'+r[2]+'" '+
+      'stroke-dasharray="'+len.toFixed(1)+' '+(C-len).toFixed(1)+'" '+
+      'stroke-dashoffset="'+(-off).toFixed(1)+'" transform="rotate(-90 60 60)"/>';
+    off+=len; return len>0?seg:''; }).join('');
+  host.innerHTML=
+    '<div class="stgring"><svg viewBox="0 0 120 120">'+
+      '<circle class="tr" cx="60" cy="60" r="'+R+'"/>'+arcs+'</svg>'+
+      '<span class="v"><b>'+(pct===null?'—':pct+'%')+'</b>'+
+        '<i>'+(pct===null?'لا خطط منتظَرة':'الخطط المعتمدة')+'</i></span></div>'+
+    '<div class="stglg">'+rows.map(function(r){
+      return '<span class="sg1"><i style="background:'+r[2]+'"></i>'+
+        '<span>'+esc(r[0])+'</span><b>'+r[1]+'</b></span>'; }).join('')+'</div>';
+}
+
+/* تحية باسم المستخدم وتاريخ اليوم فوق الشعار — من الساعة والاسم، بلا طلب خارجي */
+function renderGreet(){
+  const el=$('cbHi'); if(!el) return;
+  if(!user||!user.name){ el.hidden=true; return; }
+  const h=new Date().getHours();
+  const g = h<12 ? 'صباح الخير' : h<17 ? 'طاب يومك' : 'مساء الخير';
+  const first=String(user.name).split(' ')[0]||user.name;
+  const d=new Date();
+  const days=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  el.hidden=false;
+  el.innerHTML='<b>'+esc(g)+'، '+esc(first)+'</b><span>'+esc(days[d.getDay()])+'، '+
+    d.getDate()+' '+esc(AR_MONTHS[d.getMonth()])+' '+d.getFullYear()+'</span>';
+}
 function renderKpis(){
   const h=$('kgrid'); if(!h) return;
   refreshTasks();
@@ -13766,7 +13876,8 @@ function renderHome(){
   ['wkPanel','todayPanel','coachGrid'].forEach(id=>{const e=$(id); if(e) e.hidden=true;});
   /* الرئيسية هدفها واحد: حالة قسم الإعداد الفني.
      المؤشّرات · الميداليات · المنحنى · الأجندة — وما عداها في صفحته */
-  dashFilters(); renderKpis(); renderMedals(); renderAgenda(); renderBell(); markClubWide();
+  dashFilters(); renderGreet(); renderKpis(); renderStages(); renderFeed();
+  renderMedals(); renderAgenda(); renderBell(); markClubWide();
   renderNatBanner(); renderPerf(); renderVisStrip(); renderCalPanel();
   try{ renderTopFilters(); renderLivePill(); renderPageHead(); }catch(e){}
   const lg=$('legacyDash'); if(lg) lg.hidden=true;
