@@ -3381,6 +3381,16 @@ body{min-height:100vh;background-attachment:fixed}
 
 /* ===== شريط علوي مرتّب: بحث · الموسم · التنبيهات · المستخدم ===== */
 .qawrap,.seawrap{position:relative;display:inline-flex}
+/* عنقود أدوات الشريط: صفٌّ واحد لا ينكسر، وما فيه مصطفٌّ على المنتصف.
+   الالتفاف كان يُنزل نصف الأيقونات سطراً ثانياً ويكسر اصطفافها. */
+.tnavx{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;flex:none}
+/* ويتقلّص العنوان بدلاً من العنقود */
+.topnav .pgt{flex:0 1 auto;min-width:0}
+.topnav .pgt h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:900px){
+  /* على الضيّق ينكسر العنقود وحده، مصطفّاً إلى نهايته */
+  .tnavx{flex-wrap:wrap;justify-content:flex-end}
+}
 .qabtn svg,.seabtn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7}
 .qabtn svg{fill:currentColor;stroke:none}
 .seabtn b{font-weight:700;color:var(--ink-deep)}
@@ -4138,6 +4148,33 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
 
 /* القوائم المنسدلة والنوافذ */
 .seapanel,.bellpanel,.qapanel,.fmenu,.coachpop{box-shadow:var(--shadow-pop)}
+@media (prefers-reduced-motion:no-preference){
+  /* تبديل المظهر: الألوان تتمازج لحظةً بدل أن تنقلب دفعةً واحدة.
+     تُفرض أثناء التبديل وحده — لا انتقال دائم على كلّ عنصر. */
+  html.theming,html.theming *,html.theming *::before,html.theming *::after{
+    transition:background-color .3s var(--ease),background-image .3s var(--ease),
+      color .3s var(--ease),border-color .3s var(--ease),fill .3s var(--ease),
+      stroke .3s var(--ease),box-shadow .3s var(--ease),opacity .3s var(--ease)
+      !important}
+  /* الأيقونة تلتفّ حين تتبدّل: شمسٌ فهلالٌ فنصف دائرة */
+  #themeIco.tw{animation:themeTwist .4s var(--ease) both}
+  @keyframes themeTwist{
+    from{transform:rotate(-80deg) scale(.66);opacity:0}
+    to{transform:none;opacity:1}}
+  /* النقطة تنبض حين تتغيّر حالة الحفظ — الحالة تُلاحَظ لا تُقرأ */
+  .led.beat{animation:ledBeat .55s var(--ease)}
+  @keyframes ledBeat{
+    0%{transform:scale(1);box-shadow:0 0 0 0 currentColor}
+    35%{transform:scale(1.5)}
+    100%{transform:scale(1);box-shadow:0 0 0 7px transparent}}
+  /* أزرار الشريط: اللمسة تُحَسّ */
+  .icobtn{transition:background var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease),border-color var(--motion-fast) var(--ease),
+    transform var(--motion-fast) var(--ease)}
+  .icobtn:hover{transform:translateY(-1px)}
+  .icobtn:active{transform:translateY(0) scale(.94)}
+}
+
 /* حالة الحفظ: نقطةٌ وكلمة في الشريط — كانت مدفونةً في لوحة الإجراءات */
 .tstate{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--steel);
   padding:6px 11px;border:1px solid var(--hairline);border-radius:var(--r-full);
@@ -4253,6 +4290,7 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
   <button class="rvpill" id="livePill" hidden></button>
   <span class="grow"></span>
   <span class="who" id="who"></span>
+  <span class="tnavx">
   <span class="seawrap">
     <button class="pill seabtn" id="topSeason" title="الموسم الرياضي">
       <svg viewBox="0 0 24 24"><rect x="3.6" y="5" width="16.8" height="15.4" rx="2.6"/>
@@ -4290,8 +4328,6 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
       stroke-linecap="round" stroke-linejoin="round"><rect x="6.4" y="2.8" width="11.2" height="18.4" rx="2.2"/>
       <path d="M10.6 18.4h2.8"/></svg></button>
-  <span class="tstate" id="tState" title="حالة الحفظ">
-    <span class="led" id="led"></span><b id="ledTxt">محفوظ</b></span>
   <button class="icobtn lang" id="btnLangTop" title="العربية / English" aria-label="تبديل اللغة">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
       <circle cx="12" cy="12" r="8.6"/>
@@ -4310,6 +4346,7 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
         <button class="link" id="bellAll">عرض الكل</button></div>
       <div id="bellList"></div>
     </div></span>
+  </span>
 </nav>
 
 
@@ -5576,7 +5613,14 @@ function tally(p,dayIdx){
   return {total:t,...c,cancelled:cx,rated:rated,
           score:t?Math.round(((c.done+c.partial*.5)/t)*100):0};
 }
-function led(txt,cls){ $('ledTxt').textContent=txt; $('led').className='led '+(cls||''); }
+function led(txt,cls){
+  const t=$('ledTxt'), d=$('led'); if(!t||!d) return;
+  const next='led '+(cls||'');
+  const changed = t.textContent!==txt || d.className.replace(' beat','')!==next;
+  t.textContent=txt; d.className=next;
+  /* تنبض عند التغيّر وحده — نبضةٌ مع كلّ نداءٍ ضجيجٌ لا إشارة */
+  if(changed){ void d.offsetWidth; d.className=next+' beat'; }
+}
 /* شريط أحمر عريض حين لا يُحفَظ شيء فعلاً — لا يجوز أن يفشل الحفظ بصمت */
 const NEED_BUILD = 11;
 function warnBar(html){
@@ -7737,7 +7781,18 @@ function applyTheme(pref, save){
   if(tc) tc.setAttribute('content', m==='light' ? '#F1F5FA' : '#07090c');
   themeAssets(m);
   const tag=$('themeTag'); if(tag) tag.textContent = THEME_LBL[p];
-  const ico=$('themeIco'); if(ico) ico.innerHTML = THEME_ICO[p];
+  const ico=$('themeIco');
+  if(ico && ico.innerHTML !== THEME_ICO[p]){
+    ico.innerHTML = THEME_ICO[p];
+    /* إعادة تشغيل الحركة: الصنف وحده لا يكفي إن كان موضوعاً */
+    ico.classList.remove('tw'); void ico.offsetWidth; ico.classList.add('tw');
+  }
+  if(save){
+    const r0=document.documentElement;
+    r0.classList.add('theming');
+    clearTimeout(applyTheme._t);
+    applyTheme._t=setTimeout(function(){ r0.classList.remove('theming'); },340);
+  }
   const btn=$('btnTheme');
   if(btn) btn.setAttribute('title','المظهر: '+THEME_LBL[p]+' — اضغط للتبديل');
   if(save){ try{ localStorage.setItem('fmac.theme', p); }catch(e){} }
