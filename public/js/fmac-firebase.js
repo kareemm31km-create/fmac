@@ -376,7 +376,32 @@ const respond = (obj) => ({
   text: async () => JSON.stringify(obj),
 });
 
+/* نداءات الحفظ في index.html ملفوفة في catch فارغ، فأي فشل يمرّ صامتاً
+   ويبدو للمستخدم أن شيئاً لم يُحفظ بلا سبب. نُظهره هنا بدل ابتلاعه. */
+function surface(action, info) {
+  try {
+    console.error('[FMAC] فشل الحفظ:', action || '(رصد)', info);
+    let el = document.getElementById('fmacErr');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'fmacErr';
+      el.style.cssText = 'position:fixed;inset-inline:12px;bottom:12px;z-index:100000;' +
+        'background:#2a1416;border:1px solid #ff4d59;color:#ffd7da;border-radius:12px;' +
+        'padding:12px 14px;font:13px/1.6 Tajawal,system-ui,sans-serif;direction:rtl;' +
+        'max-width:560px;margin-inline:auto;box-shadow:0 8px 28px #0008;cursor:pointer';
+      el.addEventListener('click', () => el.remove());
+      document.body.appendChild(el);
+    }
+    el.innerHTML = '<b>لم يُحفظ: ' + (action || 'الرصد') + '</b><br>' +
+      String(info).slice(0, 220) + '<br><span style="opacity:.7;font-size:11.5px">' +
+      'اضغط لإخفاء الرسالة</span>';
+    clearTimeout(surface._t);
+    surface._t = setTimeout(() => { const e = document.getElementById('fmacErr'); if (e) e.remove(); }, 12000);
+  } catch (e) { /* لا شيء */ }
+}
+
 export async function __fmacApi(url, opts) {
+  let action = '';
   try {
     await ready();
     /* fetch يفترض GET حين لا يُذكر method — ونداء init يمرّر {cache:'no-store'} فقط */
@@ -384,9 +409,14 @@ export async function __fmacApi(url, opts) {
     if (method === 'GET') return respond(await initPayload());
     let body = {};
     try { body = JSON.parse(opts.body || '{}'); } catch (e) { body = {}; }
-    return respond(await dispatch(body));
+    action = S(body.action);
+    const res = await dispatch(body);
+    if (!res || res.ok !== true) surface(action, (res && res.error) || 'ردّ غير متوقَّع');
+    return respond(res);
   } catch (e) {
-    return respond({ ok: false, error: String((e && e.message) || e) });
+    const msg = String((e && e.code ? e.code + ' — ' : '') + ((e && e.message) || e));
+    surface(action, msg);
+    return respond({ ok: false, error: msg });
   }
 }
 
