@@ -134,14 +134,20 @@ export function parseRoster(text) {
   lines.forEach((raw, i) => {
     const line = raw.trim();
     if (!line) return;
-    const c = line.split(/\t|,|;|\s{2,}/).map((x) => x.trim()).filter((x) => x !== '');
-    if (c.length < 2) { errs.push('سطر ' + (i + 1) + ': ناقص — الاسم والبريد مطلوبان.'); return; }
+    /* الجدولة تحفظ المواضع: إسقاط الفارغ يُنزلق الفرعَ إلى خانة اللعبة
+       حين لا لعبة للموظّف — والمعالجون والإداريّون كلّهم كذلك. */
+    const c = line.indexOf('\t') >= 0
+      ? line.split('\t').map((x) => x.trim())
+      : line.split(/,|;|\s{2,}/).map((x) => x.trim()).filter((x) => x !== '');
+    if (c.filter(Boolean).length < 2) {
+      errs.push('سطر ' + (i + 1) + ': ناقص — الاسم والبريد مطلوبان.'); return; }
     /* البريد قد يأتي أوّلاً أو ثانياً — نأخذه من موضعه لا من ترتيبه */
     const ei = c.findIndex((x) => x.indexOf('@') > 0);
     if (ei < 0) { errs.push('سطر ' + (i + 1) + ': لا بريد في السطر.'); return; }
     const email = c[ei];
     const rest = c.filter((_, k) => k !== ei);
-    if (!rest.length) { errs.push('سطر ' + (i + 1) + ': لا اسم مع البريد.'); return; }
+    if (!rest.filter(Boolean).length) {
+      errs.push('سطر ' + (i + 1) + ': لا اسم مع البريد.'); return; }
     rows.push({
       name: rest[0], email,
       sport: rest[1] || '', branch: rest[2] || '', phone: rest[3] || '',
