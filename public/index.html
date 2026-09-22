@@ -3956,7 +3956,7 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
 
 /* ===== الطباعة: نفس شكل الموقع ===== */
 @media print{
-  @page{ size:A4; margin:12mm; }
+  @page{ size:A4; margin:9mm 8mm; }
   /* الداكن للتقرير الشهري وحده؛ الأسبوعي يُطبع أبيض كما كان.
      ولولا تقييد اللون لَوَرِث النصُّ أسودَ الطباعة فوق كحليّ فاختفى. */
   html:has(body.printing-report){background:var(--canvas)!important}
@@ -3968,7 +3968,21 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
   body.printing-report .toast,body.printing-report .bellpanel{display:none!important}
   body.printing-report .wrap{padding:0!important;max-width:none!important;margin:0!important}
   body.printing-report .rdoc{border:0;border-radius:0;padding:0;box-shadow:none}
-  body.printing-report .rsec{page-break-inside:avoid}
+  /* القسم ينقسم — وإلّا قفز كاملاً وترك الورقة نصفها أبيض */
+  body.printing-report .rsec{break-inside:auto;page-break-inside:auto;
+    margin-bottom:16px}
+  body.printing-report .rsec h4{break-after:avoid;page-break-after:avoid}
+  body.printing-report .mkg{break-inside:avoid;page-break-inside:avoid;gap:7px;
+    margin-bottom:10px}
+  body.printing-report .gtbl.rpt thead{display:table-header-group}
+  body.printing-report .gtbl.rpt tr{break-inside:avoid;page-break-inside:avoid}
+  body.printing-report .rsec > .scroll{overflow:visible}
+  body.printing-report .gtbl.rpt{min-width:0}
+  body.printing-report .mk{padding:9px 10px;border-radius:10px}
+  body.printing-report .mk b{font-size:18px}
+  body.printing-report .mk .s{min-height:0}
+  body.printing-report .rhead{padding-bottom:12px;margin-bottom:14px}
+  body.printing-report .wrap{width:100%!important;padding-inline:0!important}
   body.printing-report .gtbl.rpt{font-size:11px}
   body.printing-report .mkg{grid-template-columns:repeat(3,1fr)}
 }
