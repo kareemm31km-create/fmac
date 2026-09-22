@@ -240,7 +240,8 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   .creedbar::after{background:linear-gradient(270deg,rgba(7,9,12,.96) 0%,
                    rgba(7,9,12,.88) 55%,rgba(7,9,12,.55) 100%)}
 }
-.kgrid.k1{grid-template-columns:minmax(0,1fr)}
+/* الحلقة وحدها: نصف العرض يكفيها، والنصف الآخر فراغ مقصود لا كرت حشو */
+.kgrid.k1{grid-template-columns:minmax(0,560px)}
 /* عنوان مجموعة داخل لوحة أداء الخطط */
 .pfh{font-size:11.5px;letter-spacing:.06em;color:var(--stone);margin:2px 0 6px}
 .pfh:not(:first-child){margin-top:10px}
@@ -276,6 +277,12 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .fdr .fg{margin-inline-start:auto;color:var(--steel);display:flex}
 .fdr .fg svg{width:15px;height:15px}
 @media (max-width:760px){ .stgwrap{justify-content:center} }
+/* صفّ من كرتين — والأعلى أولويةً أوّل الصفّ */
+.drow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;
+  align-items:start;margin-bottom:16px}
+.drow > *{min-width:0;margin-bottom:0}
+.drow > .panel{height:100%;display:flex;flex-direction:column}
+@media (max-width:1080px){ .drow{grid-template-columns:minmax(0,1fr)} }
 /* ===== بطاقة زيارات المدارس في الرئيسية ===== */
 .schcard .schrow{display:flex;align-items:baseline;gap:10px;margin-top:6px}
 .schcard .schrow b{font-size:38px;font-weight:800;color:var(--ink-deep);line-height:1;
@@ -4560,16 +4567,13 @@ input::placeholder,textarea::placeholder{color:#64788B}
     </header>
 
     <div id="adminDash" hidden>
-      <!-- §21 — الترتيب بالأولويات العشر، لا بالشكل ولا بالمساحة.
-           ٢ المشاركات · ٣ ما يحتاج إجراء · ٦ الخطط
-           ٨ المؤشرات · ٩ الإحصاءات التشغيلية · ١٠ التقارير والمرجع.
-           الأولوية ١ (التنبيهات) بلا قسم بطلب المستخدم — وهي في
-           تبويب «ما يحتاج تدخلك» وفي جرس الشريط العلوي.
-           والأولويات ٤ و٥ و٧ (حالة اللاعبين، الحضور، تقييم اللاعبين)
-           لا أقسام لها في الموقع بعد، فلا مكان فارغ يُحجز لها. -->
+      <!-- §21 — الترتيب بالأولويات، والمقاسات بحسب ما يحتاجه كلّ كرت.
+           الكرت الذي يحمل جدولاً أو شريطاً زمنياً يأخذ العرض كلّه،
+           وما هو قائمة أو رقم يُقرَن بجاره. وداخل الصفّ: الأعلى أولويةً
+           يميناً، فيُقرأ أوّلاً في العربية. -->
       <div class="filters" id="dashFilters" hidden></div>
 
-      <!-- ٢ — المشاركات والبطولات القادمة -->
+      <!-- ٢ — المشاركات القادمة: شريط شهور وبطاقات، يحتاج العرض -->
             <section class="panel" id="calPanel">
         <div class="sc-head"><span class="ci" id="calIco"></span>
           <h3 id="calTitle">جدول مشاركات الموسم</h3>
@@ -4581,27 +4585,27 @@ input::placeholder,textarea::placeholder{color:#64788B}
         <div class="sc-lg" id="calLegend"></div>
       </section>
 
-      <!-- ٣ — المهام والمواعيد التي تحتاج إجراء -->
-            <section class="panel" id="agnPanel">
+      <!-- ٣ الأجندة · ٦ تقدّم الخطط -->
+      <div class="drow">
+                <section class="panel" id="agnPanel">
           <div class="ch"><h3>أجندة القسم</h3><span class="cnt" id="agnN"></span>
             <span class="hact"><button class="mini2" id="agnAdd">+ موعد</button></span></div>
           <div class="lede" id="agnLede"></div>
           <div id="agnBody"></div>
         </section>
-
-      <!-- ٦ — الخطط التدريبية: أين وصلت خطط الأسبوع -->
-      <section class="panel" id="stagePanel">
+                <section class="panel" id="stagePanel">
         <div class="ch"><h3>تقدّم الخطط التدريبية</h3>
           <span class="hact"><button class="link" data-view="review">عرض التفاصيل</button></span></div>
         <div class="stgwrap" id="stageBody"></div>
       </section>
+      </div>
 
-      <!-- ٨ — المؤشرات الرئيسية -->
+      <!-- ٨ — الأداء العام: حلقة واحدة تُقرأ من بعيد -->
       <div class="kgrid k4" id="kgrid"></div>
       <button class="waitline" id="waitLine" hidden></button>
 
-      <!-- ٩ — البيانات والإحصاءات التشغيلية -->
-      <div class="hrow3 two">
+      <!-- ٩ تطوّر الأداء · ٩ أداء الخطط -->
+      <div class="drow">
                 <section class="panel" id="trendHome">
           <div class="ch"><h3 id="trendTitle">تطوّر الأداء عبر الأسابيع</h3>
             <span class="hact"><select class="rngsel" id="trendRange">
@@ -4623,17 +4627,19 @@ input::placeholder,textarea::placeholder{color:#64788B}
         </section>
       </div>
 
-            <div id="schoolHost"></div>
-
-      <div id="natHost"></div>
-
-      <!-- كرت المنتخب بعرض الصفّ: التصميم عريض لا عمودياً -->
-      <section class="panel" id="medPanel">
+      <!-- ٩ زيارات المدارس · ٩ الميداليات -->
+      <div class="drow">
+                <div id="schoolHost"></div>
+                <section class="panel" id="medPanel">
           <div class="ch"><h3 id="medTitle">الميداليات</h3><span class="ci" id="medIco"></span></div>
           <div class="medwrap" id="medBody"></div>
         </section>
+      </div>
 
-      <!-- ١٠ — التقارير والمعلومات المرجعية -->
+      <!-- ٩ — المنتخب: التصميم عريض -->
+      <div id="natHost"></div>
+
+      <!-- ١٠ — التقارير والمرجع -->
             <section class="panel" id="visStrip">
         <div class="ch"><h3>آخر المتابعات الفنية</h3><span class="cnt" id="visStripN"></span>
           <span class="hact"><button class="link" data-view="visit">عرض الكل</button></span></div>
