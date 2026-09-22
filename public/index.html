@@ -6765,16 +6765,120 @@ try{ LANG = localStorage.getItem(LS+'.lang')||'ar'; }catch(e){}
 
 const SPORT_EN={'الجودو':'Judo','الجوجيتسو':'Jiu-Jitsu','الكاراتيه':'Karate','المبارزة':'Fencing',
   'المصارعة':'Wrestling','القوس والسهم':'Archery','التايكوندو':'Taekwondo','الملاكمة':'Boxing',
-  'السباحة':'Swimming','الترياثلون':'Triathlon'};
+  'السباحة':'Swimming','الترياثلون':'Triathlon',
+  'القوس والسهم':'Archery'};
+/* عباراتٌ تُستبدل قبل الكلمات المفردة. بدونها يبتلع «الفجيرة»
+   اسمَ النادي فيصير «نادي Fujairah للفنون القتالية». الأطول أوّلاً. */
+const PHRASE_EN={
+  'نادي الفجيرة للفنون القتالية':'Fujairah Martial Arts Club',
+  'قسم الإعداد الفني':'Technical Department',
+  'القوس و السهم':'Archery',
+};
 const DAY_EN={'الأحد':'Sunday','الاثنين':'Monday','الإثنين':'Monday','الثلاثاء':'Tuesday',
   'الأربعاء':'Wednesday','الخميس':'Thursday','الجمعة':'Friday','السبت':'Saturday'};
-const MISC_EN={'ناشئين':'Cadets','ناشئات':'Cadet girls','براعم':'Minis','أشبال':'Youth','كبار':'Seniors','شباب':'Juniors','سيدات':'Women','الفرق':'Teams','بنات تحت 15 سنة':'Girls under 15','بنات تحت 15':'Girls under 15','الفريق الأساسي':'Main team','الفريق الأول':'First team','الالتزام بالحجم':'Volume adherence','الالتزام بالشدة':'Intensity adherence','تظهر تلقائياً بعد أول متابعة حصة.':'appears automatically after the first tracked session.','كوميتيه':'Kumite','مبتدئون':'Beginners','المبتدئن':'Beginners','مبتدئين':'Beginners','الاعداد العام':'General preparation','الاعداد':'Preparation','خطتان':'two plans','حصتان':'two sessions','للبطولة':'per event','دبا':'Dibba','الفجيرة':'Fujairah','تلقائي':'auto','وغيرها':'and others',
+const MISC_EN={'ناشئين':'Cadets','ناشئات':'Cadet girls','براعم':'Minis','أشبال':'Youth','كبار':'Seniors','شباب':'Juniors','سيدات':'Women','الفرق':'Teams','بنات تحت 15 سنة':'Girls under 15','بنات تحت 15':'Girls under 15','الفريق الأساسي':'Main team','الفريق الأول':'First team','الالتزام بالحجم':'Volume adherence','الالتزام بالشدة':'Intensity adherence','تظهر تلقائياً بعد أول متابعة حصة.':'appears automatically after the first tracked session.','كوميتيه':'Kumite','مبتدئون':'Beginners','المبتدئن':'Beginners','مبتدئين':'Beginners','مبتدأين':'Beginners','المنافسات':'Competitions','الاعداد العام':'General preparation','الاعداد':'Preparation','خطتان':'two plans','حصتان':'two sessions','للبطولة':'per event','دبا':'Dibba','الفجيرة':'Fujairah','تلقائي':'auto','وغيرها':'and others',
   'وآخرون':'and others','ملغاة':'cancelled','←':'→','الأسبوع':'Week'};
 const MON_EN={'يناير':'January','فبراير':'February','مارس':'March','أبريل':'April','مايو':'May',
   'يونيو':'June','يوليو':'July','أغسطس':'August','سبتمبر':'September','أكتوبر':'October',
   'نوفمبر':'November','ديسمبر':'December'};
 
 const DICT={
+/* ما أحصته المراجعة ناقصاً — كان يظهر عربيّاً في الإنجليزية */
+  /* هجاءٌ يرد في البيانات كما يكتبه الناس — قاموساً لا كلماتٍ مفردة،
+     وإلّا شُوّه ما هو داخل اسم علم مثل «الامارات للتايكواندو» */
+  'الكراتيه':'Karate','المصارعه':'Wrestling','الجيوجيتسو':'Jiu-Jitsu',
+  'التايكواندو':'Taekwondo','تايكواندو':'Taekwondo','القوس و السهم':'Archery',
+  'المنتخب الوطني':'National team',
+  /* أسبوعيّات كانت تخرج «تقويم Week» */
+  'تقويم الأسبوع':'Week calendar','عدّ الأسبوع':'Week count',
+  'تقرير الأسبوع':'Week report','ملخّص الأسبوع':'Week summary',
+  'التقرير الشهري الشامل وملخّص الأسبوع الجاري':
+    'The full monthly report and a summary of the current week',
+  'الإدارة والإضافة ←':'Manage and add →',
+  'زيارات المدارس':'School visits',
+  'تقدّم الخطط التدريبية':'Training plan progress',
+  'عرض التفاصيل':'View details',
+  'تم الاعتماد':'Approved',
+  'قيد المراجعة':'Under review',
+  'بحاجة تحديث':'Needs update',
+  'غير مستلمة':'Not submitted',
+  'عرض الوحدة':'Open module',
+  'لا زيارات مسجَّلة في هذا الموسم بعد.':'No visits recorded this season yet.',
+  'لا توجد ملفات مواسم بعد. استوردها لتظهر الميداليات هنا.':'No season files yet. Import them for medals to appear here.',
+  'أداء الخطط':'Plan performance',
+  'من التسليم إلى التنفيذ':'From submission to execution',
+  'دورة الخطة':'Plan cycle',
+  'لم يُرصد أي بند بعد':'No item tracked yet',
+  'ما يُقاس داخل الحصة':'What is measured inside the session',
+  'مواهب اليوم … إنجازات الغد':'Today\'s talent … tomorrow\'s achievements',
+  'الألعاب المختلفة':'Sports covered',
+  'إجمالي اللاعبين':'Total players',
+  'لاعبين في المنتخب الوطني':'players in the national team',
+  'رياضة وطنية':'National sport',
+  'مستقبل واعد':'A promising future',
+  'لا رصد بعد':'Not tracked yet',
+  'لا حصص':'No sessions',
+  'أسبوع واحد':'one week',
+  'الإدارة والإضافة →':'Manage and add →',
+  'لا حصص مرصودة لهذه اللعبة بعد.':'No sessions tracked for this sport yet.',
+  'لاعبو المنتخب الوطني':'National team players',
+  'لاعباً':'players',
+  'متابعة التنفيذ':'Execution tracking',
+  'الخطط الشهرية':'Monthly plans',
+  'اعتُمدت الخطة وتنتظر أول رصد.':'The plan is approved and awaiting its first tracking.',
+  'الزيارات واللاعبون المختارون وتحليلاتها':'Visits, selected players and their analytics',
+  'الزيارات الميدانية للمدارس — التخطيط والتنفيذ ومخرجات الاختيار.':'School field visits — planning, execution and selection outcomes.',
+  'نظرة عامة':'Overview',
+  'التقويم':'Calendar',
+  'المدارس':'Schools',
+  'الزيارات':'Visits',
+  'اللاعبون':'Players',
+  'التحليلات':'Analytics',
+  'تصدير Excel':'Export Excel',
+  'طباعة / PDF':'Print / PDF',
+  '+ زيارة جديدة':'+ New visit',
+  'الأرقام من الزيارات التي تمّت وحدها؛ ما لم يُسجَّل يظهر «—».':'Figures come from completed visits only; anything unrecorded shows “—”.',
+  'زيارة في الموسم':'visits this season',
+  'لم تُسجَّل زيارة بعد':'No visit recorded yet',
+  'مدرسة تمّت تغطيتها':'schools covered',
+  'طالباً شارك':'students took part',
+  'طالباً اختير':'students selected',
+  'نسبة التحويل':'Conversion rate',
+  'تحتاج مشاركين ومختارين مسجَّلين':'Needs recorded participants and selections',
+  'أفضل المدارس مخرجاً':'Top schools by output',
+  'لا زيارات تمّت بعد.':'No visits completed yet.',
+  'زياراتك المُسنَدة':'Your assigned visits',
+  'زياراتي':'My visits',
+  'كل الزيارات':'All visits',
+  'زياراتك':'Your visits',
+  'التقرير الشهري':'Monthly report',
+  'الشهر':'Month',
+  'تصدير PDF':'Export PDF',
+  'يُطبع بنفس شكل الموقع — اختر «حفظ كملف PDF» في نافذة الطباعة':'Prints exactly as the site looks — choose “Save as PDF” in the print dialog',
+  'تقرير قسم الإعداد الفني':'Technical Department report',
+  'أولاً — التدريب':'One — Training',
+  'ثانياً — نتائج البطولات في الشهر':'Two — Competition results this month',
+  'ثالثاً — الألعاب':'Three — Sports',
+  'رابعاً — المعسكرات':'Four — Camps',
+  'خامساً — الزيارات الفنية':'Five — Technical visits',
+  'سادساً — أجندة القسم':'Six — Department agenda',
+  'سابعاً — كشف الاتحادات في الشهر':'Seven — Federation listings this month',
+  'ثامناً — لاعبو المنتخب الوطني':'Eight — National team players',
+  'لا بطولات مسجَّلة بتاريخ داخل هذا الشهر.':'No competitions dated within this month.',
+  'لا نشاط مسجَّل للألعاب في هذا الشهر.':'No sport activity recorded this month.',
+  'لا معسكرات في هذا الشهر.':'No camps this month.',
+  'لا زيارات في هذا الشهر.':'No visits this month.',
+  'لا مواعيد مسجَّلة في هذا الشهر.':'No dates recorded this month.',
+  'يُقاس في المتابعة':'Measured during tracking',
+  'التاريخ':'Date',
+  'الحالة':'Status',
+  'اللاعب':'Player',
+  'محلية':'Local',
+  'إرسال تذكير':'Send reminder',
+  'واتساب':'WhatsApp',
+  'إجراءان':'two actions',
+  'غير مربوط':'Not linked',
+  'يعمل الموقع بالفحص الآلي وحده حتى تضع المفتاح':'The site runs on automatic checks alone until you add the key',
 /* ما استُحدث في قسمَي الإعداد البدني والعلاج الطبيعي وشعار النادي */
 'من هنا تبدأ القوة…':'Where strength begins…',
 'ومن هنا يُصنع الأبطال':'And champions are made.',
@@ -7542,6 +7646,28 @@ const DICT={
 };
 
 const RULES=[
+  /* ===== ما أحصته المراجعة: جملٌ متغيّرة لا يطالها قاموس ===== */
+  /* [^—] لا (.+): الصيغة الطويلة «… — نظرة عامة» لها قاعدةٌ أدقّ بعدها */
+  [/^(صباح الخير|طاب يومك|مساء الخير)، ([^—]+)$/,function(m,a,b){
+    return ({'صباح الخير':'Good morning','طاب يومك':'Good afternoon',
+      'مساء الخير':'Good evening'})[a]+', '+b; }],
+  [/^(\d+) من (\d+) · (\d+) مدرباً لم يسلّم$/,'$1 of $2 · $3 coaches have not submitted'],
+  [/^(\d+) من (\d+) · (.+) تنتظر اعتمادك$/,'$1 of $2 · $3 awaiting your approval'],
+  [/^(\d+) مدرباً لم يسلّم بعد$/,'$1 coaches have not submitted yet'],
+  [/^(.+) لم تُعتمد$/,'$1 not approved'],
+  [/^لاعبو (.+) في منتخب الإمارات لموسم (.+)$/,
+    '$1 players in the UAE national team — season $2'],
+  [/^خطة (.+?) — (.+)$/,'$1 plan — $2'],
+  [/^(\d+) بند · لم يُرصد بعد$/,'$1 items · not tracked yet'],
+  [/^· لم يُرصد أي بند بعد — (\d+) ألعاب في القسم$/,
+    '· No item tracked yet — $1 sports in the department'],
+  [/^من (\d+) تمريناً$/,'of $1 exercises'],
+  [/^(\d+) مستلمة$/,'$1 submitted'],
+  [/^نظرة عامة — موسم (.+)$/,'Overview — season $1'],
+  [/^صدر في (.+)$/,'Issued on $1'],
+  [/^الجنس مسجَّل لـ(\d+) من (\d+) — يُسجَّل عند إضافة اللاعب$/,
+    'Gender recorded for $1 of $2 — captured when a player is added'],
+  [/^(.+) · (\d+) مدرباً$/,'$1 · $2 coaches'],
   /* ===== لوحة الرئيسية الجديدة ===== */
   [/^(.+) — الجاري$/,'$1 — current'],
   [/^اليوم · (.+)$/,'Today · $1'],
@@ -7707,10 +7833,16 @@ function tokWord(x,k,v){
   return out;
 }
 function trTokens(x){
+  /* العبارات أوّلاً، والأطول قبل الأقصر — وإلّا ابتلعت الكلمةُ العبارةَ */
+  /* tokWord لا split: «بنادي الفجيرة…» حرفُ جرٍّ ملتصق، وهي بيانات */
+  Object.keys(PHRASE_EN).sort((p,q)=>q.length-p.length)
+    .forEach(k=>{ x=tokWord(x,k,PHRASE_EN[k]); });
   Object.keys(SPORT_EN).forEach(k=>{ x=x.split(k).join(SPORT_EN[k]); });
   Object.keys(DAY_EN).forEach(k=>{ x=x.split(k).join(DAY_EN[k]); });
   Object.keys(MON_EN).forEach(k=>{ x=x.split(k).join(MON_EN[k]); });
   Object.keys(MISC_EN).forEach(k=>{ x=tokWord(x,k,MISC_EN[k]); });
+  /* النصّ صار إنجليزيّاً، فلتتبعه علامة الترقيم — «Tuesday، 22» ليست جملة */
+  x = x.replace(/،\s*/g, ', ').replace(/؛\s*/g, '; ').replace(/؟/g, '?');
   return x;
 }
 function tr(raw){
@@ -12565,7 +12697,9 @@ function renderAgenda(){
           'data-agnopen="'+esc(a.k||a.date)+'">'+
           '<span class="dt2"><b dir="ltr">'+dd+'</b><span>'+esc(mm)+'</span></span>'+
           '<span class="ic">'+di(agnIcon(a.kind))+'</span>'+
-          '<span class="t"><b>'+esc(a.title)+'</b><span>'+
+          /* عنوان الموعد وتفصيله نصٌّ كتبه المستخدم — يبقى بلغته
+             ولا يُترجَم جزئياً (كما يقول حارس data-raw في applyLang) */
+          '<span class="t"><b data-raw>'+esc(a.title)+'</b><span data-raw>'+
             esc([a.time,a.detail||a.kind,a.branch].filter(Boolean).join(' · '))+'</span></span>'+
           '<span class="go">'+di('chev')+'</span></button>'; }).join('')+'</div>'+
       '<div class="pmore"><button class="mini2" data-view="calendar">'+
