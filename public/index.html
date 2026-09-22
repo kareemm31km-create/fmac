@@ -202,29 +202,41 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .fitstrip .fs-m{font-size:12px;color:var(--steel)}
 .fitstrip .fs-p{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .fitstrip .fs-ro{color:var(--live,#7fb3ff)}
-/* شعار النادي النصّي أعلى الرئيسية — خلفية العلم والحصن تحت حجاب داكن */
+/* شعار النادي أعلى الرئيسية — الصورة خلفية والنصّ نصّ، فيبقى حادّاً
+   على كل مقاس ولا يحتاج نسخةً لكل عرض شاشة. */
 .creedbar{position:relative;overflow:hidden;border-radius:var(--r-xl);
-  margin:0 0 var(--s-base);min-height:168px;display:flex;align-items:center;
-  background:#0a0d12}
+  margin:0 0 var(--s-base);display:flex;align-items:center;background:#07090c;
+  min-height:clamp(180px,20vw,250px)}
 .creedbar::before{content:'';position:absolute;inset:0;
-  background:url(./img/hero.jpg) center 22% / cover no-repeat;opacity:.55}
+  /* الشريط أعرض من الصورة نسبةً، فالقصّ رأسي — والموضع الرأسي هو ما يفيد */
+  background:url(./img/banner.jpg) center 68% / cover no-repeat}
 .creedbar::after{content:'';position:absolute;inset:0;
-  /* الأغمق خلف النصّ — والنصّ يمين الصفحة في العربية */
-  background:linear-gradient(270deg,rgba(8,9,12,.92) 0%,rgba(8,9,12,.58) 52%,rgba(8,9,12,.22) 100%)}
-.creedbar .cb-in{position:relative;z-index:2;padding:22px 26px}
-.creedbar .cb-k{display:block;font:600 12px/1 'Segoe UI',system-ui,sans-serif;
-  letter-spacing:.42em;color:#dfe4ea;direction:ltr}
-.creedbar .cb-h{margin:10px 0 0;display:flex;flex-direction:column;line-height:1.02;
-  direction:ltr;font-style:italic;font-weight:800;letter-spacing:.01em;
-  font-size:clamp(26px,4.4vw,44px);font-family:'Segoe UI',system-ui,sans-serif}
+  /* الأغمق حيث النصّ — وهو يمين الصفحة في العربية */
+  background:linear-gradient(270deg,rgba(7,9,12,.96) 0%,rgba(7,9,12,.80) 30%,
+             rgba(7,9,12,.30) 68%,rgba(7,9,12,0) 100%)}
+.creedbar .cb-in{position:relative;z-index:2;padding:26px 30px;max-width:min(560px,68%)}
+.creedbar .cb-k{display:flex;align-items:center;gap:14px;
+  font:600 12px/1 'Segoe UI',system-ui,sans-serif;letter-spacing:.42em;
+  color:#dfe4ea;direction:ltr;flex-direction:row-reverse}
+.creedbar .cb-k i{flex:1;max-width:96px;height:1.5px;background:var(--brand);display:block}
+.creedbar .cb-h{margin:16px 0 0;display:flex;flex-direction:column;gap:4px;
+  font-size:clamp(21px,2.9vw,36px);font-weight:800;line-height:1.28;letter-spacing:-.4px}
 .creedbar .cb-h span{color:#f4f6f8}
-.creedbar .cb-h em{font-style:italic;color:#e8555c}
-.creedbar .cb-ar{margin:12px 0 0;font-size:clamp(15px,2vw,20px);font-weight:700;color:#e9ecf1}
-@media (max-width:640px){
-  .creedbar{min-height:140px}
-  .creedbar .cb-in{padding:18px}
-  .creedbar .cb-k{letter-spacing:.3em;font-size:11px}
-  .creedbar::after{background:linear-gradient(270deg,rgba(8,9,12,.93) 0%,rgba(8,9,12,.66) 70%,rgba(8,9,12,.42) 100%)}
+.creedbar .cb-h em{font-style:normal;color:var(--brand)}
+.creedbar .cb-en{margin:16px 0 0;direction:ltr;text-align:start;
+  font:500 clamp(11px,1.15vw,14px)/1.75 'Segoe UI',system-ui,sans-serif;
+  letter-spacing:.2em;color:#c7cdd6}
+.creedbar .cb-v{margin:16px 0 0;direction:ltr;text-align:start;
+  font:600 clamp(9.5px,.95vw,12px)/1 'Segoe UI',system-ui,sans-serif;
+  letter-spacing:.3em;color:#8f98a6}
+.creedbar .cb-v i{font-style:normal;color:var(--brand);margin:0 12px}
+@media (max-width:760px){
+  .creedbar{min-height:auto}
+  .creedbar .cb-in{padding:20px 18px;max-width:100%}
+  .creedbar .cb-k{letter-spacing:.26em;font-size:10.5px}
+  .creedbar .cb-k i{max-width:44px}
+  .creedbar::after{background:linear-gradient(270deg,rgba(7,9,12,.96) 0%,
+                   rgba(7,9,12,.88) 55%,rgba(7,9,12,.55) 100%)}
 }
 /* بطاقة قسم محجوز — تقول إنّه فارغ صراحةً ولا توهم بمحتوى */
 .soonbox{text-align:center;padding:52px 24px}
@@ -4242,11 +4254,12 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
   <section id="homeView">
     <!-- شعار النادي النصّي — نصّ لا صورة، فيبقى حادّاً ويتبع لون الواجهة -->
     <div class="creedbar" role="img"
-         aria-label="أكثر من نادٍ .. لصناعة جيل أقوى — More than a club, a stronger tomorrow">
+         aria-label="من هنا تبدأ القوة… ومن هنا يُصنع الأبطال — Where strength begins, and champions are made">
       <div class="cb-in">
-        <span class="cb-k">MORE THAN A CLUB</span>
-        <h2 class="cb-h"><span>A STRONGER</span><em>TOMORROW</em></h2>
-        <p class="cb-ar">أكثر من نادٍ.. لصناعة جيل أقوى</p>
+        <span class="cb-k">MORE THAN A CLUB<i></i></span>
+        <h2 class="cb-h"><span>من هنا تبدأ القوة…</span><em>ومن هنا يُصنع الأبطال</em></h2>
+        <p class="cb-en">WHERE STRENGTH BEGINS…<br>AND CHAMPIONS ARE MADE.</p>
+        <p class="cb-v">DISCIPLINE<i>|</i>UNITY<i>|</i>EXCELLENCE</p>
       </div>
     </div>
 

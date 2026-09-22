@@ -31,10 +31,12 @@ const T = {
     send: 'أرسل الطلب', sending: 'جارٍ الإرسال…',
     sent: 'وصل طلبك إلى الإدارة. ستصلك رسالة على بريدك حين يُفتح الحساب.',
     haveAcc: 'لديك حساب؟', backIn: 'عُد لتسجيل الدخول',
-    slogan1: 'أكثر من نادٍ ..', slogan2: 'لصناعة جيل أقوى',
-    sloganEn1: 'MORE THAN A CLUB ..', sloganEn2: 'A STRONGER TOMORROW',
+    kicker: 'MORE THAN A CLUB',
+    slogan1: 'من هنا تبدأ القوة…', slogan2: 'ومن هنا يُصنع الأبطال',
+    sloganEn1: 'WHERE STRENGTH BEGINS…', sloganEn2: 'AND CHAMPIONS ARE MADE.',
     foot: 'من الفجيرة .. إلى العالمية', footEn: 'FROM FUJAIRAH .. TO THE WORLD',
-    creed: ['DISCIPLINE', 'BUILDS', 'STRONGER', 'GENERATIONS'],
+    creed: ['DISCIPLINE', 'UNITY', 'EXCELLENCE'],
+    values: ['DISCIPLINE', 'UNITY', 'EXCELLENCE'],
     needEmail: 'اكتب بريدك أوّلاً ثم اضغط الرابط.',
     resetSent: 'أُرسلت رسالة إعادة التعيين إلى بريدك.',
     needName: 'الاسم والبريد مطلوبان.',
@@ -60,10 +62,12 @@ const T = {
     send: 'Send request', sending: 'Sending…',
     sent: 'Your request reached the administration. You will be emailed once it opens.',
     haveAcc: 'Have an account?', backIn: 'Back to sign in',
-    slogan1: 'More than a club ..', slogan2: 'building a stronger generation',
-    sloganEn1: 'MORE THAN A CLUB ..', sloganEn2: 'A STRONGER TOMORROW',
+    kicker: 'MORE THAN A CLUB',
+    slogan1: 'Where strength begins…', slogan2: 'and champions are made.',
+    sloganEn1: 'من هنا تبدأ القوة…', sloganEn2: 'ومن هنا يُصنع الأبطال',
     foot: 'From Fujairah .. to the world', footEn: 'FROM FUJAIRAH .. TO THE WORLD',
-    creed: ['DISCIPLINE', 'BUILDS', 'STRONGER', 'GENERATIONS'],
+    creed: ['DISCIPLINE', 'UNITY', 'EXCELLENCE'],
+    values: ['DISCIPLINE', 'UNITY', 'EXCELLENCE'],
     needEmail: 'Type your email first, then press the link.',
     resetSent: 'A reset message was sent to your email.',
     needName: 'Name and email are required.',
@@ -102,8 +106,16 @@ export const STYLE = `
 #fmacLogin .creed span{font:600 14px/1 'Segoe UI',system-ui,sans-serif;letter-spacing:.3em;
   color:#e9ecf126;direction:ltr}
 #fmacLogin .slog{padding-inline-end:170px}
-#fmacLogin .slog h2{margin:0;font-size:clamp(24px,3vw,40px);font-weight:800;line-height:1.28}
-#fmacLogin .slog h2 i{font-style:normal;color:#e8555c}
+#fmacLogin .kick{display:flex;flex-direction:row-reverse;align-items:center;gap:14px;
+  font:600 11.5px/1 'Segoe UI',system-ui,sans-serif;letter-spacing:.4em;color:#dfe4ea;
+  direction:ltr;margin-bottom:14px}
+#fmacLogin .kick i{flex:1;max-width:90px;height:1.5px;background:#e8555c;display:block}
+#fmacLogin .slog h2{margin:0;font-size:clamp(21px,2.6vw,34px);font-weight:800;line-height:1.32;
+  letter-spacing:-.4px;color:#f4f6f8}
+#fmacLogin .slog h2 em{font-style:normal;color:#e8555c}
+#fmacLogin .vals{margin-top:14px!important;font:600 10px/1 'Segoe UI',system-ui,sans-serif;
+  letter-spacing:.3em;color:#8f98a6;direction:ltr}
+#fmacLogin .vals i{font-style:normal;color:#e8555c;margin:0 10px}
 #fmacLogin .slog p{margin:12px 0 0;font:500 12.5px/1.9 'Segoe UI',system-ui,sans-serif;
   letter-spacing:.22em;color:#9aa3b0;direction:ltr;text-align:start}
 /* direction:ltr — الصفّ بصري كما في التصميم: الجودو أوّله من اليسار */
@@ -227,8 +239,11 @@ function sidePanel(t) {
     '<img class="logo" src="./img/fmac-logo.png" ' +
     'alt="نادي الفجيرة للفنون القتالية — قسم الإعداد الفني">' +
     '<div class="creed">' + t.creed.map((c) => '<span>' + c + '</span>').join('') + '</div>' +
-    '<div><div class="slog"><h2>' + esc(t.slogan1) + '<br><i>' + esc(t.slogan2) + '</i></h2>' +
-    '<p>' + esc(t.sloganEn1) + '<br>' + esc(t.sloganEn2) + '</p></div>' +
+    '<div><div class="slog">' +
+    '<span class="kick">' + esc(t.kicker) + '<i></i></span>' +
+    '<h2>' + esc(t.slogan1) + '<br><em>' + esc(t.slogan2) + '</em></h2>' +
+    '<p>' + esc(t.sloganEn1) + '<br>' + esc(t.sloganEn2) + '</p>' +
+    '<p class="vals">' + t.values.map(esc).join('<i>|</i>') + '</p></div>' +
     '<div class="sports">' + SPORTS.map(([ar, slug]) =>
       '<a title="' + esc(ar) + '"><img src="./img/sports/' + slug + '.png" alt="' +
       esc(ar) + '"><span>' + esc(ar) + '</span></a>').join('') + '</div>' +
