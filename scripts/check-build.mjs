@@ -33,3 +33,19 @@ const shim = (html.match(/__fmacApi\(API/g) || []).length;
 console.log(`✓ النسخة متطابقة — BUILD = NEED_BUILD = ${a}`);
 console.log(`✓ ${shim} نداءً يمرّ بطبقة Firebase، ولا نداء مباشر`);
 console.log('✓ لا أثر لـApps Script في الواجهة');
+
+/* ثلاث قوائم للصفحات يجب أن تتّفق: VIEWS تُظهر القسم، وPG_TITLE تعنونه،
+   وROUTES تعطيه مساراً. افترقت مرّةً فبقي عنوان «الرئيسية» فوق قسمين. */
+const viewsSrc = html.match(/const VIEWS=\{([\s\S]*?)\};/);
+const titleSrc = html.match(/const PG_TITLE=\{([\s\S]*?)\n\};/);
+const routesSrc = await readFile(join(ROOT, 'public/js/fmac-router.js'), 'utf8');
+if (!viewsSrc || !titleSrc) fail('تعذّر قراءة VIEWS أو PG_TITLE');
+const keys = (src) => [...src.matchAll(/(?:^|[{,\s])([a-zA-Z][a-zA-Z0-9_]*)\s*:/g)].map((m) => m[1]);
+const views = new Set(keys(viewsSrc[1]));
+const titles = new Set(keys(titleSrc[1]));
+const routes = new Set([...routesSrc.matchAll(/view:\s*'([^']+)'/g)].map((m) => m[1]));
+const missT = [...views].filter((v) => !titles.has(v));
+const missR = [...views].filter((v) => !routes.has(v));
+if (missT.length) fail('أقسام بلا عنوان في PG_TITLE: ' + missT.join('، '));
+if (missR.length) fail('أقسام بلا مسار في ROUTES: ' + missR.join('، '));
+console.log(`✓ ${views.size} قسماً، لكلٍّ عنوانٌ ومسار`);

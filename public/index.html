@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- التطبيق يُخدَم من الجذر، وكلّ مسارٍ يُعاد إلى index.html. فمن يُحدّث
+     صفحةً عميقة مثل /sports/judo كانت مساراته النسبيّة ./js/ تُحلّ من
+     /sports/ فتعود HTML بدل JavaScript، وتبقى الصفحة بيضاء. -->
+<base href="/">
 <meta name="color-scheme" content="dark">
 <script>
 /* الوضع يُحسَم قبل أوّل رسم — وإلّا ومَض الداكنُ في وجه من اختار الفاتح.
@@ -12937,6 +12941,8 @@ const PG_TITLE={
   calendar:['تقويم النادي','مواعيد الأسبوع'],
   coaches:['المدربون','التسليم والأداء'],
   audit:['سجل التدقيق','كل ما جرى في الموقع'],
+  monthly:['الخطط الشهرية','الخطة الشهرية لكل لعبة ومراجعتها'],
+  schools:['زيارات المدارس','الزيارات واللاعبون المختارون وتحليلاتها'],
   fitness:['الإعداد البدني','خطة اللياقة الأسبوعية لكل لعبة'],
   physio:['وحدة العلاج الطبيعي','قسم محجوز — لم يُبنَ محتواه بعد'],
   settings:['الإعدادات','المستخدمون والبيانات والمواسم']
@@ -15471,7 +15477,13 @@ document.addEventListener('keydown',e=>{
   let prof=null;
   try{ prof=await (window.__fmacAuthReady||Promise.resolve(null)); }catch(e){}
   const code=(prof&&(prof.code||prof.uid))||'firebase';
+  /* المسار الوارد يُلتقط قبل الإقلاع: start() يستدعي setView('home')
+     فيدفع '/' ويمحو ما جاء به المستخدم، فيقرأ المُوجِّه رئيسيةً دائماً.
+     وrouting يمنع دفع مدخلٍ زائد في السجلّ أثناء الإقلاع. */
+  const wantPath = location.pathname;
+  routing = true;
   const ok=await tryCode(code);
+  routing = false;
   if(!ok){ showGate('تعذّر تحميل بياناتك. حدّث الصفحة أو راجع الإدارة.'); return; }
 
   /* ── التوجيه: افتح الصفحة التي يشير إليها المسار، وتابع زرّ الرجوع ── */
@@ -15487,7 +15499,7 @@ document.addEventListener('keydown',e=>{
       }catch(e){}
       routing=false;
     };
-    apply(R.parse());
+    apply(R.parse(wantPath));
     /* استبدل لا تدفع، حتى لا يُضاف مدخل زائد عند أوّل تحميل */
     try{ R.replace(curView,{sport:curSport,tab:repTab}); }catch(e){}
     addEventListener('popstate',()=>{ apply(R.parse()); });
