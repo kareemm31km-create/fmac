@@ -7,7 +7,7 @@
 <h1 style="font-size:17px">FMAC — فحص بناء الحمولة</h1>
 <div id="sum">running…</div><div id="out"></div>
 <script type="module">
-import * as P from './js/fmac-payload.js';
+import * as P from './js/fmac-payload.js?s=2';
 
 const out = []; let pass = 0, fail = 0;
 const head = (t) => out.push('<h2>' + t + '</h2>');
@@ -222,6 +222,30 @@ head('[14] دورة كاملة: هجرة ← حمولة');
 const rt = P.readTicks(jobOf('سجل التقييم').docs.map((d) => ({ k: 'k1', ...d.data })), V);
 eq('الرصد المهاجَر يُقرأ', rt['k1'], { s: 'نُفِّذ', n: 'ملحوظة' });
 
+
+/* ── 15. الأسبوع الجاري لا يعلق في موسم منقضٍ ── */
+head('[15] انتقال الموسم — الأسبوع الجاري');
+eq('«الأسبوع 3 — أغسطس 2026» ⇒ موسم منقضٍ',
+   P.seasonOfWeek('الأسبوع 3 — أغسطس 2026'), '2025-2026');
+eq('«الأسبوع 2 — سبتمبر 2026» ⇒ الجاري',
+   P.seasonOfWeek('الأسبوع 2 — سبتمبر 2026'), '2026-2027');
+eq('«الأسبوع 1 — يناير 2027» ⇒ الجاري',
+   P.seasonOfWeek('الأسبوع 1 — يناير 2027'), '2026-2027');
+eq('مسمّى بلا شهر ⇒ فارغ', P.seasonOfWeek('الأسبوع 4'), '');
+eq('1 سبتمبر يبدأ موسماً', P.seasonOf('2027-09-01'), '2027-2028');
+eq('31 أغسطس آخر يوم في السابق', P.seasonOf('2027-08-31'), '2026-2027');
+/* أسبوع الموسم الماضي يُتجاهَل ويُحسب من التاريخ */
+eq('أسبوع أغسطس المحفوظ يُتجاهَل',
+   P.weekNow({ week: 'الأسبوع 3 — أغسطس 2026', dates: 'قديم' }).label,
+   P.weekAuto().label);
+/* أسبوع الموسم الجاري يُحترَم كما ضبطته الإدارة */
+eq('أسبوع الموسم الجاري يُحترَم',
+   P.weekNow({ week: 'الأسبوع 2 — سبتمبر 2026', dates: '6 – 11 سبتمبر 2026' }).label,
+   'الأسبوع 2 — سبتمبر 2026');
+eq('وتواريخه معه',
+   P.weekNow({ week: 'الأسبوع 2 — سبتمبر 2026', dates: '6 – 11 سبتمبر 2026' }).dates,
+   '6 – 11 سبتمبر 2026');
+eq('بلا إعدادات ⇒ من التاريخ', P.weekNow({}).label, P.weekAuto().label);
 document.getElementById('out').innerHTML = out.join('');
 document.getElementById('sum').innerHTML = (fail === 0)
   ? '<span class="ok">كل الفحوص نجحت — ' + pass + '/' + (pass + fail) + '</span>'

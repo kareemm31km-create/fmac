@@ -56,8 +56,36 @@ export function buildSettings(cfgDoc) {
     },
   };
 }
-export const weekNow = (settings) =>
-  settings && settings.week ? { label: settings.week, dates: settings.dates } : weekAuto();
+/* الموسم الرياضي يبدأ أوّل سبتمبر وينتهي أوّل يوليو.
+   getMonth صفريّ الأساس، فسبتمبر = 8. */
+export function seasonOf(d) {
+  const t = d ? new Date(d) : new Date();
+  const y = t.getFullYear();
+  return (t.getMonth() >= 8) ? (y + '-' + (y + 1)) : ((y - 1) + '-' + y);
+}
+
+/** موسم أسبوع من مسمّاه: «الأسبوع 3 — أغسطس 2026» ⇒ 2025-2026 */
+export function seasonOfWeek(label) {
+  const t = S(label);
+  const y = t.match(/(20\d\d)/);
+  let mo = 0;
+  for (let i = 0; i < AR_MONTHS.length; i++) if (t.indexOf(AR_MONTHS[i]) >= 0) mo = i + 1;
+  if (!y || !mo) return '';
+  const Y = Number(y[1]);
+  return mo >= 9 ? (Y + '-' + (Y + 1)) : ((Y - 1) + '-' + Y);
+}
+
+/** الأسبوع الجاري. أسبوعٌ محفوظ من موسم منقضٍ لا يصلح أسبوعاً جارياً،
+ *  فيُتجاهل ويُحسب من التاريخ — وبه ينتقل الموقع إلى الموسم الجديد
+ *  أوّل سبتمبر بلا تدخّل، ولا تبقى اللوحة على أسبوع الموسم الماضي. */
+export const weekNow = (settings) => {
+  const w = settings && S(settings.week);
+  if (w) {
+    const s = seasonOfWeek(w);
+    if (!s || s === seasonOf()) return { label: w, dates: S(settings.dates) };
+  }
+  return weekAuto();
+};
 
 /* ── خرائط بسيطة ──────────────────────────────────────────── */
 export function planMap(plans) {
