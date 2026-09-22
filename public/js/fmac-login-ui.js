@@ -227,11 +227,14 @@ const IC = {
     '<path d="M3 3l18 18"/></svg>',
 };
 
+/* المفتاح نفسه الذي يستعمله الموقع بعد الدخول، فاختيارك يتبعك */
+const LANG_KEY = 'fmac.tracker.v2.lang';
+
 export const lang = () => {
-  try { return localStorage.getItem('fmac.lang') === 'en' ? 'en' : 'ar'; }
+  try { return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'ar'; }
   catch (e) { return 'ar'; }
 };
-const setLang = (v) => { try { localStorage.setItem('fmac.lang', v); } catch (e) { /* لا شيء */ } };
+const setLang = (v) => { try { localStorage.setItem(LANG_KEY, v); } catch (e) { /* لا شيء */ } };
 
 /* لوحة النادي — ثابتة في كل الحالات */
 function sidePanel(t) {

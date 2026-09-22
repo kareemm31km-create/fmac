@@ -42,7 +42,7 @@ export const ROUTES = [
   { path: 'calendar',  view: 'calendar', label: 'تقويم الأسبوع' },
   { path: 'sports',    view: 'sport',    label: 'الألعاب', param: 'sport' },
   { path: 'visits',    view: 'visit',    label: 'المتابعة الفنية' },
-  { path: 'season',    view: 'season',   label: 'كالندر الموسم' },
+  { path: 'season',    view: 'season',   label: 'جدول مشاركات الموسم' },
   { path: 'reports',   view: 'reports',  label: 'التقارير', param: 'tab' },
   { path: 'archive',   view: 'archive',  label: 'الأرشيف' },
   { path: 'review',    view: 'review',   label: 'المراجعة' },

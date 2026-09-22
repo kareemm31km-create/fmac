@@ -35,7 +35,7 @@ export const COL = {
   national:   'national',     // لاعبو المنتخب
   agenda:     'agenda',       // أجندة القسم
   visits:     'visits',       // الزيارات الفنية
-  calendar:   'calendar',     // كالندر الموسم
+  calendar:   'calendar',     // جدول مشاركات الموسم
   audit:      'audit',        // سجل التدقيق
   monthly:    'monthlyPlans',   // الخطط الشهرية
   reviews:    'monthlyReviews', // تقييمات الخطط الشهرية
