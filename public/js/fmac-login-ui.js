@@ -93,7 +93,12 @@ export const STYLE = `
 #fmacLogin .side::after{content:'';position:absolute;inset:0;z-index:1;
   background:linear-gradient(90deg,rgba(8,9,12,.72) 0%,rgba(8,9,12,.28) 45%,rgba(8,9,12,.80) 100%)}
 #fmacLogin .side > *{position:relative;z-index:2}
+#fmacLogin .mark{display:inline-flex;flex-direction:column;gap:9px;align-items:stretch}
 #fmacLogin .logo{height:44px;width:auto;display:block}
+/* «قسم الإعداد الفني» بخطَّي الشعار الحمراوين — كما في شعار النادي المرسَل */
+#fmacLogin .unit{display:flex;align-items:center;gap:10px}
+#fmacLogin .unit i{flex:1;height:1.5px;background:#e8555c;opacity:.85}
+#fmacLogin .unit span{font-size:12.5px;font-weight:700;color:#e9ecf1;white-space:nowrap}
 /* left لا inset-inline-start: اللوحة بصرية ثابتة مهما كان اتجاه النصّ */
 #fmacLogin .creed{position:absolute;left:34px;top:46%;transform:translateY(-50%);
   z-index:2;display:flex;flex-direction:column;gap:9px;pointer-events:none}
@@ -216,8 +221,9 @@ const setLang = (v) => { try { localStorage.setItem('fmac.lang', v); } catch (e)
 /* لوحة النادي — ثابتة في كل الحالات */
 function sidePanel(t) {
   return '<aside class="side">' +
-    '<img class="logo" src="./img/fmac-logo.png" ' +
+    '<div class="mark"><img class="logo" src="./img/fmac-logo.png" ' +
     'alt="نادي الفجيرة للفنون القتالية">' +
+    '<div class="unit"><i></i><span>قسم الإعداد الفني</span><i></i></div></div>' +
     '<div class="creed">' + t.creed.map((c) => '<span>' + c + '</span>').join('') + '</div>' +
     '<div><div class="slog"><h2>' + esc(t.slogan1) + '<br><i>' + esc(t.slogan2) + '</i></h2>' +
     '<p>' + esc(t.sloganEn1) + '<br>' + esc(t.sloganEn2) + '</p></div>' +
