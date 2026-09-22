@@ -10,47 +10,47 @@ const esc = (s) => S(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
 
 const STYLE = `
 .mo-wrap{display:flex;flex-direction:column;gap:16px}
-.mo-card{background:var(--surface,#0f1115);border:1px solid var(--line,#23272f);
+.mo-card{background:var(--surface,#0D1A29);border:1px solid var(--line,#20364C);
   border-radius:18px;padding:18px}
 .mo-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .mo-title{font-size:16px;font-weight:700;margin:0}
-.mo-sub{color:var(--steel,#9aa3b0);font-size:12.5px;margin:4px 0 0}
+.mo-sub{color:var(--steel,#93A7BA);font-size:12.5px;margin:4px 0 0}
 .mo-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.mo-btn{background:var(--brand,#e8555c);color:#fff;border:0;border-radius:12px;
+.mo-btn{background:var(--brand,#3B9DFF);color:#fff;border:0;border-radius:12px;
   padding:10px 18px;font:700 13.5px inherit;cursor:pointer}
-.mo-btn.ghost{background:var(--surface-soft,#191d24);color:#e9ecf1;
-  border:1px solid #2a2f38;font-weight:400}
+.mo-btn.ghost{background:var(--surface-soft,#112235);color:#F4F8FC;
+  border:1px solid #20364C;font-weight:400}
 .mo-btn:disabled{opacity:.5;cursor:default}
 .mo-pill{font-size:11.5px;padding:3px 10px;border-radius:99px;
-  background:var(--surface-soft,#191d24);border:1px solid #2a2f38;white-space:nowrap}
-.mo-pill.ok{color:#22c07f;border-color:#22c07f55;background:#22c07f18}
-.mo-pill.late{color:#ffc233;border-color:#ffc23355;background:#ffc23318}
-.mo-pill.bad{color:#ff4d59;border-color:#ff4d5955;background:#ff4d5918}
+  background:var(--surface-soft,#112235);border:1px solid #20364C;white-space:nowrap}
+.mo-pill.ok{color:#21C77A;border-color:#21C77A55;background:#21C77A18}
+.mo-pill.late{color:#F2A93B;border-color:#F2A93B55;background:#F2A93B18}
+.mo-pill.bad{color:#EF4D5A;border-color:#EF4D5A55;background:#EF4D5A18}
 .mo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-.mo-item{background:var(--surface-soft,#191d24);border:1px solid #23272f;
+.mo-item{background:var(--surface-soft,#112235);border:1px solid #20364C;
   border-radius:14px;padding:14px;cursor:pointer;transition:border-color .15s}
-.mo-item:hover{border-color:var(--brand,#e8555c)}
+.mo-item:hover{border-color:var(--brand,#3B9DFF)}
 .mo-score{font-size:30px;font-weight:800;line-height:1;direction:ltr;
   font-variant-numeric:tabular-nums}
 .mo-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
-.mo-tbl th,.mo-tbl td{text-align:right;padding:9px 8px;border-bottom:1px solid #1c2028;
+.mo-tbl th,.mo-tbl td{text-align:right;padding:9px 8px;border-bottom:1px solid #17283A;
   vertical-align:top}
-.mo-tbl th{color:var(--steel,#9aa3b0);font-size:11.5px;font-weight:600}
+.mo-tbl th{color:var(--steel,#93A7BA);font-size:11.5px;font-weight:600}
 .mo-tbl td.n{direction:ltr;text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap}
-.mo-bar{height:5px;border-radius:99px;background:#23272f;overflow:hidden;margin-top:6px}
+.mo-bar{height:5px;border-radius:99px;background:#20364C;overflow:hidden;margin-top:6px}
 .mo-bar i{display:block;height:100%}
-.mo-ev{color:var(--steel,#9aa3b0);font-size:12px;margin-top:3px;line-height:1.6}
-.mo-req{color:#c7cdd6;font-size:12px;margin-top:3px}
-.mo-drop{border:1.5px dashed #2a2f38;border-radius:14px;padding:22px;text-align:center;
-  color:var(--steel,#9aa3b0);font-size:13px}
-.mo-drop.on{border-color:var(--brand,#e8555c);color:#e9ecf1}
+.mo-ev{color:var(--steel,#93A7BA);font-size:12px;margin-top:3px;line-height:1.6}
+.mo-req{color:#A9B8C8;font-size:12px;margin-top:3px}
+.mo-drop{border:1.5px dashed #20364C;border-radius:14px;padding:22px;text-align:center;
+  color:var(--steel,#93A7BA);font-size:13px}
+.mo-drop.on{border-color:var(--brand,#3B9DFF);color:#F4F8FC}
 .mo-msg{font-size:13px;min-height:20px;margin-top:10px}
-.mo-empty{color:var(--steel,#9aa3b0);font-size:13.5px;text-align:center;padding:24px}
+.mo-empty{color:var(--steel,#93A7BA);font-size:13.5px;text-align:center;padding:24px}
 `;
 
-const COLOR = (s) => s === null ? '#9aa3b0'
-  : s >= 90 ? '#22c07f' : s >= 80 ? '#5bd6a0' : s >= 70 ? '#ffc233'
-    : s >= 60 ? '#ff9f43' : '#ff4d59';
+const COLOR = (s) => s === null ? '#93A7BA'
+  : s >= 90 ? '#21C77A' : s >= 80 ? '#21C77A' : s >= 70 ? '#F2A93B'
+    : s >= 60 ? '#F2A93B' : '#EF4D5A';
 
 const PRIO_CLS = { 'عالية': 'bad', 'متوسطة': 'late', 'منخفضة': 'ok' };
 
@@ -158,7 +158,7 @@ export function render(host, ctx) {
     opts.map((o) => '<option value="' + o.key + '">' + esc(o.label) + '</option>').join('') +
     '</select><span class="mo-pill" id="moDue"></span></div>' +
     '<div class="mo-drop" id="moDrop" style="margin-top:14px">' +
-    'اسحب ملف الخطة هنا أو <b style="color:var(--brand,#e8555c);cursor:pointer" id="moPick">اختر ملفاً</b>' +
+    'اسحب ملف الخطة هنا أو <b style="color:var(--brand,#3B9DFF);cursor:pointer" id="moPick">اختر ملفاً</b>' +
     '<input type="file" id="moFile" accept=".xlsx" hidden></div>' +
     '<div class="mo-msg" id="moMsg"></div></div>' +
     '<div id="moPreview"></div>' +
@@ -206,24 +206,24 @@ export function render(host, ctx) {
     $('moPreview').innerHTML = '';
     let buf;
     try { buf = await file.arrayBuffer(); }
-    catch (e) { msg.className = 'mo-msg'; msg.style.color = '#ff4d59';
+    catch (e) { msg.className = 'mo-msg'; msg.style.color = '#EF4D5A';
       msg.textContent = 'تعذّرت قراءة الملف.'; return; }
 
     const r = await evaluateCoachFile(buf, readXlsx);
     if (!r.ok) {
-      msg.style.color = '#ff4d59';
+      msg.style.color = '#EF4D5A';
       msg.textContent = r.error;
       return;
     }
     const monthFromFile = M.monthKey((r.plan.header || {})['الشهر']);
     if (monthFromFile && monthFromFile !== sel.value) {
-      msg.style.color = '#ffc233';
+      msg.style.color = '#F2A93B';
       msg.textContent = 'تنبيه: الشهر في الملف «' + M.monthLabel(monthFromFile) +
         '» ويختلف عن المختار. سيُحفظ بشهر الملف.';
       sel.value = monthFromFile;
       showDue();
     } else {
-      msg.style.color = '#9aa3b0';
+      msg.style.color = '#93A7BA';
       msg.textContent = 'تمّ التقييم — راجع النتيجة ثم احفظ.';
     }
 
@@ -270,12 +270,12 @@ export function render(host, ctx) {
         });
         const j = await res.json();
         if (!j || !j.ok) throw new Error((j && j.error) || 'فشل الحفظ');
-        sm.style.color = '#22c07f';
+        sm.style.color = '#21C77A';
         sm.textContent = 'حُفظت.';
         if (ctx.onSaved) ctx.onSaved();
       } catch (e) {
         btn.disabled = false;
-        sm.style.color = '#ff4d59';
+        sm.style.color = '#EF4D5A';
         const t = S(e && e.message);
         /* أشهر سببين: قواعد لم تُنشر بعد — نقولها صراحةً بدل نصّ Firebase الخام */
         if (t.indexOf('storage/unauthorized') >= 0 || t.indexOf('permission to access') >= 0) {

@@ -14,50 +14,50 @@ const esc = (s) => S(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
 
 const STYLE = `
 .fb-wrap{display:flex;flex-direction:column;gap:16px}
-.fb-card{background:var(--surface,#0f1115);border:1px solid var(--hairline,#23272f);
+.fb-card{background:var(--surface,#0D1A29);border:1px solid var(--hairline,#20364C);
   border-radius:18px;padding:18px}
 .fb-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .fb-title{font-size:16px;font-weight:700;margin:0}
-.fb-sub{color:var(--steel,#9aa3b0);font-size:12.5px;margin:4px 0 0;line-height:1.7}
+.fb-sub{color:var(--steel,#93A7BA);font-size:12.5px;margin:4px 0 0;line-height:1.7}
 .fb-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.fb-btn{background:var(--brand,#e8555c);color:#fff;border:0;border-radius:12px;
+.fb-btn{background:var(--brand,#3B9DFF);color:#fff;border:0;border-radius:12px;
   padding:10px 18px;font:700 13.5px inherit;cursor:pointer}
-.fb-btn.ghost{background:var(--surface-soft,#191d24);color:var(--ink,#e9ecf1);
-  border:1px solid var(--hairline,#2a2f38);font-weight:400}
+.fb-btn.ghost{background:var(--surface-soft,#112235);color:var(--ink,#F4F8FC);
+  border:1px solid var(--hairline,#20364C);font-weight:400}
 .fb-btn:disabled{opacity:.5;cursor:default}
 .fb-pill{font-size:11.5px;padding:3px 10px;border-radius:99px;
-  background:var(--surface-soft,#191d24);border:1px solid var(--hairline,#2a2f38);
+  background:var(--surface-soft,#112235);border:1px solid var(--hairline,#20364C);
   white-space:nowrap}
-.fb-pill.ok{color:#22c07f;border-color:#22c07f55;background:#22c07f18}
-.fb-pill.warn{color:#ffc233;border-color:#ffc23355;background:#ffc23318}
-.fb-pill.bad{color:#ff4d59;border-color:#ff4d5955;background:#ff4d5918}
-.fb-pill.read{color:#7fb3ff;border-color:#7fb3ff55;background:#7fb3ff14}
+.fb-pill.ok{color:#21C77A;border-color:#21C77A55;background:#21C77A18}
+.fb-pill.warn{color:#F2A93B;border-color:#F2A93B55;background:#F2A93B18}
+.fb-pill.bad{color:#EF4D5A;border-color:#EF4D5A55;background:#EF4D5A18}
+.fb-pill.read{color:#3B9DFF;border-color:#3B9DFF55;background:#3B9DFF14}
 .fb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
-.fb-item{background:var(--surface-soft,#191d24);border:1px solid var(--hairline,#23272f);
+.fb-item{background:var(--surface-soft,#112235);border:1px solid var(--hairline,#20364C);
   border-radius:14px;padding:14px;cursor:pointer;transition:border-color .15s}
-.fb-item:hover{border-color:var(--brand,#e8555c)}
+.fb-item:hover{border-color:var(--brand,#3B9DFF)}
 .fb-item b{font-size:14.5px}
-.fb-sess{border:1px solid var(--hairline,#23272f);border-radius:14px;padding:14px;
-  margin-top:12px;background:var(--surface-soft,#12161c)}
+.fb-sess{border:1px solid var(--hairline,#20364C);border-radius:14px;padding:14px;
+  margin-top:12px;background:var(--surface-soft,#0F1E2E)}
 .fb-sess h4{margin:0 0 2px;font-size:14.5px}
 .fb-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
-.fb-tbl th,.fb-tbl td{text-align:right;padding:8px;border-bottom:1px solid #1c2028;
+.fb-tbl th,.fb-tbl td{text-align:right;padding:8px;border-bottom:1px solid #17283A;
   vertical-align:top}
-.fb-tbl th{color:var(--steel,#9aa3b0);font-size:11.5px;font-weight:600}
+.fb-tbl th{color:var(--steel,#93A7BA);font-size:11.5px;font-weight:600}
 /* لا direction:ltr — التكرارات والراحة نصّ عربي مختلط، وقلبها يعكس ترتيبه */
 .fb-tbl td.n{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
-.fb-drop{border:1.5px dashed var(--hairline,#2a2f38);border-radius:14px;padding:22px;
-  text-align:center;color:var(--steel,#9aa3b0);font-size:13px}
-.fb-drop.on{border-color:var(--brand,#e8555c);color:var(--ink,#e9ecf1)}
+.fb-drop{border:1.5px dashed var(--hairline,#20364C);border-radius:14px;padding:22px;
+  text-align:center;color:var(--steel,#93A7BA);font-size:13px}
+.fb-drop.on{border-color:var(--brand,#3B9DFF);color:var(--ink,#F4F8FC)}
 .fb-msg{font-size:13px;min-height:20px;margin-top:10px;line-height:1.7}
-.fb-empty{color:var(--steel,#9aa3b0);font-size:13.5px;text-align:center;padding:24px}
-.fb-note{background:var(--surface-soft,#191d24);border:1px solid var(--hairline,#2a2f38);
+.fb-empty{color:var(--steel,#93A7BA);font-size:13.5px;text-align:center;padding:24px}
+.fb-note{background:var(--surface-soft,#112235);border:1px solid var(--hairline,#20364C);
   border-radius:12px;padding:12px;font-size:13px;line-height:1.8;white-space:pre-wrap}
-.fb-ta{width:100%;min-height:90px;background:var(--surface-soft,#191d24);
-  color:var(--ink,#e9ecf1);border:1px solid var(--hairline,#2a2f38);border-radius:12px;
+.fb-ta{width:100%;min-height:90px;background:var(--surface-soft,#112235);
+  color:var(--ink,#F4F8FC);border:1px solid var(--hairline,#20364C);border-radius:12px;
   padding:10px 12px;font:13.5px/1.7 inherit;resize:vertical}
-.fb-sel{background:var(--surface-soft,#191d24);color:var(--ink,#e9ecf1);
-  border:1px solid var(--hairline,#2a2f38);border-radius:10px;padding:9px 12px;
+.fb-sel{background:var(--surface-soft,#112235);color:var(--ink,#F4F8FC);
+  border:1px solid var(--hairline,#20364C);border-radius:10px;padding:9px 12px;
   font:13.5px inherit}
 `;
 
@@ -212,7 +212,7 @@ export function render(host, ctx) {
       '</option>').join('') +
     '</select></div>' +
     '<div class="fb-drop" id="fbDrop" style="margin-top:14px">' +
-    'اسحب ملف الخطة هنا أو <b style="color:var(--brand,#e8555c);cursor:pointer" ' +
+    'اسحب ملف الخطة هنا أو <b style="color:var(--brand,#3B9DFF);cursor:pointer" ' +
     'id="fbPick">اختر ملفاً</b>' +
     '<input type="file" id="fbFile" accept=".xlsx,.pdf,.docx" hidden></div>' +
     '<div class="fb-msg" id="fbMsg"></div></div>'
@@ -251,15 +251,15 @@ export function render(host, ctx) {
       const ta = box.querySelector('#fbNote');
       const msg = box.querySelector('#fbNoteMsg');
       btn.disabled = true;
-      msg.style.color = 'var(--steel,#9aa3b0)';
+      msg.style.color = 'var(--steel,#93A7BA)';
       msg.textContent = 'جارٍ الحفظ…';
       try {
         await post(ctx, { action: 'fitnote', fitnote: { k, text: S(ta.value) } });
-        msg.style.color = '#22c07f';
+        msg.style.color = '#21C77A';
         msg.textContent = 'حُفظت.';
         if (ctx.onSaved) ctx.onSaved();
       } catch (e) {
-        msg.style.color = '#ff4d59';
+        msg.style.color = '#EF4D5A';
         msg.textContent = explain(e);
       }
       btn.disabled = false;
@@ -288,13 +288,13 @@ export function render(host, ctx) {
   });
 
   async function handle(file) {
-    msg.style.color = 'var(--steel,#9aa3b0)';
+    msg.style.color = 'var(--steel,#93A7BA)';
     msg.textContent = 'جارٍ قراءة الملف…';
     $('fbPreview').innerHTML = '';
 
     let buf;
     try { buf = await file.arrayBuffer(); }
-    catch (e) { msg.style.color = '#ff4d59'; msg.textContent = 'تعذّرت قراءة الملف.'; return; }
+    catch (e) { msg.style.color = '#EF4D5A'; msg.textContent = 'تعذّرت قراءة الملف.'; return; }
 
     let parsed = { ok: false, error: '' };
     if (isXlsx(file.name)) {
@@ -305,7 +305,7 @@ export function render(host, ctx) {
 
     /* الملفّ غير الإكسل يُحفظ للتنزيل، ونقول صراحةً أنّ محتواه لا يُقرأ هنا */
     if (!parsed.ok) {
-      msg.style.color = isXlsx(file.name) ? '#ff4d59' : '#ffc233';
+      msg.style.color = isXlsx(file.name) ? '#EF4D5A' : '#F2A93B';
       msg.textContent = isXlsx(file.name)
         ? parsed.error
         : 'هذا ليس ملف إكسل، فلن تظهر جداول التمارين داخل الموقع — ' +
@@ -322,7 +322,7 @@ export function render(host, ctx) {
     const sportFinal = matchSport(hdr.sport, sports) || sport;
     const weekFinal = looksLikeWeek(hdr.week) ? S(hdr.week) : week;
     if (parsed.ok && sportFinal !== sport) {
-      msg.style.color = '#ffc233';
+      msg.style.color = '#F2A93B';
       msg.textContent = 'اللعبة في الملف «' + sportFinal + '» وتختلف عن المختارة — ' +
         'ستُحفظ بلعبة الملف.';
     }
@@ -347,7 +347,7 @@ export function render(host, ctx) {
       const btn = host.querySelector('#fbSave');
       const sm = host.querySelector('#fbSaveMsg');
       btn.disabled = true;
-      sm.style.color = 'var(--steel,#9aa3b0)';
+      sm.style.color = 'var(--steel,#93A7BA)';
       sm.textContent = 'جارٍ الحفظ…';
       try {
         await post(ctx, {
@@ -361,12 +361,12 @@ export function render(host, ctx) {
             sessions, readable: parsed.ok,
           },
         });
-        sm.style.color = '#22c07f';
+        sm.style.color = '#21C77A';
         sm.textContent = 'حُفظت.';
         if (ctx.onSaved) ctx.onSaved();
       } catch (e) {
         btn.disabled = false;
-        sm.style.color = '#ff4d59';
+        sm.style.color = '#EF4D5A';
         sm.textContent = explain(e);
       }
     });

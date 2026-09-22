@@ -3,8 +3,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FMAC monthly preview</title>
 <style>
-:root{--brand:#e8555c;--surface:#0f1115;--surface-soft:#191d24;--line:#23272f;--steel:#9aa3b0}
-body{background:#08090c;color:#e9ecf1;
+:root{--brand:#3B9DFF;--surface:#0D1A29;--surface-soft:#112235;--line:#20364C;--steel:#93A7BA}
+body{background:#050B14;color:#F4F8FC;
   font:14px/1.7 Tajawal,'Segoe UI',system-ui,sans-serif;
   padding:24px;max-width:1080px;margin:0 auto;direction:rtl}
 h1{font-size:20px;margin:0 0 4px}
@@ -45,9 +45,9 @@ const api = async (url, opts) => {
   const body = JSON.parse(opts.body);
   console.log('MOCK SAVE:', body);
   const info = document.createElement('pre');
-  info.style.cssText = 'background:#0f1115;border:1px solid #23272f;border-radius:12px;' +
+  info.style.cssText = 'background:#0D1A29;border:1px solid #20364C;border-radius:12px;' +
     'padding:14px;font:12px ui-monospace,monospace;overflow:auto;max-height:260px;' +
-    'direction:ltr;text-align:left;color:#9aa3b0;margin-top:14px';
+    'direction:ltr;text-align:left;color:#93A7BA;margin-top:14px';
   const shown = JSON.parse(JSON.stringify(body));
   shown.file = shown.file ? '<' + shown.file.length + ' حرفاً base64>' : '';
   info.textContent = 'الحمولة التي كانت ستُرسل:\n' + JSON.stringify(shown, null, 2);

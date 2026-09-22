@@ -438,7 +438,7 @@ function surface(action, info) {
       el = document.createElement('div');
       el.id = 'fmacErr';
       el.style.cssText = 'position:fixed;inset-inline:12px;bottom:12px;z-index:100000;' +
-        'background:#2a1416;border:1px solid #ff4d59;color:#ffd7da;border-radius:12px;' +
+        'background:#2A1218;border:1px solid #EF4D5A;color:#FBD5D8;border-radius:12px;' +
         'padding:12px 14px;font:13px/1.6 Tajawal,system-ui,sans-serif;direction:rtl;' +
         'max-width:560px;margin-inline:auto;box-shadow:0 8px 28px #0008;cursor:pointer';
       el.addEventListener('click', () => el.remove());
