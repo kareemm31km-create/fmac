@@ -4797,11 +4797,22 @@ const BRAND  = JSON.parse(document.getElementById('brandData').textContent);
 /* نتائج المواسم — من ملفات النادي، تُقرأ كما هي ولا تُخترع */
 const SEAS = (()=>{ try{ return JSON.parse(document.getElementById('seasonData').textContent); }
   catch(e){ return {sports:{}}; } })();
+/* الموسم الرياضي يبدأ أوّل سبتمبر وينتهي أوّل يوليو. وما بين يوليو
+   وأغسطس يبقى الموسم المنتهي معروضاً حتى يقلبه أوّل سبتمبر تلقائياً.
+   getMonth صفريّ الأساس، فسبتمبر = 8. */
+function seasonOf(d){
+  const t = d ? new Date(d) : new Date();
+  const y = t.getFullYear();
+  return (t.getMonth() >= 8) ? (y+'-'+(y+1)) : ((y-1)+'-'+y);
+}
+const SEASON_NOW = seasonOf();
 const SEASONS = (()=>{ const a=new Set();
   Object.values(SEAS.sports||{}).forEach(o=>Object.keys(o).forEach(y=>a.add(y)));
+  a.add(SEASON_NOW);   /* الجاري يظهر ولو لم تُسجَّل له نتائج بعد */
   return [...a].sort(); })();
-let dashSeason='';                 /* الموسم المعروض — فارغ يعني الأحدث */
-const curSeason = () => dashSeason || SEASONS[SEASONS.length-1] || '';
+let dashSeason='';                 /* الموسم المعروض — فارغ يعني الجاري */
+/* الجاري يُحسب من التاريخ لا من أحدث موسم فيه بيانات */
+const curSeason = () => dashSeason || SEASON_NOW;
 /* الموسم السابق نسبةً إلى المعروض لا إلى الأحدث دائماً */
 const prevSeason = () => { const i=SEASONS.indexOf(curSeason());
   return i>0 ? SEASONS[i-1] : ''; };

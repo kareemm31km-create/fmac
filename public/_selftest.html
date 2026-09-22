@@ -209,6 +209,36 @@ head('[7] التوجيه');
     else bad0('قد يُحجب history المحلّي');
   }
 }
+
+/* ── 8. الموسم الرياضي — يبدأ أوّل سبتمبر ── */
+head('[8] الموسم الرياضي');
+{
+  /* نفس منطق seasonOf في index.html */
+  const seasonOf = (d) => {
+    const t = new Date(d);
+    const y = t.getFullYear();
+    return (t.getMonth() >= 8) ? (y + '-' + (y + 1)) : ((y - 1) + '-' + y);
+  };
+  const eqs = (label, got, want) => (got === want)
+    ? ok(label + ' = ' + got) : bad0(label + ' — got ' + got + ' want ' + want);
+
+  eqs('22 سبتمبر 2026', seasonOf('2026-09-22'), '2026-2027');
+  eqs('1 سبتمبر 2026 — أول يوم', seasonOf('2026-09-01'), '2026-2027');
+  eqs('31 أغسطس 2026 — قبله بيوم', seasonOf('2026-08-31'), '2025-2026');
+  eqs('1 يناير 2027 — منتصف الموسم', seasonOf('2027-01-01'), '2026-2027');
+  eqs('30 يونيو 2027 — قرب النهاية', seasonOf('2027-06-30'), '2026-2027');
+  eqs('15 يوليو 2027 — بين الموسمين', seasonOf('2027-07-15'), '2026-2027');
+  eqs('31 أغسطس 2027 — آخر يوم قبل القلب', seasonOf('2027-08-31'), '2026-2027');
+  eqs('1 سبتمبر 2027 — القلب التلقائي', seasonOf('2027-09-01'), '2027-2028');
+  eqs('1 سبتمبر 2028', seasonOf('2028-09-01'), '2028-2029');
+
+  if (idx.indexOf('const SEASON_NOW = seasonOf()') >= 0) ok('index.html يحسب الموسم من التاريخ');
+  else bad0('index.html ما زال يأخذ أحدث موسم في البيانات');
+  if (idx.indexOf('dashSeason || SEASON_NOW') >= 0) ok('المعروض افتراضاً هو الجاري');
+  else bad0('المعروض افتراضاً ليس الجاري');
+  if (idx.indexOf('a.add(SEASON_NOW)') >= 0) ok('الجاري يظهر في القائمة ولو بلا بيانات');
+  else bad0('الجاري قد يغيب من قائمة المواسم');
+}
 document.getElementById('out').innerHTML = out.join('');
 const el = document.getElementById('sum');
 el.innerHTML = (fail === 0)
