@@ -240,8 +240,10 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   .creedbar::after{background:linear-gradient(270deg,rgba(7,9,12,.96) 0%,
                    rgba(7,9,12,.88) 55%,rgba(7,9,12,.55) 100%)}
 }
-/* الحلقة وحدها: نصف العرض يكفيها، والنصف الآخر فراغ مقصود لا كرت حشو */
-.kgrid.k1{grid-template-columns:minmax(0,560px)}
+.kgrid.k1{grid-template-columns:minmax(0,1fr)}
+.drow.three > .kgrid{margin-bottom:0}
+.drow.three > .kgrid > *{height:100%}
+.drow.three .natk2,.drow.three .schcard{height:100%}
 /* عنوان مجموعة داخل لوحة أداء الخطط */
 .pfh{font-size:11.5px;letter-spacing:.06em;color:var(--stone);margin:2px 0 6px}
 .pfh:not(:first-child){margin-top:10px}
@@ -278,6 +280,9 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .fdr .fg svg{width:15px;height:15px}
 @media (max-width:760px){ .stgwrap{justify-content:center} }
 /* صفّ من كرتين — والأعلى أولويةً أوّل الصفّ */
+.drow.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:1280px){ .drow.three{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:1080px){ .drow.three{grid-template-columns:minmax(0,1fr)} }
 .drow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;
   align-items:start;margin-bottom:16px}
 .drow > *{min-width:0;margin-bottom:0}
@@ -4600,8 +4605,16 @@ input::placeholder,textarea::placeholder{color:#64788B}
       </section>
       </div>
 
-      <!-- ٨ — الأداء العام: حلقة واحدة تُقرأ من بعيد -->
-      <div class="kgrid k4" id="kgrid"></div>
+      <!-- ٨ الأداء العام · ٩ زيارات المدارس · ٩ الميداليات —
+           ثلاثة في صفّ: لا حلقة وحيدة بجانبها فراغ. -->
+      <div class="drow three">
+        <div class="kgrid k4" id="kgrid"></div>
+        <div id="schoolHost"></div>
+                <section class="panel" id="medPanel">
+          <div class="ch"><h3 id="medTitle">الميداليات</h3><span class="ci" id="medIco"></span></div>
+          <div class="medwrap" id="medBody"></div>
+        </section>
+      </div>
       <button class="waitline" id="waitLine" hidden></button>
 
       <!-- ٩ تطوّر الأداء · ٩ أداء الخطط -->
@@ -4627,14 +4640,6 @@ input::placeholder,textarea::placeholder{color:#64788B}
         </section>
       </div>
 
-      <!-- ٩ زيارات المدارس · ٩ الميداليات -->
-      <div class="drow">
-                <div id="schoolHost"></div>
-                <section class="panel" id="medPanel">
-          <div class="ch"><h3 id="medTitle">الميداليات</h3><span class="ci" id="medIco"></span></div>
-          <div class="medwrap" id="medBody"></div>
-        </section>
-      </div>
 
       <!-- ٩ — المنتخب: التصميم عريض -->
       <div id="natHost"></div>

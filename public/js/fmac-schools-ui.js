@@ -74,7 +74,13 @@ const STYLE = `
 .sv-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
 .sv-chips button{background:#0E1C2B;border:1px solid #23394E;color:#8296A9;
   border-radius:99px;padding:6px 13px;font:inherit;font-size:12px;cursor:pointer}
-.sv-chips button em{font-style:normal;opacity:.6;font-size:11px}
+.sv-picked{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.sv-picked span{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;
+  color:#62B7FF;background:color-mix(in srgb,var(--brand) 14%,transparent);
+  border:1px solid var(--brand);border-radius:99px;padding:5px 7px 5px 12px}
+.sv-picked button{background:transparent;border:0;color:inherit;cursor:pointer;
+  font:inherit;font-size:15px;line-height:1;opacity:.75;padding:0 2px}
+.sv-picked button:hover{opacity:1}
 .sv-chips button[aria-pressed="true"],.sv-chips button[aria-current="true"]{
   background:color-mix(in srgb,var(--brand) 14%,transparent);border-color:var(--brand);color:#62B7FF}
 .sv-sp{display:grid;grid-template-columns:1fr 90px 90px;gap:8px;align-items:center;
@@ -478,12 +484,18 @@ function dialog(v, sports, areas, schoolNames, coachList) {
     '</div>' +
     '<label class="sv-l">المدربون المسؤولون</label>' +
     (coachList.length
-      ? '<div class="sv-chips" id="svCoaches">' + coachList.map((c) =>
-        '<button type="button" data-svco="' + esc(c.code) + '" data-svcon="' +
-        esc(c.name) + '" aria-pressed="' +
-        v.coaches.some((x) => x.code === S(c.code)) + '">' + esc(c.name) +
-        (c.sport ? '<em> · ' + esc(c.sport) + '</em>' : '') + '</button>').join('') +
-        '</div>'
+      ? ('<select class="sv-in" id="svCoachPick">' +
+          '<option value="">— أضِف مدرباً —</option>' +
+          coachList.filter((c) => !v.coaches.some((x) => x.code === S(c.code)))
+            .map((c) => '<option value="' + esc(c.code) + '" data-nm="' + esc(c.name) +
+              '">' + esc(c.name) + (c.sport ? ' · ' + esc(c.sport) : '') +
+              '</option>').join('') + '</select>' +
+        (v.coaches.length
+          ? '<div class="sv-picked">' + v.coaches.map((c) =>
+              '<span>' + esc(c.name || c.code) +
+              '<button type="button" data-svcox="' + esc(c.code) +
+              '" title="إزالة">×</button></span>').join('') + '</div>'
+          : '<p class="sv-sub">لم يُختَر أحد بعد.</p>'))
       : '<p class="sv-sub">لا مدربون مسجَّلون في النادي بعد.</p>') +
     '<label class="sv-l">الألعاب المستهدفة</label>' +
     '<div class="sv-chips" id="svSports">' + sports.map((sp) =>
@@ -564,8 +576,11 @@ export function render(host, ctx) {
   const inSeason = rows.filter((v) => !season || v.season === season);
   const areas = [...new Set(rows.map((v) => v.area).filter(Boolean))].sort();
   const names = [...new Set(rows.map((v) => v.school).filter(Boolean))].sort();
-  const coachList = (ctx.coaches || []).filter((c) => S(c.name));
   const admin = !!(ctx.user && ctx.user.admin);
+  /* المدرب يرى نفسه وحده — لا يُسنِد زيارةً لزميله، والإدارة ترى الجميع */
+  const meCode = S(ctx.user && (ctx.user.code || ctx.user.uid));
+  const coachList = (ctx.coaches || []).filter((c) => S(c.name))
+    .filter((c) => admin || S(c.code) === meCode);
   /* المدرب يأتي ليُدخل لاعبيه، فيفتح على تبويبهم لا على النظرة العامة */
   if (!admin && !TOUCHED) { TAB = 'players'; TOUCHED = true; }
 
@@ -656,10 +671,17 @@ function wireDialog(host, ctx, go) {
     collect(host, v);
     go();
   }));
-  host.querySelectorAll('[data-svco]').forEach((b) => b.addEventListener('click', () => {
-    const code = b.dataset.svco, nm = b.dataset.svcon;
-    const i = v.coaches.findIndex((x) => x.code === code);
-    if (i >= 0) v.coaches.splice(i, 1); else v.coaches.push({ code, name: nm });
+  const pick = $('svCoachPick');
+  if (pick) pick.addEventListener('change', () => {
+    const o = pick.selectedOptions[0];
+    if (!o || !o.value) return;
+    v.coaches.push({ code: o.value, name: o.dataset.nm || o.textContent });
+    collect(host, v);
+    go();
+  });
+  host.querySelectorAll('[data-svcox]').forEach((b) => b.addEventListener('click', () => {
+    const i = v.coaches.findIndex((x) => x.code === b.dataset.svcox);
+    if (i >= 0) v.coaches.splice(i, 1);
     collect(host, v);
     go();
   }));
