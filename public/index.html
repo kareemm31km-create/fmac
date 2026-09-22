@@ -250,6 +250,25 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .callog b{font-variant-numeric:tabular-nums;color:var(--steel);font-weight:600;flex:none}
 .callog i{font-style:normal;color:var(--stone);font-size:11.5px;margin-inline-start:auto}
 .sc-why{display:block;font-size:11.5px;color:var(--steel);margin-top:4px}
+/* §21 — شريط التنبيهات أعلى اللوحة */
+.alerts{display:flex;flex-direction:column;gap:8px}
+.alrt{display:flex;align-items:center;gap:12px;width:100%;text-align:start;cursor:pointer;
+  background:var(--surface-soft);border:1px solid var(--hairline);
+  border-inline-start:3px solid var(--c,var(--brand));border-radius:var(--r-lg);
+  padding:11px 13px;font:inherit;color:var(--ink);
+  transition:background var(--motion-fast,.15s) var(--ease,ease),border-color .15s}
+.alrt:hover{background:var(--surface-hover);border-color:var(--edge)}
+.alrt .lv{flex:none;font-size:11px;font-weight:700;color:var(--c,var(--brand));
+  background:color-mix(in srgb,var(--c,var(--brand)) 14%,transparent);
+  border-radius:99px;padding:3px 10px}
+.alrt .tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.alrt .tx b{font-size:13.5px;font-weight:700}
+.alrt .tx i{font-style:normal;font-size:12px;color:var(--steel);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.alrt .go{margin-inline-start:auto;color:var(--steel);display:flex}
+.alrt .go svg{width:16px;height:16px}
+.alrt.more{justify-content:space-between;font-size:12.5px;color:var(--steel);
+  border-inline-start-color:var(--hairline)}
 .soonbox h3{margin:0 0 8px;font-size:20px}
 .soonbox p{margin:0 auto;max-width:460px;color:var(--steel);font-size:13.5px;line-height:1.9}
 .barline .nm .bdg{width:24px;height:24px;flex:none;border-radius:50%;
@@ -3556,6 +3575,7 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
 .hrow2{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(0,1fr);gap:16px;
   align-items:stretch;margin-bottom:16px}
 @media (max-width:1080px){.hrow2{grid-template-columns:minmax(0,1fr)}}
+.hrow3.two{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
 .hrow3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr);gap:16px;
   align-items:stretch;margin-bottom:16px}
 @media (max-width:1280px){.hrow3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
@@ -4416,26 +4436,48 @@ input::placeholder,textarea::placeholder{color:#64788B}
     </header>
 
     <div id="adminDash" hidden>
+      <!-- §21 — الترتيب بالأولويات العشر، لا بالشكل ولا بالمساحة.
+           ١ التنبيهات · ٢ المشاركات · ٣ ما يحتاج إجراء · ٦ الخطط
+           ٨ المؤشرات · ٩ الإحصاءات التشغيلية · ١٠ التقارير والمرجع.
+           الأولويات ٤ و٥ و٧ (حالة اللاعبين، الحضور، تقييم اللاعبين)
+           لا أقسام لها في الموقع بعد، فلا مكان فارغ يُحجز لها. -->
       <div class="filters" id="dashFilters" hidden></div>
-      <div class="kgrid k4" id="kgrid"></div>
-      <button class="waitline" id="waitLine" hidden></button>
 
-      <div class="hrow2">
-        <section class="panel" id="medPanel">
-          <div class="ch"><h3 id="medTitle">الميداليات</h3><span class="ci" id="medIco"></span></div>
-          <div class="medwrap" id="medBody"></div>
-        </section>
-        <div id="natHost"></div>
-      </div>
+      <!-- ١ — التنبيهات والإجراءات العاجلة -->
+      <section class="panel" id="alertPanel" hidden>
+        <div class="ch"><h3>التنبيهات والإجراءات العاجلة</h3>
+          <span class="cnt" id="alertN"></span>
+          <span class="hact"><button class="link" data-view="todo">عرض الكل</button></span></div>
+        <div class="alerts" id="alertBody"></div>
+      </section>
 
-      <div class="hrow3">
-        <section class="panel" id="agnPanel">
+      <!-- ٢ — المشاركات والبطولات القادمة -->
+            <section class="panel" id="calPanel">
+        <div class="sc-head"><span class="ci" id="calIco"></span>
+          <h3 id="calTitle">جدول مشاركات الموسم</h3>
+          <span class="grow"></span>
+          <button class="mini2" data-view="season">عرض التقويم الكامل</button></div>
+        <div class="sc-stats" id="calStats"></div>
+        <div class="sc-monbar" id="calMonths"></div>
+        <div id="calBody"></div>
+        <div class="sc-lg" id="calLegend"></div>
+      </section>
+
+      <!-- ٣ — المهام والمواعيد التي تحتاج إجراء -->
+            <section class="panel" id="agnPanel">
           <div class="ch"><h3>أجندة القسم</h3><span class="cnt" id="agnN"></span>
             <span class="hact"><button class="mini2" id="agnAdd">+ موعد</button></span></div>
           <div class="lede" id="agnLede"></div>
           <div id="agnBody"></div>
         </section>
-        <section class="panel" id="trendHome">
+
+      <!-- ٨ — المؤشرات الرئيسية -->
+      <div class="kgrid k4" id="kgrid"></div>
+      <button class="waitline" id="waitLine" hidden></button>
+
+      <!-- ٩ — البيانات والإحصاءات التشغيلية -->
+      <div class="hrow3 two">
+                <section class="panel" id="trendHome">
           <div class="ch"><h3 id="trendTitle">تطوّر الأداء عبر الأسابيع</h3>
             <span class="hact"><select class="rngsel" id="trendRange">
               <option value="4">4 أسابيع</option>
@@ -4449,30 +4491,27 @@ input::placeholder,textarea::placeholder{color:#64788B}
             <div class="mleg" id="trendLeg"></div>
           </div>
         </section>
-        <section class="panel" id="perfPanel">
+                <section class="panel" id="perfPanel">
           <div class="ch"><h3>أداء القسم الفني</h3><span class="ci" id="perfIco"></span></div>
           <div class="pfl" id="perfBody"></div>
           <div class="pmore"><button class="mini2" data-view="reports">عرض التحليلات ←</button></div>
         </section>
       </div>
 
-      <section class="panel" id="calPanel">
-        <div class="sc-head"><span class="ci" id="calIco"></span>
-          <h3 id="calTitle">جدول مشاركات الموسم</h3>
-          <span class="grow"></span>
-          <button class="mini2" data-view="season">عرض التقويم الكامل</button></div>
-        <div class="sc-stats" id="calStats"></div>
-        <div class="sc-monbar" id="calMonths"></div>
-        <div id="calBody"></div>
-        <div class="sc-lg" id="calLegend"></div>
-      </section>
+            <div class="hrow2">
+        <section class="panel" id="medPanel">
+          <div class="ch"><h3 id="medTitle">الميداليات</h3><span class="ci" id="medIco"></span></div>
+          <div class="medwrap" id="medBody"></div>
+        </section>
+        <div id="natHost"></div>
+      </div>
 
-      <section class="panel" id="visStrip">
+      <!-- ١٠ — التقارير والمعلومات المرجعية -->
+            <section class="panel" id="visStrip">
         <div class="ch"><h3>آخر المتابعات الفنية</h3><span class="cnt" id="visStripN"></span>
           <span class="hact"><button class="link" data-view="visit">عرض الكل</button></span></div>
         <div class="vstrip" id="visStripBody"></div>
       </section>
-
       <div class="dwrap" id="legacyDash" hidden>
         <div class="dcol">
           <section class="panel" id="cmpPanel">
@@ -12468,6 +12507,27 @@ function kcard4(ic,lb,val,small,cap,pct,col,foot,go){
     '<span class="pb"><i style="width:'+Math.max(0,Math.min(100,pct))+'%"></i></span>'+
     (foot?'<div class="ft">'+foot+'</div>':'')+'</div>';
 }
+/* §21 الأولوية ١ — التنبيهات والإجراءات العاجلة.
+   لا تُعرض مساحة فارغة: القسم يختفي كاملاً حين لا شيء ينتظر. */
+function renderAlerts(){
+  const host=$('alertPanel'); if(!host) return;
+  refreshTasks();
+  const open=openTasks();
+  if(!open.length){ host.hidden=true; return; }
+  host.hidden=false;
+  /* العاجل أوّلاً، ثم الأقرب — والباقي يُعدّ ولا يُسرَد */
+  const sorted=open.slice().sort((a,b)=>(a.lvl||0)-(b.lvl||0));
+  const top=sorted.slice(0,4), rest=sorted.length-top.length;
+  $('alertN').textContent=String(open.length);
+  $('alertBody').innerHTML=top.map(function(t){
+    return '<button class="alrt" style="--c:'+LV_COL[t.lvl]+'" data-view="todo">'+
+      '<span class="lv">'+esc(LV_LBL[t.lvl])+'</span>'+
+      '<span class="tx"><b>'+esc(t.title)+'</b>'+
+        (t.detail?'<i>'+esc(t.detail)+'</i>':'')+'</span>'+
+      '<span class="go">'+di('chev')+'</span></button>'; }).join('')+
+    (rest>0 ? '<button class="alrt more" data-view="todo">'+
+      'و'+rest+' بنداً آخر ينتظر مراجعتك<span class="go">'+di('chev')+'</span></button>' : '');
+}
 function renderKpis(){
   const h=$('kgrid'); if(!h) return;
   refreshTasks();
@@ -13645,7 +13705,7 @@ function renderHome(){
   ['wkPanel','todayPanel','coachGrid'].forEach(id=>{const e=$(id); if(e) e.hidden=true;});
   /* الرئيسية هدفها واحد: حالة قسم الإعداد الفني.
      المؤشّرات · الميداليات · المنحنى · الأجندة — وما عداها في صفحته */
-  dashFilters(); renderKpis(); renderMedals(); renderAgenda(); renderBell(); markClubWide();
+  dashFilters(); renderAlerts(); renderKpis(); renderMedals(); renderAgenda(); renderBell(); markClubWide();
   renderNatBanner(); renderPerf(); renderVisStrip(); renderCalPanel();
   try{ renderTopFilters(); renderLivePill(); renderPageHead(); }catch(e){}
   const lg=$('legacyDash'); if(lg) lg.hidden=true;
