@@ -250,25 +250,6 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .callog b{font-variant-numeric:tabular-nums;color:var(--steel);font-weight:600;flex:none}
 .callog i{font-style:normal;color:var(--stone);font-size:11.5px;margin-inline-start:auto}
 .sc-why{display:block;font-size:11.5px;color:var(--steel);margin-top:4px}
-/* §21 — شريط التنبيهات أعلى اللوحة */
-.alerts{display:flex;flex-direction:column;gap:8px}
-.alrt{display:flex;align-items:center;gap:12px;width:100%;text-align:start;cursor:pointer;
-  background:var(--surface-soft);border:1px solid var(--hairline);
-  border-inline-start:3px solid var(--c,var(--brand));border-radius:var(--r-lg);
-  padding:11px 13px;font:inherit;color:var(--ink);
-  transition:background var(--motion-fast,.15s) var(--ease,ease),border-color .15s}
-.alrt:hover{background:var(--surface-hover);border-color:var(--edge)}
-.alrt .lv{flex:none;font-size:11px;font-weight:700;color:var(--c,var(--brand));
-  background:color-mix(in srgb,var(--c,var(--brand)) 14%,transparent);
-  border-radius:99px;padding:3px 10px}
-.alrt .tx{display:flex;flex-direction:column;gap:2px;min-width:0}
-.alrt .tx b{font-size:13.5px;font-weight:700}
-.alrt .tx i{font-style:normal;font-size:12px;color:var(--steel);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.alrt .go{margin-inline-start:auto;color:var(--steel);display:flex}
-.alrt .go svg{width:16px;height:16px}
-.alrt.more{justify-content:space-between;font-size:12.5px;color:var(--steel);
-  border-inline-start-color:var(--hairline)}
 .soonbox h3{margin:0 0 8px;font-size:20px}
 .soonbox p{margin:0 auto;max-width:460px;color:var(--steel);font-size:13.5px;line-height:1.9}
 .barline .nm .bdg{width:24px;height:24px;flex:none;border-radius:50%;
@@ -4437,19 +4418,13 @@ input::placeholder,textarea::placeholder{color:#64788B}
 
     <div id="adminDash" hidden>
       <!-- §21 — الترتيب بالأولويات العشر، لا بالشكل ولا بالمساحة.
-           ١ التنبيهات · ٢ المشاركات · ٣ ما يحتاج إجراء · ٦ الخطط
+           ٢ المشاركات · ٣ ما يحتاج إجراء · ٦ الخطط
            ٨ المؤشرات · ٩ الإحصاءات التشغيلية · ١٠ التقارير والمرجع.
-           الأولويات ٤ و٥ و٧ (حالة اللاعبين، الحضور، تقييم اللاعبين)
+           الأولوية ١ (التنبيهات) بلا قسم بطلب المستخدم — وهي في
+           تبويب «ما يحتاج تدخلك» وفي جرس الشريط العلوي.
+           والأولويات ٤ و٥ و٧ (حالة اللاعبين، الحضور، تقييم اللاعبين)
            لا أقسام لها في الموقع بعد، فلا مكان فارغ يُحجز لها. -->
       <div class="filters" id="dashFilters" hidden></div>
-
-      <!-- ١ — التنبيهات والإجراءات العاجلة -->
-      <section class="panel" id="alertPanel" hidden>
-        <div class="ch"><h3>التنبيهات والإجراءات العاجلة</h3>
-          <span class="cnt" id="alertN"></span>
-          <span class="hact"><button class="link" data-view="todo">عرض الكل</button></span></div>
-        <div class="alerts" id="alertBody"></div>
-      </section>
 
       <!-- ٢ — المشاركات والبطولات القادمة -->
             <section class="panel" id="calPanel">
@@ -12507,27 +12482,6 @@ function kcard4(ic,lb,val,small,cap,pct,col,foot,go){
     '<span class="pb"><i style="width:'+Math.max(0,Math.min(100,pct))+'%"></i></span>'+
     (foot?'<div class="ft">'+foot+'</div>':'')+'</div>';
 }
-/* §21 الأولوية ١ — التنبيهات والإجراءات العاجلة.
-   لا تُعرض مساحة فارغة: القسم يختفي كاملاً حين لا شيء ينتظر. */
-function renderAlerts(){
-  const host=$('alertPanel'); if(!host) return;
-  refreshTasks();
-  const open=openTasks();
-  if(!open.length){ host.hidden=true; return; }
-  host.hidden=false;
-  /* العاجل أوّلاً، ثم الأقرب — والباقي يُعدّ ولا يُسرَد */
-  const sorted=open.slice().sort((a,b)=>(a.lvl||0)-(b.lvl||0));
-  const top=sorted.slice(0,4), rest=sorted.length-top.length;
-  $('alertN').textContent=String(open.length);
-  $('alertBody').innerHTML=top.map(function(t){
-    return '<button class="alrt" style="--c:'+LV_COL[t.lvl]+'" data-view="todo">'+
-      '<span class="lv">'+esc(LV_LBL[t.lvl])+'</span>'+
-      '<span class="tx"><b>'+esc(t.title)+'</b>'+
-        (t.detail?'<i>'+esc(t.detail)+'</i>':'')+'</span>'+
-      '<span class="go">'+di('chev')+'</span></button>'; }).join('')+
-    (rest>0 ? '<button class="alrt more" data-view="todo">'+
-      'و'+rest+' بنداً آخر ينتظر مراجعتك<span class="go">'+di('chev')+'</span></button>' : '');
-}
 function renderKpis(){
   const h=$('kgrid'); if(!h) return;
   refreshTasks();
@@ -13705,7 +13659,7 @@ function renderHome(){
   ['wkPanel','todayPanel','coachGrid'].forEach(id=>{const e=$(id); if(e) e.hidden=true;});
   /* الرئيسية هدفها واحد: حالة قسم الإعداد الفني.
      المؤشّرات · الميداليات · المنحنى · الأجندة — وما عداها في صفحته */
-  dashFilters(); renderAlerts(); renderKpis(); renderMedals(); renderAgenda(); renderBell(); markClubWide();
+  dashFilters(); renderKpis(); renderMedals(); renderAgenda(); renderBell(); markClubWide();
   renderNatBanner(); renderPerf(); renderVisStrip(); renderCalPanel();
   try{ renderTopFilters(); renderLivePill(); renderPageHead(); }catch(e){}
   const lg=$('legacyDash'); if(lg) lg.hidden=true;
