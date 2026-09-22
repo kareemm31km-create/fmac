@@ -10047,10 +10047,11 @@ function renderViewTabs(){
   const g=navGroups().find(x=>x.k===groupOf(curView));
   if(!g || g.views.length<2){ host.hidden=true; host.innerHTML=''; return; }
   host.hidden=false;
-  /* ضعه تحت ترويسة الصفحة النشطة، لا فوق العنوان */
-  const sec=$(VIEWS[curView]);
-  const hd=sec?sec.querySelector('.dashhead'):null;
-  if(hd && hd.nextSibling!==host) hd.parentNode.insertBefore(host, hd.nextSibling);
+  /* موضعه ثابت أعلى المحتوى. كان يُنقل داخل القسم ذي الترويسة، فإذا
+     انتقلتَ إلى قسم بلا ترويسة بقي داخل قسمٍ صار مخفيّاً فاختفى معه —
+     وهو سبب «كل حاجة بتختفي لمّا أرجع لمتابعة التنفيذ». */
+  const wrap=document.querySelector('.wrap');
+  if(wrap && wrap.firstElementChild!==host) wrap.insertBefore(host, wrap.firstChild);
   host.innerHTML=g.views.map(([v,l])=>{
     const n=tabCount(v);
     return '<button data-view="'+v+'" aria-current="'+(curView===v)+'">'+esc(l)+
@@ -13635,6 +13636,7 @@ function setView(v){
     if(h && window.__fmacMonthlyUI){
       window.__fmacMonthlyUI.render(h,{
         user:user, monthly:monthlyData, reviews:monthlyRv,
+        sport:curSport, sports:ALL_TEN(),
         api:window.__fmacApi,
         onSaved:()=>{ setTimeout(()=>location.reload(),700); }
       });
@@ -13646,6 +13648,7 @@ function setView(v){
     if(h && window.__fmacFitnessUI){
       window.__fmacFitnessUI.render(h,{
         user:user, sports:ALL_TEN(), fitness:fitnessData, fitnessNotes:fitnessNotes,
+        sport:curSport,
         api:window.__fmacApi,
         onSaved:()=>{ setTimeout(()=>location.reload(),700); }
       });

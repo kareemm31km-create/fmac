@@ -26,6 +26,8 @@ const STYLE = `
 .mo-pill.ok{color:#21C77A;border-color:#21C77A55;background:#21C77A18}
 .mo-pill.late{color:#F2A93B;border-color:#F2A93B55;background:#F2A93B18}
 .mo-pill.bad{color:#EF4D5A;border-color:#EF4D5A55;background:#EF4D5A18}
+button.mo-pill{cursor:pointer;font:inherit;font-size:11.5px}
+.mo-pill.on{color:#62B7FF;border-color:#3B9DFF;background:rgba(59,157,255,.14)}
 .mo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .mo-item{background:var(--surface-soft,#112235);border:1px solid #20364C;
   border-radius:14px;padding:14px;cursor:pointer;transition:border-color .15s}
@@ -124,7 +126,14 @@ export function render(host, ctx) {
     document.head.appendChild(st);
   }
   const user = ctx.user || {};
-  const list = (ctx.monthly || []).slice();
+  const all = (ctx.monthly || []).slice();
+  /* نفتح على اللعبة التي كنتَ فيها، وتبقى العودة لكلّ الألعاب بشريحة صريحة */
+  const openSport = S(ctx.sport);
+  const monSports = [...new Set(all.map((x) => S(x.sport)).filter(Boolean))].sort();
+  const picked = host.dataset.moSport;   /* '' اختيار صريح لكلّ الألعاب، وundefined لم يُختَر */
+  const filter = (picked !== undefined) ? S(picked)
+    : (openSport && monSports.indexOf(openSport) >= 0 ? openSport : '');
+  const list = filter ? all.filter((x) => S(x.sport) === filter) : all;
   const reviews = ctx.reviews || {};
   const opts = monthOptions();
 
@@ -163,11 +172,25 @@ export function render(host, ctx) {
     '<div class="mo-msg" id="moMsg"></div></div>' +
     '<div id="moPreview"></div>' +
     '<div class="mo-card"><h3 class="mo-title">الخطط المرفوعة</h3>' +
+    (monSports.length > 1
+      ? '<div class="mo-row" style="margin-top:10px">' +
+        '<button class="mo-pill' + (filter ? '' : ' on') + '" data-mosp="">كل الألعاب</button>' +
+        monSports.map((sp) => '<button class="mo-pill' + (filter === sp ? ' on' : '') +
+          '" data-mosp="' + esc(sp) + '">' + esc(sp) + '</button>').join('') + '</div>'
+      : '') +
     (rows ? '<div class="mo-grid" style="margin-top:12px">' + rows + '</div>'
           : '<div class="mo-empty">لا خطط شهرية بعد.</div>') + '</div>' +
     '<div id="moDetail"></div></div>';
 
   const $ = (id) => host.querySelector('#' + id);
+
+  host.querySelectorAll('[data-mosp]').forEach((b) => {
+    b.addEventListener('click', () => {
+      host.dataset.moSport = b.getAttribute('data-mosp');
+      render(host, ctx);
+    });
+  });
+
   const msg = $('moMsg');
   const sel = $('moMonth');
 

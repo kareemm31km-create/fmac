@@ -32,6 +32,8 @@ const STYLE = `
 .fb-pill.warn{color:#F2A93B;border-color:#F2A93B55;background:#F2A93B18}
 .fb-pill.bad{color:#EF4D5A;border-color:#EF4D5A55;background:#EF4D5A18}
 .fb-pill.read{color:#3B9DFF;border-color:#3B9DFF55;background:#3B9DFF14}
+button.fb-pill{cursor:pointer;font:inherit;font-size:11.5px}
+.fb-pill.on{color:#62B7FF;border-color:#3B9DFF;background:rgba(59,157,255,.14)}
 .fb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
 .fb-item{background:var(--surface-soft,#112235);border:1px solid var(--hairline,#20364C);
   border-radius:14px;padding:14px;cursor:pointer;transition:border-color .15s}
@@ -83,6 +85,9 @@ const toB64 = (buf) => {
 };
 
 const isXlsx = (name) => /\.xlsx$/i.test(S(name));
+
+/* الألعاب التي لها خطط فعلاً — لا نعرض شريحة لِما لا شيء تحته */
+const sportsWith = (rows) => [...new Set(rows.map((r) => S(r.sport)).filter(Boolean))].sort();
 
 /* تمييز العدد في العربية — «حصّتان» لا «2 حصص» */
 const arCount = (n, one, two, few, many) =>
@@ -175,9 +180,16 @@ export function render(host, ctx) {
   const list = canEdit ? all
     : all.filter((p) => !S(user.sport) || S(p.sport) === S(user.sport));
 
+  /* اللعبة المفتوحة في صفحة الخطط تُقدَّم هنا — لا يبحث المستخدم عنها ثانيةً */
+  const openSport = S(ctx.sport);
+  const picked = host.dataset.fbSport;   /* '' اختيار صريح لكلّ الألعاب، وundefined لم يُختَر */
+  const filter = (picked !== undefined) ? S(picked)
+    : (openSport && list.some((x) => S(x.sport) === openSport) ? openSport : '');
+  const shown = filter ? list.filter((x) => S(x.sport) === filter) : list;
+
   const weeks = weekOptions();
 
-  const cards = list.slice().sort((a, b) =>
+  const cards = shown.slice().sort((a, b) =>
     (S(b.week) + S(b.sport)).localeCompare(S(a.week) + S(a.sport))
   ).map((p) => {
     const nt = notes[p.k];
@@ -204,7 +216,8 @@ export function render(host, ctx) {
     '<div class="fb-row" style="margin-top:14px">' +
     '<label class="fb-sub" for="fbSport">اللعبة</label>' +
     '<select id="fbSport" class="fb-sel">' +
-    sports.map((s) => '<option value="' + esc(s) + '">' + esc(s) + '</option>').join('') +
+    sports.map((s) => '<option value="' + esc(s) + '"' +
+      (s === (filter || openSport) ? ' selected' : '') + '>' + esc(s) + '</option>').join('') +
     '</select>' +
     '<label class="fb-sub" for="fbWeek">الأسبوع</label>' +
     '<select id="fbWeek" class="fb-sel">' +
@@ -225,11 +238,25 @@ export function render(host, ctx) {
   host.innerHTML = '<div class="fb-wrap">' + upload +
     '<div id="fbPreview"></div>' +
     '<div class="fb-card"><h3 class="fb-title">الخطط البدنية المرفوعة</h3>' +
+    (sportsWith(list).length > 1
+      ? '<div class="fb-row" style="margin-top:10px">' +
+        '<button class="fb-pill' + (filter ? '' : ' on') + '" data-fbsp="">كل الألعاب</button>' +
+        sportsWith(list).map((sp) => '<button class="fb-pill' +
+          (filter === sp ? ' on' : '') + '" data-fbsp="' + esc(sp) + '">' + esc(sp) +
+          '</button>').join('') + '</div>'
+      : '') +
     (cards ? '<div class="fb-grid" style="margin-top:12px">' + cards + '</div>'
            : '<div class="fb-empty">لا خطط بدنية بعد.</div>') + '</div>' +
     '<div id="fbDetail"></div></div>';
 
   const $ = (id) => host.querySelector('#' + id);
+
+  host.querySelectorAll('[data-fbsp]').forEach((b) => {
+    b.addEventListener('click', () => {
+      host.dataset.fbSport = b.getAttribute('data-fbsp');
+      render(host, ctx);
+    });
+  });
 
   /* ── فتح خطة ── */
   host.querySelectorAll('[data-open]').forEach((el) => {
