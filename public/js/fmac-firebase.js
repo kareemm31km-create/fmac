@@ -42,6 +42,7 @@ async function initPayload() {
     monthly: COL.monthly, reviews: COL.reviews,
     fitness: COL.fitness, fitnotes: COL.fitnotes,
     schoolv: COL.schoolv,
+    schoolp: COL.schoolp,
   };
   const keys = Object.keys(map);
   const got = await Promise.all(keys.map((k) => readCol(map[k]).catch(() => [])));
@@ -126,6 +127,7 @@ async function initPayload() {
     })).sort((a, b) => S(b.at).localeCompare(S(a.at))),
     /* زيارات المدارس — وحدة مستقلّة، والتجميع في الواجهة لا هنا */
     schoolVisits: R.schoolv.filter((r) => S(r.k)).map((r) => Object.assign({}, r, { k: S(r.k) })),
+    schoolPlayers: R.schoolp.filter((r) => S(r.k)).map((r) => Object.assign({}, r, { k: S(r.k) })),
     fitnessNotes: mapOf(R.fitnotes, (r) => ({
       text: S(r.text), by: S(r.by), at: S(r.at) })),
     build: BUILD,
@@ -367,6 +369,37 @@ async function dispatch(body) {
       row.log = row.log.slice(-60);
       return put(COL.schoolv, id, row);
     }
+    /* استمارة لاعبي المدارس — يرفعها المدرب. صفّ لكلّ لاعب في وثيقة،
+       فالتقارير تُجمّع بلا فكّ مصفوفات، والصلاحية تبقى للمدرب وحده. */
+    case 'schoolp': {
+      const rows = Array.isArray(body.rows) ? body.rows : [];
+      if (!rows.length) return { ok: false, error: 'no_rows' };
+      if (rows.length > 500) return { ok: false, error: 'too_many_rows' };
+      const me = PROFILE || {};
+      const stamp = { by: S(me.name || me.code || me.uid), at: nowISO() };
+      const b2 = writeBatch(db);
+      const keys = [];
+      for (const r of rows) {
+        if (!S(r.name)) continue;
+        const id = S(r.k) || doc(collection(db, COL.schoolp)).id;
+        const row = Object.assign({}, r, stamp);
+        delete row.k;
+        b2.set(doc(db, COL.schoolp, id), row, { merge: true });
+        keys.push(id);
+      }
+      if (!keys.length) return { ok: false, error: 'no_named_rows' };
+      await b2.commit();
+      return { ok: true, n: keys.length, keys, at: stamp.at };
+    }
+    case 'schoolpDrop': {
+      const ks = Array.isArray(body.keys) ? body.keys.map(S).filter(Boolean) : [];
+      if (!ks.length) return { ok: false, error: 'missing' };
+      const b3 = writeBatch(db);
+      for (const k of ks) b3.delete(doc(db, COL.schoolp, k));
+      await b3.commit();
+      return { ok: true, n: ks.length };
+    }
+
     case 'schoolvDrop': {
       const d = adminOnly(); if (d) return d;
       const k = S((body.schoolv || {}).k || body.k);

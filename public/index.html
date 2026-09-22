@@ -5303,7 +5303,7 @@ let cancels={}, attend={}, replies={}, history=[];
 let stages={}, versions=[], segs={}, devs=[], acts={}, sess={};
 let monthlyData=[], monthlyRv={};
 let fitnessData=[], fitnessNotes={};
-let schoolVisits=[];
+let schoolVisits=[], schoolPlayers=[];
 let notes=[], weeks={}, audit=[], results={}, agenda=[], visits=[], calendar=[], shields={}, camps={}, staff=[],
     national={};
 let PLANS = [];
@@ -5405,7 +5405,7 @@ function tally(p,dayIdx){
 }
 function led(txt,cls){ $('ledTxt').textContent=txt; $('led').className='led '+(cls||''); }
 /* شريط أحمر عريض حين لا يُحفَظ شيء فعلاً — لا يجوز أن يفشل الحفظ بصمت */
-const NEED_BUILD = 10;
+const NEED_BUILD = 11;
 function warnBar(html){
   let el=$('warnBar');
   if(!html){ if(el) el.remove(); return; }
@@ -5751,7 +5751,7 @@ async function tryCode(code){
   agenda=j.agenda||[]; visits=j.visits||[]; calendar=j.calendar||[];
   monthlyData=j.monthly||[]; monthlyRv=j.monthlyReviews||{};
   fitnessData=j.fitness||[]; fitnessNotes=j.fitnessNotes||{};
-  schoolVisits=j.schoolVisits||[];
+  schoolVisits=j.schoolVisits||[]; schoolPlayers=j.schoolPlayers||[];
   try{ if(!offline) checkLink(j); }catch(e){}
   mergePlans(j.plans2||[]);
   /* ما رُصد ولم يصل الخادم (إغلاق مفاجئ · انقطاع شبكة) يُعاد فوق نسخة الخادم ثم يُرسل */
@@ -10180,6 +10180,7 @@ function renderBell(){
 
 /* ============ لوحة الإدارة الجديدة ============ */
 const NAV_IC={
+  school:'<svg viewBox="0 0 24 24"><path d="M12 3 3.2 7.6h17.6z"/><path d="M5.4 7.6v11.2a1.6 1.6 0 0 0 1.6 1.6h10a1.6 1.6 0 0 0 1.6-1.6V7.6"/><path d="M10 20.4v-4h4v4"/><path d="M12 3V1.2h3l-1 1.1 1 1.1H12"/><circle cx="12" cy="11.8" r="1.5"/></svg>',
   visit:'<svg viewBox="0 0 24 24"><path d="M12 21c4-4.6 6-7.7 6-10.3A6 6 0 0 0 6 10.7C6 13.3 8 16.4 12 21z"/><circle cx="12" cy="10.6" r="2.3"/></svg>',
   medal:'<svg viewBox="0 0 24 24"><circle cx="12" cy="14.6" r="5.4"/><path d="M12 12.4l.9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z"/><path d="M8.4 9.4 6 3.4h4.8l1.5 3.8"/><path d="M15.6 9.4 18 3.4h-4.8"/></svg>',
   home:'<svg viewBox="0 0 24 24"><path d="M3.5 10.4 12 3.7l8.5 6.7"/><path d="M5.6 9v9.4a1.6 1.6 0 0 0 1.6 1.6h9.6a1.6 1.6 0 0 0 1.6-1.6V9"/><path d="M9.8 20V13.6h4.4V20"/></svg>',
@@ -10218,7 +10219,7 @@ const NAV_BASE=[
   {k:'plans',   ic:'plan',    label:'الخطط',    views:[
       ['plan','متابعة التنفيذ'],['monthly','الخطط الشهرية'],['fitness','الإعداد البدني'],['calendar','تقويم الأسبوع']]},
   {k:'visits',  ic:'visit',   label:'المتابعة الفنية', views:[['visit','']]},
-  {k:'schools', ic:'visit',   label:'زيارات المدارس', views:[['schools','']]},
+  {k:'schools', ic:'school',  label:'زيارات المدارس', views:[['schools','']]},
   {k:'physio',  ic:'review',  label:'العلاج الطبيعي', views:[['physio','']]},
   {k:'season',  ic:'calendar',label:'جدول مشاركات الموسم', views:[['season','']]},
   {k:'reports', ic:'reports', label:'التقارير', views:[['reports','التقرير'],['archive','الأرشيف']]},
@@ -10232,7 +10233,7 @@ const NAV_PRO=[
   {k:'plans',   ic:'plan',    label:'الخطط',    views:[
       ['plan','متابعة التنفيذ'],['monthly','الخطط الشهرية'],['fitness','الإعداد البدني'],['calendar','تقويم الأسبوع']]},
   {k:'visits',  ic:'visit',   label:'المتابعة الفنية', views:[['visit','']]},
-  {k:'schools', ic:'visit',   label:'زيارات المدارس', views:[['schools','']]},
+  {k:'schools', ic:'school',  label:'زيارات المدارس', views:[['schools','']]},
   {k:'physio',  ic:'review',  label:'العلاج الطبيعي', views:[['physio','']]},
   {k:'season',  ic:'calendar',label:'جدول مشاركات الموسم', views:[['season','']]},
   {k:'reports', ic:'reports', label:'التقارير', views:[
@@ -14074,6 +14075,9 @@ function setView(v){
     if(h && window.__fmacSchoolsUI){
       window.__fmacSchoolsUI.render(h,{
         user:user, season:curSeason(), sports:ALL_TEN(), visits:schoolVisits,
+        players:schoolPlayers,
+        savePlayers:(rows)=>svPost('schoolp',{rows:rows}),
+        dropPlayers:(keys)=>svPost('schoolpDrop',{keys:keys}),
         save:(payload)=>svPost('schoolv',{schoolv:payload}),
         drop:(k)=>svPost('schoolvDrop',{schoolv:{k:k}}),
         onSaved:()=>{ setTimeout(()=>location.reload(),700); }

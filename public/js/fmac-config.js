@@ -41,6 +41,7 @@ export const COL = {
   reviews:    'monthlyReviews', // تقييمات الخطط الشهرية
   fitness:    'fitness',        // الخطط البدنية الأسبوعية
   schoolv:    'schoolVisits',   // زيارات المدارس
+  schoolp:    'schoolPlayers',  // لاعبو المدارس المختارون
   signups:    'signupRequests', // طلبات فتح حساب — تراجعها الإدارة
   fitnotes:   'fitnessNotes',   // ملاحظات الإدارة على الخطط البدنية
 };
@@ -50,6 +51,7 @@ export const COACH_WRITABLE = [
   COL.monthly, COL.reviews,
   COL.subs, COL.cancels, COL.attend, COL.replies,
   COL.segs, COL.devs, COL.acts, COL.sess, COL.stages, COL.versions,
+  COL.schoolp,
 ];
 
 /* الإعداد البدني: يكتبها مدرب اللياقة (fitness في ملفّه) والإدارة.
@@ -60,7 +62,7 @@ export const FITNESS_WRITABLE = [COL.fitness];
    ليست سرّاً: قيمتها معروفة للجميع أصلاً، وحمايتها في الإلزام لا في الإخفاء. */
 export const SHARED_PASSWORD = '12345678';
 
-export const BUILD = 10;
+export const BUILD = 11;
 
 /* حساب الإدارة الأوّل — يُنشأ ملفّه تلقائياً عند أوّل دخول.
    ليس سرّاً: القواعد تعترف بهذا المعرّف وحده، ومن يملكه يملك الحساب أصلاً. */

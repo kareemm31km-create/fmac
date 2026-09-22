@@ -41,14 +41,15 @@ service cloud.firestore {
               'subs','cancels','attendance','replies','segments','deviations',
               'acts','sessions','stages','versions',
               'monthlyPlans','monthlyReviews',
-              'fitness','fitnessNotes','schoolVisits'];
+              'fitness','fitnessNotes','schoolVisits','schoolPlayers'];
     }
 
     /* ما يكتبه المدرب — ما عداها للإدارة وحدها (القيد رقم 2 في وثيقة المشروع) */
     function coachWritable() {
       return ['subs','cancels','attendance','replies','segments',
               'deviations','acts','sessions','stages','versions',
-              'monthlyPlans','monthlyReviews'];
+              'monthlyPlans','monthlyReviews',
+              'schoolPlayers'];
     }
 
     /* المستخدمون: كلٌّ يقرأ ملفّه، والإدارة وحدها تقرأ وتكتب الجميع.
