@@ -2341,7 +2341,14 @@ body.en .wordmark span{letter-spacing:.02em}
 @keyframes sheen{from{background-position:200% 0}to{background-position:-200% 0}}
 
 /* دخول الصفحة — مرة واحدة بس */
-body:not(.booted) .topnav{animation:fadein .45s both}
+/* قبل جهوز البيانات لا يُعرض هيكل فارغ: لا موسم «—» ولا بطاقة بلا أرقام.
+   السطح مخفيّ حتى ينتهي الإقلاع، ثم يظهر دفعةً واحدة. وبوّابة الخطأ
+   خارج هذا السطح فتبقى ظاهرة إن فشل الجلب. */
+body:not(.ready) .topnav,body:not(.ready) .wrap,body:not(.ready) .side{
+  opacity:0;visibility:hidden;pointer-events:none}
+body.ready .topnav,body.ready .wrap,body.ready .side{
+  opacity:1;visibility:visible;transition:opacity .28s var(--ease,ease)}
+body.ready:not(.booted) .topnav{animation:fadein .45s both}
 body:not(.booted) .hero{animation:rise .6s .06s both}
 body:not(.booted) .rowlabel,body:not(.booted) .tabrow{animation:rise .55s .16s both}
 body:not(.booted) .planbar{animation:rise .55s .24s both}
@@ -5603,12 +5610,14 @@ function start(){
     $('arcs').innerHTML=''; $('daykey').innerHTML='';
     led('متصل','');
     renderHome(); setView('home');
+    document.body.classList.add('ready');
     setTimeout(()=>document.body.classList.add('booted'),1400);
     return;
   }
   led(API?'متصل بسجل النادي':'وضع تجريبي', API?'':'off');
   autoReview(false); aiReviewQueue(false);
   render(); renderHome(); setView('home');
+  document.body.classList.add('ready');
   setTimeout(()=>document.body.classList.add('booted'),1400);
 }
 
