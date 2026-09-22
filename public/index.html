@@ -3710,9 +3710,9 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
 .icobtn:hover{color:var(--ink-deep);border-color:var(--edge)}
 .icobtn svg,.icobtn .di{width:19px;height:19px}
 /* زرّ اللغة: كرة أرضية ووسم صغير — أعرض قليلاً من المربّع */
-.icobtn.lang{width:auto;min-width:40px;padding:0 10px!important;display:inline-flex;
-  align-items:center;gap:6px}
-.icobtn.lang b{font:700 11px/1 'Segoe UI',system-ui,sans-serif;letter-spacing:.06em}
+/* اللغة نصٌّ وحده: «EN» و«ع» تُقرآن بلا كرة أرضيّة تشرحهما */
+.icobtn.lang{width:40px;padding:0!important;display:grid;place-items:center}
+.icobtn.lang b{font:800 12.5px/1 'Segoe UI',system-ui,sans-serif;letter-spacing:.04em}
 .icobtn.on{color:var(--brand);border-color:color-mix(in srgb,var(--brand) 40%,transparent);
   background:color-mix(in srgb,var(--brand) 12%,transparent)}
 .side .sfoot .uchip{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:12px;
@@ -4359,11 +4359,8 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
       stroke-linecap="round" stroke-linejoin="round"><rect x="6.4" y="2.8" width="11.2" height="18.4" rx="2.2"/>
       <path d="M10.6 18.4h2.8"/></svg></button>
-  <button class="icobtn lang" id="btnLangTop" title="العربية / English" aria-label="تبديل اللغة">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-      <circle cx="12" cy="12" r="8.6"/>
-      <path d="M3.4 12h17.2M12 3.4c2.5 2.5 2.5 14.7 0 17.2M12 3.4c-2.5 2.5-2.5 14.7 0 17.2"/></svg>
-    <b id="langTag">EN</b></button>
+  <button class="icobtn lang" id="btnLangTop" title="العربية / English"
+    aria-label="تبديل اللغة"><b id="langTag">EN</b></button>
   <button class="icobtn theme" id="btnTheme" title="المظهر: تلقائي / فاتح / داكن"
     aria-label="تبديل المظهر"><svg id="themeIco" viewBox="0 0 24 24" fill="none"
       stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></svg></button>

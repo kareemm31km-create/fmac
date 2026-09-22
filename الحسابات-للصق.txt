@@ -18,7 +18,6 @@ Anas Taleb	Anas.Taleb@fmac.fujairah.ae	التايكوندو	البدية
 Mohammed Elamine Ezzahiri	Mohammed.Elamine@fmac.fujairah.ae	الجوجيتسو	الفجيرة
 Awad Ahmed	Awad.ahmed@fmac.fujairah.ae	الجودو	الفجيرة
 Mohamed eldahab	Mohamed.eldahab@fmac.fujairah.ae	المبارزة	البدية
-Ahmed banna	AhmadBanna@fmac.fujairah.ae		الفجيرة
 Omar Helmy	Omar.helmy@fmac.fujairah.ae	الجوجيتسو	الفجيرة
 Saber Mohamed	Saber.mohamed@fmac.fujairah.ae	السباحة	الفجيرة
 Alya Ibrahim Elsayed	Alya.ibrahim@fmac.fujairah.ae	التايكوندو	الفجيرة
@@ -31,6 +30,7 @@ Nabil Ali Al Ali	nabilalali@fmac.fujairah.ae	السباحة	الفجيرة
 Mohsen Al Ali	MohsinAlAli@fmac.fujairah.ae	الترياثلون	الفجيرة
 Sabri mohamed Fathy	Sabri.mohammed@fmac.fujairah.ae	السباحة	الفجيرة
 Mohamed Rabie Hussain	m.rabie@fmac.fujairah.ae	الجودو	البدية
+عبدالله عمر	abdullah.o@fmac.fujairah.ae	القوس والسهم	
 
 ================================================================
 معالج طبيعي — 5
@@ -42,9 +42,10 @@ Loai Atef	Loei.Atef@fmac.fujairah.ae		الفجيرة
 Romisaa Barakat	romissa.b@fmac.fujairah.ae		دبا
 
 ================================================================
-مدرب لياقة بدنية — 1
+مدرب لياقة بدنية — 2
 ================================================================
 Nawar Khaled Haaj Jumaa	NawarKhaled@fmac.fujairah.ae		الفجيرة
+Ahmed banna	AhmadBanna@fmac.fujairah.ae		الفجيرة
 
 ================================================================
 إدارة — 2
@@ -53,6 +54,6 @@ Anas Jalal	Anas.jalal@fmac.fujairah.ae		الفجيرة
 Kareem Zaaher	Kareem@fmac.fujairah.ae		الفجيرة
 
 ================================================================
-يحتاج نظرك
+ملاحظات
 ================================================================
-سطر 39: «بلا اسم» — abdullah.o@fmac.fujairah.ae
+عبدالله عمر — بلا فرع في الجدول، يُضبط من الإعدادات
