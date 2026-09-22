@@ -74,6 +74,7 @@ export async function createAccount(opts) {
     name: S(opts.name) || (legacy && legacy.name) || email,
     role: S(opts.role) || (legacy && legacy.role) || 'مدرب',
     admin: !!opts.admin,
+    fitness: !!opts.fitness,
     sport: S(opts.sport) || (legacy && legacy.sport) || '',
     branch: S(opts.branch) || (legacy && legacy.branch) || '',
     phone: S(opts.phone) || (legacy && legacy.phone) || '',

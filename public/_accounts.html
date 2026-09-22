@@ -56,6 +56,7 @@ code{background:var(--soft);padding:1px 5px;border-radius:5px;font-size:12px}
       <div><label for="phone">الموبايل</label><input id="phone" type="text"></div>
       <div><label for="role">الصلاحية</label>
         <select id="role"><option value="مدرب">مدرب</option>
+        <option value="مدرب لياقة بدنية">مدرب لياقة بدنية</option>
         <option value="إدارة">إدارة</option></select></div>
     </div>
     <div style="margin-top:18px"><button id="create">إنشاء الحساب</button></div>
@@ -117,6 +118,7 @@ async function refresh() {
         '<td>' + esc(u.sport || '—') + '</td>' +
         '<td>' + esc(u.branch || '—') + '</td>' +
         '<td>' + (u.admin ? '<span class="tag adm">إدارة</span> ' : '') +
+          (u.fitness ? '<span class="tag adm">لياقة بدنية</span> ' : '') +
           (linked ? '<span class="tag">مرتبط</span>'
                   : '<span class="tag leg">مهاجَر — بلا حساب</span>') + '</td>' +
         '<td style="white-space:nowrap">' +
@@ -152,6 +154,8 @@ $('create').addEventListener('click', async () => {
     email: $('email').value, password: $('pass').value, name: $('name').value,
     sport: $('sport').value, branch: $('branch').value, phone: $('phone').value,
     role: $('role').value, admin: $('role').value === 'إدارة',
+    /* مدرب اللياقة يكتب الخطط البدنية وحدها — ليس إدارةً ولا مدرب لعبة */
+    fitness: $('role').value === 'مدرب لياقة بدنية',
     legacyCode: $('legacy').value,
   });
   $('create').disabled = false;

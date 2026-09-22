@@ -40,6 +40,7 @@ async function initPayload() {
     camps: COL.camps, national: COL.national, agenda: COL.agenda,
     visits: COL.visits, calendar: COL.calendar, acts: COL.acts, audit: COL.audit,
     monthly: COL.monthly, reviews: COL.reviews,
+    fitness: COL.fitness, fitnotes: COL.fitnotes,
   };
   const keys = Object.keys(map);
   const got = await Promise.all(keys.map((k) => readCol(map[k]).catch(() => [])));
@@ -51,6 +52,7 @@ async function initPayload() {
 
   const user = {
     code: S(me.code || me.uid), name: S(me.name), admin: !!me.admin,
+    fitness: !!me.fitness,             // مدرب اللياقة: يكتب الخطط البدنية وحدها
     sport: S(me.sport), branch: S(me.branch), phone: S(me.phone),
     photo: S(me.photo), email: S(me.email), uid: S(me.uid),
   };
@@ -112,6 +114,16 @@ async function initPayload() {
       coverage: NUM(r.coverage), grade: S(r.grade),
       decision: S(r.decision), action: S(r.action), at: S(r.at),
     })),
+    /* الخطط البدنية: يقرؤها الجميع — المدرب للمتابعة لا للتعديل.
+       والترشيح للعرض في الواجهة، فالقاعدة تتيح القراءة لكل من دخل. */
+    fitness: R.fitness.filter((f) => S(f.k)).map((f) => ({
+      k: S(f.k), sport: S(f.sport), week: S(f.week), focus: S(f.focus),
+      block: S(f.block), freq: S(f.freq), byName: S(f.byName), by: S(f.by),
+      at: S(f.at), url: S(f.url), file: S(f.file), readable: f.readable !== false,
+      sessions: Array.isArray(f.sessions) ? f.sessions : [],
+    })).sort((a, b) => S(b.at).localeCompare(S(a.at))),
+    fitnessNotes: mapOf(R.fitnotes, (r) => ({
+      text: S(r.text), by: S(r.by), at: S(r.at) })),
     build: BUILD,
     ai: { on: false, model: '' },   // مزايا المساعد تحتاج Cloud Function
   };
@@ -331,6 +343,45 @@ async function dispatch(body) {
       }
       return { ok: true, k: id, url };
     }
+    /* الخطة البدنية: يكتبها مدرب اللياقة والإدارة وحدهما.
+       الحارس هنا للرسالة الواضحة؛ المنع الفعلي في قواعد Firestore. */
+    case 'fitness': {
+      const me = PROFILE || {};
+      if (!me.admin && !me.fitness) return { ok: false, error: 'not_fitness_coach' };
+      const f = body.fitness || {};
+      if (!S(f.sport) || !S(f.week)) return { ok: false, error: 'missing_sport_or_week' };
+      const id = S(f.k) || (S(f.sport) + '__' + S(f.week));
+      let url = S(f.url);
+      if (body.file) url = await putFile(body.file, body.name, 'fitness');
+      const row = Object.assign({}, f, {
+        sport: S(f.sport), week: S(f.week),
+        byName: S(f.byName) || S(me.name),
+        sessions: Array.isArray(f.sessions) ? f.sessions : [],
+        readable: f.readable !== false,
+        url, file: S(body.name || f.file),
+      });
+      delete row.k;
+      return put(COL.fitness, id, row);
+    }
+    case 'fitnessDrop': {
+      const me = PROFILE || {};
+      if (!me.admin && !me.fitness) return { ok: false, error: 'not_fitness_coach' };
+      const k = S((body.fitness || {}).k || body.k);
+      if (!k) return { ok: false, error: 'missing' };
+      await drop(COL.fitness, k);
+      await drop(COL.fitnotes, k).catch(() => null);
+      return { ok: true };
+    }
+    /* ملاحظة الإدارة على الخطة البدنية — لا درجة، فالمعيار لم يُوضع */
+    case 'fitnote': {
+      const d = adminOnly(); if (d) return d;
+      const n = body.fitnote || {};
+      const k = S(n.k);
+      if (!k) return { ok: false, error: 'missing' };
+      if (!S(n.text)) return drop(COL.fitnotes, k);
+      return put(COL.fitnotes, k, { text: S(n.text) });
+    }
+
     case 'monthlyDrop': {
       const d = adminOnly(); if (d) return d;
       const k = S((body.monthly || {}).k || body.k);

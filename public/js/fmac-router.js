@@ -37,6 +37,7 @@ export const ROUTES = [
   { path: '',          view: 'home',     label: 'الرئيسية' },
   { path: 'plan',      view: 'plan',     label: 'متابعة التنفيذ', param: 'sport' },
   { path: 'monthly',   view: 'monthly',  label: 'الخطط الشهرية' },
+  { path: 'fitness',   view: 'fitness',  label: 'الإعداد البدني' },
   { path: 'calendar',  view: 'calendar', label: 'تقويم الأسبوع' },
   { path: 'sports',    view: 'sport',    label: 'الألعاب', param: 'sport' },
   { path: 'visits',    view: 'visit',    label: 'المتابعة الفنية' },

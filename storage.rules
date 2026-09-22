@@ -33,6 +33,14 @@ service firebase.storage {
       allow delete: if isAdmin();
     }
 
+    /* ملفّات الخطط البدنية — يرفعها مدرب اللياقة، وتُقرأ بعد الدخول.
+       صلاحية الكتابة الفعلية على البيانات في firestore.rules؛ هنا حدّ الحجم. */
+    match /fitness/{allPaths=**} {
+      allow read:   if signedIn();
+      allow create: if signedIn() && underSize(20);
+      allow delete: if isAdmin();
+    }
+
     /* صور المستخدمين — الإدارة وحدها */
     match /users/{uid}/{allPaths=**} {
       allow read:   if signedIn();

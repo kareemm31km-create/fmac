@@ -58,9 +58,9 @@ else bad('التصدير __fmacApi مفقود');
 
 const cfg = NS['./js/fmac-config.js'];
 const nCol = cfg && cfg.COL ? Object.keys(cfg.COL).length : 0;
-if (nCol === 27)
-  ok('خريطة المجموعات: ' + nCol + ' مجموعة (المتوقَّع 27)');
-else bad('خريطة المجموعات: ' + nCol + ' والمتوقَّع 27');
+if (nCol === 29)
+  ok('خريطة المجموعات: ' + nCol + ' مجموعة (المتوقَّع 29)');
+else bad('خريطة المجموعات: ' + nCol + ' والمتوقَّع 29');
 
 const authNs = NS['./js/fmac-auth.js'];
 if (authNs && authNs.auth && authNs.db && authNs.storage) ok('Auth + Firestore + Storage مهيّأة');

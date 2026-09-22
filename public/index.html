@@ -192,6 +192,16 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .coachpop .cpick .pc{margin-inline-start:auto;font-variant-numeric:tabular-nums}
 .coachpop .none{padding:7px 10px;font-size:12.5px;color:var(--steel)}
 @media (hover:none){.coachpop{display:none}}
+/* شريط الخطة البدنية في صفحة الخطة — سطح قراءة، فلا أزرار تعديل فيه */
+.fitstrip{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  background:var(--surface-soft,var(--surface));border:1px solid var(--hairline);
+  border-inline-start:3px solid var(--live,#7fb3ff);border-radius:var(--r-xl);
+  padding:12px 14px;margin:12px 0}
+.fitstrip .fs-t{display:flex;flex-direction:column;gap:2px;min-width:200px}
+.fitstrip .fs-t b{font-size:14px}
+.fitstrip .fs-m{font-size:12px;color:var(--steel)}
+.fitstrip .fs-p{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.fitstrip .fs-ro{color:var(--live,#7fb3ff)}
 .barline .nm .bdg{width:24px;height:24px;flex:none;border-radius:50%;
   background-size:cover;background-position:center;background-repeat:no-repeat}
 .cprof .cbdg{width:56px;height:56px;border-radius:50%;flex:none;
@@ -4651,6 +4661,13 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
     <div id="monthlyHost"></div>
   </section>
 
+  <section id="fitnessView" hidden>
+    <header class="dashhead"><div><h1>الإعداد البدني</h1>
+      <div class="sub">اللياقة البدنية تخصّص يخدم الألعاب كلّها — يضع مدربها خطة
+        أسبوعية لكل لعبة، ويقرؤها مدربوها للمتابعة.</div></div></header>
+    <div id="fitnessHost"></div>
+  </section>
+
   <section id="archiveView" hidden>
     <header class="dashhead"><div><h1>الأرشيف</h1>
       <div class="sub">الأسابيع المنتهية وخططها كما نُفِّذت — للاطّلاع والطباعة</div></div></header>
@@ -4745,6 +4762,7 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
   <div id="planWrap" hidden><div class="rowlabel">الخطة</div><div class="tabrow sub" id="planTabs"></div></div>
 
   <div id="stgHost"></div>
+  <div id="fitStrip"></div>
   <div class="planbar" id="planbar"></div>
 
   <div class="grid2" id="pvHost"></div>
@@ -4784,6 +4802,7 @@ window.__fmacApi = function(url, opts){
 </script>
 <script type="module" src="./js/fmac-firebase.js"></script>
 <script type="module" src="./js/fmac-monthly-ui.js"></script>
+<script type="module" src="./js/fmac-fitness-ui.js"></script>
 <script type="module" src="./js/fmac-router.js"></script>
 <script>
 /* ================= FMAC tracker — roles + Google Sheet sync ================= */
@@ -4897,6 +4916,7 @@ let settings={week:'',dates:'',club:''}, coaches=[], subs=[], curView='home', su
 let cancels={}, attend={}, replies={}, history=[];
 let stages={}, versions=[], segs={}, devs=[], acts={}, sess={};
 let monthlyData=[], monthlyRv={};
+let fitnessData=[], fitnessNotes={};
 let notes=[], weeks={}, audit=[], results={}, agenda=[], visits=[], calendar=[], shields={}, camps={}, staff=[],
     national={};
 let PLANS = [];
@@ -4937,13 +4957,24 @@ function ALL_TEN(){
   SPORTS.concat(SOON).forEach(s=>{ if(s && out.indexOf(s)<0) out.push(s); });
   return out;
 }
-/* مدرّبو لعبة: صفّ لكلّ خطة، عنوانه اسم المدرب المُسنَد إن وُجد */
+/* مدرّبو لعبة: صفّ لكلّ مدرب لا لكلّ خطة — المدرب الواحد قد تكون له
+   خطط عدّة في اللعبة، فصفوفها تتطابق بلا فائدة. وخططه تظهر في شريط
+   الخطط تحت التبويبات بعد اختياره. */
 function sportCoaches(s){
-  return view.filter(p=>p.sport===s).map(p=>{
-    const c=coachOf(p.id), L=planLabel(p);
-    return { id:p.id, name:(c?c.name:'بلا مدرب مُسنَد'),
-             sub:(c?L.sub:(L.main+(L.sub?' · '+L.sub:''))), pct:tally(p).score };
+  const out=[], by={};
+  view.filter(p=>p.sport===s).forEach(p=>{
+    const c=coachOf(p.id);
+    const key=c?c.code:'__none';
+    const t=tally(p);
+    if(by[key]===undefined){
+      by[key]=out.length;
+      out.push({ id:p.id, name:(c?c.name:'بلا مدرب مُسنَد'), plans:0, total:0, done:0 });
+    }
+    const r=out[by[key]];
+    r.plans++; r.total+=t.total; r.done+=t.done+t.partial*0.5;
   });
+  out.forEach(r=>{ r.pct = r.total ? Math.round(r.done/r.total*100) : 0; });
+  return out;
 }
 const weekOf=pid=>{ const p=PLANS.find(x=>x.id===pid); return (p&&p.week)||weekInfo().label; };
 const key=(p,d,s,i)=>weekOf(p)+'|'+p+'|'+d+'|'+s+'|'+i;
@@ -4978,7 +5009,7 @@ function tally(p,dayIdx){
 }
 function led(txt,cls){ $('ledTxt').textContent=txt; $('led').className='led '+(cls||''); }
 /* شريط أحمر عريض حين لا يُحفَظ شيء فعلاً — لا يجوز أن يفشل الحفظ بصمت */
-const NEED_BUILD = 7;
+const NEED_BUILD = 8;
 function warnBar(html){
   let el=$('warnBar');
   if(!html){ if(el) el.remove(); return; }
@@ -5315,6 +5346,7 @@ async function tryCode(code){
   staff=j.staff||[]; national=j.national||{};
   agenda=j.agenda||[]; visits=j.visits||[]; calendar=j.calendar||[];
   monthlyData=j.monthly||[]; monthlyRv=j.monthlyReviews||{};
+  fitnessData=j.fitness||[]; fitnessNotes=j.fitnessNotes||{};
   try{ if(!offline) checkLink(j); }catch(e){}
   mergePlans(j.plans2||[]);
   /* ما رُصد ولم يصل الخادم (إغلاق مفاجئ · انقطاع شبكة) يُعاد فوق نسخة الخادم ثم يُرسل */
@@ -5415,7 +5447,7 @@ function renderTabs(){
         ? cs.map(c=>'<button class="cpick" type="button" data-coachpick="'+esc(c.id)+'"'+
             ' aria-current="'+(c.id===cur)+'">'+
             '<span class="nm">'+esc(c.name)+'</span>'+
-            (c.sub?'<span class="sb">'+esc(c.sub)+'</span>':'')+
+            (c.plans>1?'<span class="sb">'+c.plans+' خطط</span>':'')+
             '<span class="sb pc">'+c.pct+'%</span></button>').join('')
         : '<div class="none">لم تُرفع خطة لهذه اللعبة بعد.</div>')+
       '</div>';
@@ -5615,9 +5647,33 @@ function render(){
     (planCat(p)?'<span class="badge">الفئة: '+esc(planCat(p))+'</span>':'')+
     '<span>'+countItems(p)+' بند · '+tp.score+'% منفّذ</span></div></div>';
   $('stgHost').innerHTML = stageBar(p);
+  $('fitStrip').innerHTML = fitnessStrip(p);
   $('pvHost').innerHTML   = pvaBlock(p,curDay) + (user.admin?verPanel(p):'');
   renderTabs(); renderMeter(p); renderDay(p); paintArena(p); observeReveal();
   requestAnimationFrame(()=>revealAll($('planView')));
+}
+
+/* شريط الخطة البدنية في صفحة الخطة — للاطّلاع لا للتعديل.
+   يظهر خطة أسبوع الخطة نفسها؛ فإن لم تُرفع بعد قال ذلك ولم يَصمت. */
+function fitnessStrip(p){
+  if(!p) return '';
+  const mine=(fitnessData||[]).filter(f=>f.sport===p.sport);
+  if(!mine.length) return '';
+  const same=mine.find(f=>f.week===p.week);
+  const f=same||mine[0];
+  const n=(f.sessions||[]).length;
+  const ex=(f.sessions||[]).reduce((a,s)=>a+((s.rows||[]).length),0);
+  const note=(fitnessNotes||{})[f.k];
+  return '<div class="fitstrip">'+
+    '<div class="fs-t"><b>الخطة البدنية — '+esc(f.sport)+'</b>'+
+    '<span class="fs-m">'+esc(f.week||'—')+
+    (same?'':' · ليست لهذا الأسبوع')+
+    (f.focus?' · '+esc(f.focus):'')+'</span></div>'+
+    '<div class="fs-p"><span class="badge">'+n+' حصص</span>'+
+    '<span class="badge">'+ex+' تمريناً</span>'+
+    (note&&note.text?'<span class="badge">ملاحظة إدارة</span>':'')+
+    '<span class="badge fs-ro">للاطّلاع فقط</span>'+
+    '<button class="pill" type="button" data-view="fitness">افتح القسم</button></div></div>';
 }
 
 function patchItem(k, btn){
@@ -9688,7 +9744,7 @@ const NAV_IC={
 /* خمس مجموعات لا عشرة أقسام — وداخل المجموعة تبويبات */
 const NAV_COACH=[
   {k:'home',    ic:'home',    label:'الرئيسية', views:[['home','']]},
-  {k:'plans',   ic:'plan',    label:'خطتي',     views:[['plan','متابعة التنفيذ'],['monthly','الخطة الشهرية']]},
+  {k:'plans',   ic:'plan',    label:'خطتي',     views:[['plan','متابعة التنفيذ'],['monthly','الخطة الشهرية'],['fitness','الإعداد البدني']]},
   {k:'reports', ic:'archive', label:'الأرشيف',  views:[['archive','']]},
   {k:'settings',ic:'settings',label:'الإعدادات',views:[['settings','']]}
 ];
@@ -9708,7 +9764,7 @@ const NAV_BASE=[
   {k:'home',    ic:'home',    label:'الرئيسية', views:[['home','']]},
   {k:'sports',  ic:'medal',   label:'الألعاب',  views:[['sport','']]},
   {k:'plans',   ic:'plan',    label:'الخطط',    views:[
-      ['plan','متابعة التنفيذ'],['monthly','الخطط الشهرية'],['calendar','تقويم الأسبوع']]},
+      ['plan','متابعة التنفيذ'],['monthly','الخطط الشهرية'],['fitness','الإعداد البدني'],['calendar','تقويم الأسبوع']]},
   {k:'visits',  ic:'visit',   label:'المتابعة الفنية', views:[['visit','']]},
   {k:'season',  ic:'calendar',label:'كالندر الموسم', views:[['season','']]},
   {k:'reports', ic:'reports', label:'التقارير', views:[['reports','التقرير'],['archive','الأرشيف']]},
@@ -9720,7 +9776,7 @@ const NAV_PRO=[
   {k:'home',    ic:'home',    label:'الرئيسية', views:[['home','']]},
   {k:'sports',  ic:'medal',   label:'الألعاب',  views:[['sport','']]},
   {k:'plans',   ic:'plan',    label:'الخطط',    views:[
-      ['plan','متابعة التنفيذ'],['monthly','الخطط الشهرية'],['calendar','تقويم الأسبوع']]},
+      ['plan','متابعة التنفيذ'],['monthly','الخطط الشهرية'],['fitness','الإعداد البدني'],['calendar','تقويم الأسبوع']]},
   {k:'visits',  ic:'visit',   label:'المتابعة الفنية', views:[['visit','']]},
   {k:'season',  ic:'calendar',label:'كالندر الموسم', views:[['season','']]},
   {k:'reports', ic:'reports', label:'التقارير', views:[
@@ -13291,7 +13347,7 @@ const VIEWS={home:'homeView',todo:'todoView',plan:'planView',calendar:'calendarV
              sport:'sportView',visit:'visitView',season:'seasonView',
              coaches:'coachesView',reports:'reportsView',settings:'settingsView',
              review:'reviewView',audit:'auditView',archive:'archiveView',
-             monthly:'monthlyView'};
+             monthly:'monthlyView', fitness:'fitnessView'};
 /* في العرض المبسّط لكل صفحة موسّعة بديل يؤدّي الغرض نفسه — لا نُرجع المستخدم لصفحة فارغة */
 const PRO_FALL={review:'plan', calendar:'plan', coaches:'home', audit:'reports'};
 /* صفحة اللعبة متاحة في العرضين — هي قلب قسم الإعداد الفني */
@@ -13337,6 +13393,17 @@ function setView(v){
       });
     }
     requestAnimationFrame(()=>revealAll($('monthlyView')));
+  }
+  else if(v==='fitness'){
+    const h=$('fitnessHost');
+    if(h && window.__fmacFitnessUI){
+      window.__fmacFitnessUI.render(h,{
+        user:user, sports:ALL_TEN(), fitness:fitnessData, fitnessNotes:fitnessNotes,
+        api:window.__fmacApi,
+        onSaved:()=>{ setTimeout(()=>location.reload(),700); }
+      });
+    }
+    requestAnimationFrame(()=>revealAll($('fitnessView')));
   }
   else if(v==='settings'){ renderSettings(); requestAnimationFrame(()=>revealAll($('settingsView'))); }
   else if(v==='todo'){ renderTodoPage(); requestAnimationFrame(()=>revealAll($('todoView'))); }

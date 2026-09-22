@@ -39,6 +39,8 @@ export const COL = {
   audit:      'audit',        // سجل التدقيق
   monthly:    'monthlyPlans',   // الخطط الشهرية
   reviews:    'monthlyReviews', // تقييمات الخطط الشهرية
+  fitness:    'fitness',        // الخطط البدنية الأسبوعية
+  fitnotes:   'fitnessNotes',   // ملاحظات الإدارة على الخطط البدنية
 };
 
 /* المجموعات التي يكتبها المدرب — ما عداها للإدارة وحدها */
@@ -48,7 +50,11 @@ export const COACH_WRITABLE = [
   COL.segs, COL.devs, COL.acts, COL.sess, COL.stages, COL.versions,
 ];
 
-export const BUILD = 7;
+/* الإعداد البدني: يكتبها مدرب اللياقة (fitness في ملفّه) والإدارة.
+   ليست في COACH_WRITABLE — مدرب اللعبة يقرؤها ولا يكتبها. */
+export const FITNESS_WRITABLE = [COL.fitness];
+
+export const BUILD = 8;
 
 /* حساب الإدارة الأوّل — يُنشأ ملفّه تلقائياً عند أوّل دخول.
    ليس سرّاً: القواعد تعترف بهذا المعرّف وحده، ومن يملكه يملك الحساب أصلاً. */
