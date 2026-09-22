@@ -41,7 +41,7 @@ service cloud.firestore {
               'subs','cancels','attendance','replies','segments','deviations',
               'acts','sessions','stages','versions',
               'monthlyPlans','monthlyReviews',
-              'fitness','fitnessNotes'];
+              'fitness','fitnessNotes','schoolVisits'];
     }
 
     /* ما يكتبه المدرب — ما عداها للإدارة وحدها (القيد رقم 2 في وثيقة المشروع) */

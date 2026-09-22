@@ -41,6 +41,13 @@ service firebase.storage {
       allow delete: if isAdmin();
     }
 
+    /* مرفقات زيارات المدارس — ترفعها الإدارة وتُقرأ بعد الدخول */
+    match /schools/{allPaths=**} {
+      allow read:   if signedIn();
+      allow create: if isAdmin() && underSize(20);
+      allow delete: if isAdmin();
+    }
+
     /* صور المستخدمين — الإدارة وحدها */
     match /users/{uid}/{allPaths=**} {
       allow read:   if signedIn();

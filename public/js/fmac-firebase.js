@@ -41,6 +41,7 @@ async function initPayload() {
     visits: COL.visits, calendar: COL.calendar, acts: COL.acts, audit: COL.audit,
     monthly: COL.monthly, reviews: COL.reviews,
     fitness: COL.fitness, fitnotes: COL.fitnotes,
+    schoolv: COL.schoolv,
   };
   const keys = Object.keys(map);
   const got = await Promise.all(keys.map((k) => readCol(map[k]).catch(() => [])));
@@ -123,6 +124,8 @@ async function initPayload() {
       at: S(f.at), url: S(f.url), file: S(f.file), readable: f.readable !== false,
       sessions: Array.isArray(f.sessions) ? f.sessions : [],
     })).sort((a, b) => S(b.at).localeCompare(S(a.at))),
+    /* زيارات المدارس — وحدة مستقلّة، والتجميع في الواجهة لا هنا */
+    schoolVisits: R.schoolv.filter((r) => S(r.k)).map((r) => Object.assign({}, r, { k: S(r.k) })),
     fitnessNotes: mapOf(R.fitnotes, (r) => ({
       text: S(r.text), by: S(r.by), at: S(r.at) })),
     build: BUILD,
@@ -344,6 +347,33 @@ async function dispatch(body) {
       }
       return { ok: true, k: id, url };
     }
+    /* زيارة مدرسة — الإدارة وحدها. التاريخ الأصلي لا يُمحى، والإلغاء
+       يُوثَّق ولا يَحذف، ولكل تغيير سطر في السجلّ (نفس منطق المشاركات). */
+    case 'schoolv': {
+      const d = adminOnly(); if (d) return d;
+      const v = body.schoolv || {};
+      if (!S(v.school)) return { ok: false, error: 'missing_school' };
+      const id = S(v.k) || doc(collection(db, COL.schoolv)).id;
+      const keep = Array.isArray(v.keepFiles) ? v.keepFiles : [];
+      const fresh = [];
+      for (const f of (Array.isArray(v.newFiles) ? v.newFiles : [])) {
+        if (!f || !S(f.data)) continue;
+        const url = await putFile(f.data, f.name, 'schools');
+        if (url) fresh.push({ name: S(f.name), url });
+      }
+      const row = Object.assign({}, v, { files: keep.concat(fresh) });
+      delete row.k; delete row.keepFiles; delete row.newFiles;
+      if (!Array.isArray(row.log)) row.log = [];
+      row.log = row.log.slice(-60);
+      return put(COL.schoolv, id, row);
+    }
+    case 'schoolvDrop': {
+      const d = adminOnly(); if (d) return d;
+      const k = S((body.schoolv || {}).k || body.k);
+      if (!k) return { ok: false, error: 'missing' };
+      return drop(COL.schoolv, k);
+    }
+
     /* الخطة البدنية: يكتبها مدرب اللياقة والإدارة وحدهما.
        الحارس هنا للرسالة الواضحة؛ المنع الفعلي في قواعد Firestore. */
     case 'fitness': {
