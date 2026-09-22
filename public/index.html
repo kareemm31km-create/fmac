@@ -2236,8 +2236,13 @@ body.hasside .wrap{padding-inline-start:calc(246px + var(--s-xxl));max-width:152
   body::before,body::after{display:none !important}
   .side,.topnav,.srch,.modal,.live,#fx,.toast,.arena-wrap,.dropz{display:none !important}
   .wrap,body.hasside .wrap{padding:0 !important;max-width:none !important}
-  #homeView,#planView,#coachesView,#reportsView,#settingsView{display:none !important}
-  #printDoc{display:block !important}
+  /* طباعة التقرير الأسبوعي تُخفي الواجهة وتُظهر #printDoc وحده.
+     أمّا التقرير الشهري فيُطبع من داخل #reportsView نفسه — فلا نُخفيه عليه. */
+  body:not(.printing-report) #homeView,body:not(.printing-report) #planView,
+  body:not(.printing-report) #coachesView,body:not(.printing-report) #reportsView,
+  body:not(.printing-report) #settingsView{display:none !important}
+  body:not(.printing-report) #printDoc{display:block !important}
+  body.printing-report #printDoc{display:none !important}
   .pr-head{display:flex;align-items:center;gap:14px;border-bottom:2px solid #111;
     padding-bottom:10px;margin-bottom:14px}
   .pr-head img{height:38px;width:auto;filter:invert(1)}
@@ -3822,6 +3827,18 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
   background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c)}
 .vsc .ic .di{width:17px;height:17px}
 
+/* المتابعات داخل كرت المنحنى: الفراغ أسفل الرسم يملؤه عملٌ لا هواء */
+.trfeed{margin-top:14px;padding-top:12px;border-top:1px solid var(--hairline-soft)}
+.trfh{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.trfh h4{margin:0;font-size:12.5px;font-weight:800;color:var(--ink-deep);
+  letter-spacing:.2px}
+.trfh .cnt{font-size:11px;color:var(--stone)}
+.trfh .link{margin-inline-start:auto}
+#trendHome .mlwrap{flex:none}
+#trendHome .vstrip{grid-template-columns:minmax(0,1fr);gap:8px}
+#trendHome .vsc{padding:9px 11px}
+#trendHome .vsc .tm2{display:inline;margin-inline-start:8px}
+
 /* منحنى متعدّد الخطوط */
 .mlwrap{position:relative;flex:1;display:flex;flex-direction:column}
 .mlchart{width:100%;height:auto;display:block}
@@ -3940,7 +3957,11 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
 /* ===== الطباعة: نفس شكل الموقع ===== */
 @media print{
   @page{ size:A4; margin:12mm; }
-  html,body{background:var(--canvas)!important;
+  /* الداكن للتقرير الشهري وحده؛ الأسبوعي يُطبع أبيض كما كان.
+     ولولا تقييد اللون لَوَرِث النصُّ أسودَ الطباعة فوق كحليّ فاختفى. */
+  html:has(body.printing-report){background:var(--canvas)!important}
+  body.printing-report{background:var(--canvas)!important;color:var(--ink)!important}
+  body.printing-report,body.printing-report *{
     -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   body.printing-report .topnav,body.printing-report .side,body.printing-report #repTabs,
   body.printing-report .mfilt,body.printing-report .dashhead,body.printing-report #repWeek,
@@ -4632,6 +4653,12 @@ input::placeholder,textarea::placeholder{color:#64788B}
               preserveAspectRatio="xMidYMid meet"></svg>
             <div class="mleg" id="trendLeg"></div>
           </div>
+          <div class="trfeed">
+            <div class="trfh"><h4>آخر المتابعات الفنية</h4>
+              <span class="cnt" id="visStripN"></span>
+              <button class="link" data-view="visit">عرض الكل</button></div>
+            <div class="vstrip" id="visStripBody"></div>
+          </div>
         </section>
                 <section class="panel" id="perfPanel">
           <div class="ch"><h3>أداء الخطط</h3><span class="cnt" id="perfSub">من التسليم إلى التنفيذ</span><span class="ci" id="perfIco"></span></div>
@@ -4644,12 +4671,6 @@ input::placeholder,textarea::placeholder{color:#64788B}
       <!-- ٩ — المنتخب: التصميم عريض -->
       <div id="natHost"></div>
 
-      <!-- ١٠ — التقارير والمرجع -->
-            <section class="panel" id="visStrip">
-        <div class="ch"><h3>آخر المتابعات الفنية</h3><span class="cnt" id="visStripN"></span>
-          <span class="hact"><button class="link" data-view="visit">عرض الكل</button></span></div>
-        <div class="vstrip" id="visStripBody"></div>
-      </section>
       <div class="dwrap" id="legacyDash" hidden>
         <div class="dcol">
           <section class="panel" id="cmpPanel">
@@ -12856,7 +12877,7 @@ function renderPerf(){
         '<span class="t"><b>'+esc(r[1])+'</b><span>'+esc(r[4])+'</span></span>'+
         '<span class="n" dir="ltr">'+esc(String(r[3]))+'</span></div>'; }).join('');
 }
-/* آخر المتابعات الفنية — أربع بطاقات تفتح الزيارة */
+/* آخر المتابعات الفنية — ستّ بطاقات تفتح الزيارة، تملأ ما تحت المنحنى */
 function renderVisStrip(){
   const h=$('visStripBody'); if(!h) return;
   const today=iso(new Date());
@@ -12871,7 +12892,7 @@ function renderVisStrip(){
       : isNaN(d) ? s : (d.getDate()+' '+AR_MONTHS[d.getMonth()]);
     return lbl+(v.time?' · '+v.time:'');
   };
-  h.innerHTML = all.length ? all.slice(0,4).map(function(v){
+  h.innerHTML = all.length ? all.slice(0,6).map(function(v){
       const col = v.state==='مغلقة' ? 'var(--success)'
                 : v.state==='مجدولة' ? 'var(--blue)'
                 : v.state==='ملغاة' ? 'var(--stone)' : 'var(--attention)';

@@ -108,6 +108,7 @@ let SCHOOL = '';         /* ملفّ مدرسة مفتوح */
 let STICKY = { school: '', other: '', sport: '', nat: 'إمارات' };
 let PFILTER = '';        /* ترشيح قائمة اللاعبين بالمدرسة */
 let TOUCHED = false;     /* هل اختار المستخدم تبويباً بنفسه */
+let MYONLY = true;       /* غير الإدارة يبدأ على زياراته */
 
 const iso = (d) => d.toISOString().slice(0, 10);
 const AR_M = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو',
@@ -275,15 +276,49 @@ function calendar(rows, season) {
     '</div></div>';
 }
 
+/* ── تبويب الزيارات ────────────────────────────────────── */
+function visitsTab(rows, meCode, admin) {
+  const mine = admin ? [] : M.assignedTo(rows, meCode);
+  const show = (!admin && MYONLY && mine.length) ? mine : rows;
+  const sorted = show.slice().sort((a, b) => S(b.date).localeCompare(S(a.date)));
+  return '<div class="sv-card"><div class="sv-head">' +
+    '<h3 class="sv-t">' + ((!admin && MYONLY && mine.length) ? 'زياراتك' : 'كل الزيارات') +
+    '</h3>' +
+    (!admin && mine.length
+      ? '<div class="sv-chips"><button data-myonly="1" aria-current="' + MYONLY +
+        '">زياراتي (' + mine.length + ')</button>' +
+        '<button data-myonly="" aria-current="' + (!MYONLY) + '">كل الزيارات (' +
+        rows.length + ')</button></div>'
+      : '') + '</div>' + visitTable(sorted) + '</div>';
+}
+
 /* ── تبويب اللاعبين ────────────────────────────────────── */
-function rosterTab(ctx, season, sports) {
+function rosterTab(ctx, season, sports, visits, meCode) {
   const all = M.players(ctx.players || []);
   const mine = all.filter((p) => !season || p.season === season);
   const shown = PFILTER ? mine.filter((p) => p.school === PFILTER) : mine;
   const st = M.rosterStats(mine);
   const admin = !!(ctx.user && ctx.user.admin);
   const known = M.schoolNames(ctx.visits || [], all);
+  /* ما أسنَدته الإدارة إليه: مدارسه أوّلاً في القائمة، وزياراته أمامه */
+  const seasonVisits = (visits || []).filter((v) => !season || v.season === season);
+  const myVisits = admin ? [] : M.assignedTo(seasonVisits, meCode);
+  const mySchools = [...new Set(myVisits.map((v) => v.school).filter(Boolean))];
   const other = STICKY.school === '__other';
+
+  const assigned = (!admin && myVisits.length)
+    ? '<div class="sv-card"><h3 class="sv-t">زياراتك المُسنَدة</h3>' +
+      '<p class="sv-sub">أسنَدتها الإدارة إليك. اضغط المدرسة لتملأها في النموذج.</p>' +
+      '<div class="sv-chips" style="margin-top:10px">' + myVisits
+        .slice().sort((x, y) => S(x.date).localeCompare(S(y.date)))
+        .map((v) => '<button type="button" data-myv="' + esc(v.school) + '">' +
+          esc(v.school) + '<em> · ' + esc(dayLabel(v.date)) + ' · ' +
+          esc(v.status) + '</em></button>').join('') + '</div></div>'
+    : (!admin
+        ? '<div class="sv-card"><h3 class="sv-t">زياراتك المُسنَدة</h3>' +
+          '<p class="sv-sub">لم تُسنَد إليك زيارة في هذا الموسم بعد — ' +
+          'تُنشئها الإدارة وتُسنِدها. ويمكنك مع ذلك تسجيل لاعبين من أيّ مدرسة.</p></div>'
+        : '');
 
   const form =
     '<div class="sv-card"><div class="sv-head"><div>' +
@@ -295,8 +330,15 @@ function rosterTab(ctx, season, sports) {
       '<span><label class="sv-l">المدرسة</label>' +
         '<select class="sv-in" id="rpSchool">' +
         '<option value="">— اختر المدرسة —</option>' +
-        known.map((n) => '<option' + (STICKY.school === n ? ' selected' : '') + '>' +
-          esc(n) + '</option>').join('') +
+        (mySchools.length
+          ? '<optgroup label="مدارس زياراتك">' + mySchools.map((n) =>
+              '<option' + (STICKY.school === n ? ' selected' : '') + '>' + esc(n) +
+              '</option>').join('') + '</optgroup>' +
+            '<optgroup label="مدارس أخرى">' + known.filter((n) => mySchools.indexOf(n) < 0)
+              .map((n) => '<option' + (STICKY.school === n ? ' selected' : '') + '>' +
+              esc(n) + '</option>').join('') + '</optgroup>'
+          : known.map((n) => '<option' + (STICKY.school === n ? ' selected' : '') + '>' +
+              esc(n) + '</option>').join('')) +
         '<option value="__other"' + (other ? ' selected' : '') + '>— مدرسة أخرى —</option>' +
         '</select></span>' +
       '<span' + (other ? '' : ' hidden') + ' id="rpOtherWrap">' +
@@ -352,7 +394,7 @@ function rosterTab(ctx, season, sports) {
       '</div>'
     : '';
 
-  return form +
+  return assigned + form +
     '<div class="sv-card"><div class="sv-head"><h3 class="sv-t">اللاعبون المختارون</h3>' +
       (admin && mine.length
         ? '<button class="sv-btn ghost" id="rsCsv">تصدير Excel</button>' : '') +
@@ -385,6 +427,13 @@ function wireRoster(host, ctx, go, season) {
 
   host.querySelectorAll('[data-pfil]').forEach((b) => b.addEventListener('click', () => {
     PFILTER = b.getAttribute('data-pfil'); go();
+  }));
+
+  host.querySelectorAll('[data-myv]').forEach((b) => b.addEventListener('click', () => {
+    STICKY.school = b.getAttribute('data-myv');
+    go();
+    const n = host.querySelector('#rpName');
+    if (n) n.focus();
   }));
 
   const sc = $('rpSchool');
@@ -590,10 +639,8 @@ export function render(host, ctx) {
   const body =
     TAB === 'cal' ? calendar(rows, season)
       : TAB === 'schools' ? schoolsTab(rows, season)
-        : TAB === 'visits' ? ('<div class="sv-card"><h3 class="sv-t">كل الزيارات</h3>' +
-          visitTable(inSeason.slice().sort((a, b) => S(b.date).localeCompare(S(a.date)))) +
-          '</div>')
-          : TAB === 'players' ? rosterTab(ctx, season, sports)
+        : TAB === 'visits' ? visitsTab(inSeason, meCode, admin)
+          : TAB === 'players' ? rosterTab(ctx, season, sports, rows, meCode)
           : TAB === 'stats' ? analytics(rows, season)
             : overview(rows, season, sports);
 
@@ -613,6 +660,9 @@ export function render(host, ctx) {
   const $ = (id) => host.querySelector('#' + id);
   const go = () => render(host, ctx);
 
+  host.querySelectorAll('[data-myonly]').forEach((b) => b.addEventListener('click', () => {
+    MYONLY = !!b.getAttribute('data-myonly'); go();
+  }));
   host.querySelectorAll('[data-svtab]').forEach((b) => b.addEventListener('click', () => {
     TAB = b.dataset.svtab; SCHOOL = ''; TOUCHED = true; go();
   }));

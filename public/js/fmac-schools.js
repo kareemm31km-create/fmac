@@ -274,3 +274,10 @@ export function teamOf(v) {
   const extra = S(v.team);
   return names.concat(extra ? [extra] : []).join(' · ');
 }
+
+/** زيارات أُسنِدت إلى مدرب بعينه — بكوده لا باسمه */
+export function assignedTo(rows, code) {
+  const c = S(code);
+  if (!c) return [];
+  return (rows || []).filter((v) => (v.coaches || []).some((x) => S(x.code) === c));
+}
