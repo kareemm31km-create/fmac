@@ -11072,7 +11072,6 @@ function spData(sp,y){
   const xs=(EXTRA_SHIELDS()[sp]||{})[y]||null;
   const xc=(EXTRA_CAMPS()[sp]||{})[y]||null;
   const nt=NATL(sp,y);
-  if(!base && !ex && !xs && !xc && !nt.length) return null;
   const ch=(base?base.championships.slice():[]).concat(ex?ex.championships||[]:[]);
   /* المؤشّرات على البطولات المحلية — كما كانت قبل إضافة الدولي والمنتخب */
   const loc=ch.filter(x=>scopeOf(x)==='محلي');
@@ -11089,6 +11088,9 @@ function spData(sp,y){
       (c.status==='مؤكدة' || c.status==='انتهت') &&
       !done[S(c.k)] && !done['nm:'+norm(c.name)];
   }).sort(function(a2,b2){ return S(a2.date).localeCompare(S(b2.date)); });
+  /* الخروج المبكر بعد المعلَّقات لا قبلها: لعبةٌ لها بطولةٌ مؤكَّدة في
+     الكشف ولا نتائج بعد كانت تُعرَض فارغةً، فلا تظهر قائمة الانتظار. */
+  if(!base && !ex && !xs && !xc && !nt.length && !pending.length) return null;
   return { championships:ch, pending:pending, local:loc, events:loc.length, computed_total:t,
            byScope:{'محلي':t,
                     'دولي':sumCh(ch.filter(x=>scopeOf(x)==='دولي')),
@@ -11767,10 +11769,11 @@ function spResultsHtml(years){
 
     /* البطولات — أفضل خمس بطولات ثم جدول للبقيّة */
     const BS=d.byScope||{};
-    if(!(d.championships||[]).some(x=>scopeOf(x)===spScope)){
-      const first=SCOPES.find(k=>(d.championships||[]).some(x=>scopeOf(x)===k));
-      spScope=first||'محلي';
-    }
+    /* النطاق يعرف المعلَّقات كذلك — ولولا ذلك أُجبر على «محلي» حين لا
+       نتائج، فاختفت بطولةٌ معلَّقة نطاقها دوليّ أو منتخب. */
+    const inScope=k=>(d.championships||[]).some(x=>scopeOf(x)===k)||
+      (d.pending||[]).some(x=>scopeOf(x)===k);
+    if(!inScope(spScope)) spScope=SCOPES.find(inScope)||'محلي';
     const ch=d.championships.filter(x=>scopeOf(x)===spScope).sort((a,b)=>
       (b.gold+b.silver+b.bronze)-(a.gold+a.silver+a.bronze));
     const SC=BS[spScope]||sumCh(ch);
