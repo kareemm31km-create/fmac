@@ -3611,6 +3611,35 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
 .evmore{color:var(--brand);font-weight:600}
 .evmore.on{background:color-mix(in srgb,var(--brand) 12%,transparent)}
 
+/* بانتظار النتيجة — مؤكَّدٌ في الكشف بلا نتيجة بعد */
+.pend{margin:2px 0 14px;padding:12px 13px;border-radius:13px;
+  background:color-mix(in srgb,var(--attention) 7%,var(--card-2));
+  border:1px solid color-mix(in srgb,var(--attention) 26%,transparent)}
+.pendh{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap}
+.pendh b{font-size:12.5px;color:var(--ink-deep);font-weight:800}
+.pendh span{font-size:11.5px;color:var(--steel)}
+.pendh .di{width:15px;height:15px;color:var(--attention)}
+.pendr{display:flex;align-items:center;gap:10px;padding:8px 0;flex-wrap:wrap;
+  border-top:1px solid var(--hairline-soft)}
+.pendr:first-of-type{border-top:0}
+.pendr .t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.pendr .t b{font-size:13px;color:var(--ink-deep);font-weight:600}
+.pendr .t span{font-size:11px;color:var(--stone)}
+.pendb{display:flex;gap:6px;flex-wrap:wrap}
+.mini2.gh{background:transparent;color:var(--steel);border-color:var(--hairline)}
+.mini2.gh:hover{color:var(--ink-deep);border-color:var(--edge)}
+.nomed{font-size:11.5px;color:var(--stone);white-space:nowrap}
+.evc .nm .prt{display:inline-flex;align-items:center;gap:5px;font-size:11px;
+  color:var(--steel);margin-top:3px}
+.evc .nm .prt b{color:var(--ink-deep);font-weight:800;font-variant-numeric:tabular-nums}
+.evc .nm .prt .di{width:12px;height:12px;opacity:.7}
+/* خانة «بلا ميداليات» في النموذج */
+.nores{display:flex;align-items:center;gap:9px;margin:10px 0 2px;cursor:pointer;
+  font-size:12.5px;color:var(--charcoal)}
+.nores input{width:16px;height:16px;accent-color:var(--brand);cursor:pointer}
+.inp.ro{display:flex;align-items:center;background:var(--surface-soft);
+  color:var(--ink-deep);font-weight:800;font-variant-numeric:tabular-nums}
+
 /* أزرار تصحيح النتيجة — خافتة حتى تُقصد، وحمراء للحذف وحده (§الأحمر للحرِج) */
 .resacts{display:inline-flex;gap:4px;align-items:center;margin-inline-start:6px}
 .rsb{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
@@ -4479,6 +4508,17 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
       <span><label class="fl2">برونز</label>
         <input id="resB" class="inp" type="number" min="0" value="0"></span>
     </div>
+    <div class="mgrid">
+      <span><label class="fl2">مشاركون — ذكور</label>
+        <input id="resM" class="inp" type="number" min="0" placeholder="—"></span>
+      <span><label class="fl2">مشاركات — إناث</label>
+        <input id="resF" class="inp" type="number" min="0" placeholder="—"></span>
+      <span><label class="fl2">مجموع المشاركين</label>
+        <output id="resT" class="inp ro">—</output></span>
+    </div>
+    <label class="nores"><input type="checkbox" id="resNone">
+      <span>شاركنا بلا ميداليات — لا نتائج لهذه البطولة</span></label>
+    <p class="hint" id="resLink" hidden></p>
     <div class="upmsg" id="resMsg"></div>
     <div class="acts2">
       <button class="pill solid" id="resSave">حفظ النتيجة</button>
@@ -11024,6 +11064,8 @@ function sumCh(list){
   list.forEach(x=>{ t.gold+=x.gold||0; t.silver+=x.silver||0; t.bronze+=x.bronze||0; });
   t.all=t.gold+t.silver+t.bronze; return t;
 }
+/* أسماء البطولات تُكتب بفراغاتٍ مختلفة — نقارنها مُسوّاة */
+const norm = v => S(v).replace(/\s+/g,' ').trim();
 function spData(sp,y){
   const base=((SEAS.sports[sp]||{})[y])||null;
   const ex=(EXTRA_RESULTS()[sp]||{})[y]||null;
@@ -11036,7 +11078,18 @@ function spData(sp,y){
   const loc=ch.filter(x=>scopeOf(x)==='محلي');
   const t=sumCh(loc);
   const sh=((base&&base.shields)||[]).concat((xs&&xs.shields)||[]);
-  return { championships:ch, local:loc, events:loc.length, computed_total:t,
+  /* المؤكَّد في الكشف ولم تُسجَّل نتيجته بعد. و«انتهت» معه: بطولةٌ
+     انقضت بلا نتيجةٍ أولى بالظهور لا أحقّ بالإخفاء. */
+  const done={}; ch.forEach(function(x){
+    if(S(x.calK)) done[S(x.calK)]=1;
+    done['nm:'+norm(x.name)]=1;
+  });
+  const pending=(calendar||[]).filter(function(c){
+    return c && c.sport===sp && c.season===y &&
+      (c.status==='مؤكدة' || c.status==='انتهت') &&
+      !done[S(c.k)] && !done['nm:'+norm(c.name)];
+  }).sort(function(a2,b2){ return S(a2.date).localeCompare(S(b2.date)); });
+  return { championships:ch, pending:pending, local:loc, events:loc.length, computed_total:t,
            byScope:{'محلي':t,
                     'دولي':sumCh(ch.filter(x=>scopeOf(x)==='دولي')),
                     'منتخب':sumCh(ch.filter(x=>scopeOf(x)==='منتخب'))},
@@ -11731,6 +11784,22 @@ function spResultsHtml(years){
         return '<button class="scb'+(k===spScope?' on':'')+(n?'':' none')+
           '" data-spscope="'+esc(k)+'" style="--c:'+SCOPE_COL[k]+'">'+esc(k)+
           '<span>'+n+'</span></button>'; }).join('')+'</div>'+
+      (function(){
+        const pd=(d.pending||[]).filter(x=>scopeOf(x)===spScope);
+        if(!pd.length) return '';
+        return '<div class="pend"><div class="pendh">'+di('clock')+
+          '<b>بانتظار النتيجة</b><span>'+
+          ar(pd.length,'بطولة واحدة مؤكَّدة','بطولتان مؤكَّدتان','بطولات مؤكَّدة','بطولة مؤكَّدة')+
+          ' في الكشف بلا نتيجة</span></div>'+
+        pd.map(function(c){
+          return '<div class="pendr"><span class="t"><b>'+esc(c.name)+'</b><span>'+
+            esc([c.date,c.place,c.fed].filter(Boolean).join(' · '))+'</span></span>'+
+            (user.admin?'<span class="pendb">'+
+              '<button class="mini2" data-rescal="'+esc(c.k)+'">سجّل النتيجة ←</button>'+
+              '<button class="mini2 gh" data-resnone="'+esc(c.k)+'">بلا ميداليات</button>'+
+              '</span>':'')+'</div>';
+        }).join('')+'</div>';
+      })()+
       (ch.length?'':'<div class="emptyrow">لا بطولات في نطاق «'+esc(spScope)+
         '» هذا الموسم — اضغط «+ أضف نتيجة» لتسجيل واحدة.</div>')+
       (topN.length?'<div class="lede">أعلى خمس بطولات حصيلةً</div><div class="evtop">'+
@@ -11739,8 +11808,11 @@ function spResultsHtml(years){
           return '<div class="evc"><span class="rk">'+(n+1)+'</span>'+
             '<span class="nm"><b>'+esc(x.name)+'</b>'+
             (x.place||x.date?'<span>'+esc([x.date,x.place].filter(Boolean).join(' · '))+'</span>':'')+
+            partLine(x)+
             '</span><span class="tot">'+a2+'</span>'+
-            '<span class="mds">'+mchip('g',x.gold)+mchip('s',x.silver)+mchip('b',x.bronze)+'</span>'+
+            '<span class="mds">'+(x.noMedals
+              ? '<span class="nomed">بلا ميداليات</span>'
+              : mchip('g',x.gold)+mchip('s',x.silver)+mchip('b',x.bronze))+'</span>'+
             resActs(x)+
             '<span class="pbx"><i style="width:'+(a2/mx*100).toFixed(1)+'%"></i></span></div>';
         }).join('')+'</div>':'')+
@@ -11886,7 +11958,8 @@ function spPlansHtml(){
 }
 /* ——— إدخال نتيجة بطولة ——— */
 let resEditK='';   /* مفتاح البطولة قيد التعديل — فارغ يعني إضافة */
-function openResult(k){
+let resCalK='';    /* مفتاح صفّ الكشف الذي جاءت منه — يربط النتيجة به */
+function openResult(k, calK){
   const years=spSeasonList(spCur);
   const yopts=[...new Set(years.concat([curSeason(), nextSeasonLabel()]))]
     .filter(Boolean).sort();
@@ -11907,6 +11980,22 @@ function openResult(k){
     $('resPlace').value=row.place||''; $('resDate').value=row.date||'';
     $('resScope').value=row.scope||'محلي';
   }
+  /* جاءت من الكشف: اسمها وتاريخها ومكانها ونطاقها منه، فلا تُكتب مرّتين */
+  resCalK = S(calK) || (row ? S(row.calK) : '');
+  const cal = resCalK ? (calendar||[]).find(c=>String(c.k)===resCalK) : null;
+  if(cal && !row){
+    $('resName').value=cal.name||''; $('resPlace').value=cal.place||'';
+    $('resDate').value=String(cal.date||'').slice(0,10);
+    $('resScope').value=cal.scope||spScope||'محلي';
+    const yy=$('resYear');
+    if(yy && cal.season && [...yy.options].some(o=>o.value===cal.season)) yy.value=cal.season;
+  }
+  ['resM','resF'].forEach(id=>{ const e=$(id); if(e) e.value = row ? (row[id==='resM'?'men':'women']||'') : ''; });
+  const nn=$('resNone'); if(nn) nn.checked = !!(row && row.noMedals);
+  resNoneSync();
+  resPart();
+  const lnk=$('resLink');
+  if(lnk){ lnk.hidden=!cal; if(cal) lnk.textContent='مرتبطة بكشف الموسم: '+cal.name; }
   const ttl=$('resDlgT');
   if(ttl) ttl.textContent = resEditK ? 'تعديل نتيجة بطولة' : 'تسجيل نتيجة بطولة';
   const go=$('resSave');
@@ -11914,6 +12003,48 @@ function openResult(k){
   $('resMsg').textContent=''; $('resMsg').className='upmsg';
   $('resDlg').hidden=false;
   setTimeout(()=>$('resName').focus(),40);
+}
+/* تسجيل «بلا ميداليات» بنقرة — البطولة شاركنا فيها ولم نحصد شيئاً.
+   هذا صفرٌ مُعلَن، يختلف عن الفراغ المجهول. */
+async function markNoMedals(calK){
+  calK=S(calK); if(!calK) return;
+  const c=(calendar||[]).find(x=>String(x.k)===calK); if(!c) return;
+  if(!confirm('تسجيل «'+c.name+'» بلا ميداليات؟\nتخرج من قائمة الانتظار،'+
+    ' ويمكنك تعديلها لاحقاً.')) return;
+  const y=S(c.season)||spSeason;
+  const row={k:'',calK:calK,sport:spCur,season:y,name:c.name,
+    gold:0,silver:0,bronze:0,noMedals:true,
+    scope:c.scope||'محلي',date:String(c.date||'').slice(0,10),place:c.place||''};
+  if(API){
+    let j=null;
+    try{
+      const r=await __fmacApi(API,{method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({u:user.code,action:'result',result:row})});
+      j=await r.json();
+    }catch(e){ console.error('result/noMedals',e); toast('لا يوجد اتصال — لم يُسجَّل.'); return; }
+    if(!j||!j.ok){ console.error('result/noMedals',j);
+      toast('تعذَّر التسجيل — '+((j&&j.error)||'')); return; }
+    row.k=S(j.k);
+  }
+  results[spCur]=results[spCur]||{};
+  results[spCur][y]=results[spCur][y]||{championships:[]};
+  results[spCur][y].championships.push(Object.assign({added:true},row));
+  renderSport();
+  toast('سُجِّلت «'+c.name+'» بلا ميداليات ✓');
+  auditPush('نتيجة','سجّل بلا ميداليات — '+c.name+' — '+spCur);
+}
+/* المجموع يُحسب ولا يُخزَّن — ولا يُقال صفراً قبل أن يُدخَل عدد (§24) */
+/* الخانة تُعطّل حقول الميداليات: لا معنى لرقمٍ فيها والبطولة بلا ميداليات */
+function resNoneSync(){
+  const on=!!($('resNone')||{}).checked;
+  ['resG','resS','resB'].forEach(id=>{ const e=$(id); if(!e) return;
+    e.disabled=on; if(on) e.value=0; });
+}
+function resPart(){
+  const m=$('resM'), f=$('resF'), o=$('resT'); if(!o) return;
+  const a2=S(m&&m.value), b2=S(f&&f.value);
+  o.textContent = (a2==='' && b2==='') ? '—' : String((+a2||0)+(+b2||0));
 }
 /* حذف نتيجة — بتأكيدٍ باسمها، فالحذف لا يُستردّ */
 /* يبحث عن الصفّ في مواسم اللعبة كلّها لا في المعروض وحده،
@@ -11956,6 +12087,17 @@ async function dropResult(k){
   auditPush('نتيجة','حذف نتيجة — '+nm+' — '+spCur);
   if(!hit && API){ try{ await tryCode(user.code); }catch(e){} }
   renderSport();
+}
+/* سطر المشاركين — يظهر إن عُدّوا وحدهم، ولا يُقال صفراً إن لم يُعدّوا */
+function partLine(x){
+  const m=x.men, f=x.women;
+  if((m===null||m===undefined) && (f===null||f===undefined)) return '';
+  const tot=(+m||0)+(+f||0);
+  const bits=[];
+  if(m!==null&&m!==undefined) bits.push(m+" ذكور");
+  if(f!==null&&f!==undefined) bits.push(f+" إناث");
+  return '<span class="prt">'+di('users')+'<b>'+tot+'</b> مشاركاً · '+
+    esc(bits.join(" · "))+'</span>';
 }
 /* أزرار التصحيح — لما أُدخل من الموقع وحده. وما جاء من ملفّ الموسم
    لا مفتاح له، فيُصحَّح من ملفّه لا من هنا. */
@@ -12249,7 +12391,13 @@ async function saveResult(){
   const name=$('resName').value.trim();
   const y=$('resYear').value, scope=$('resScope').value||'محلي';
   const date=$('resDate').value||'', place=$('resPlace').value.trim();
-  const g=+$('resG').value||0, s2=+$('resS').value||0, b=+$('resB').value||0;
+  const none=!!($('resNone')||{}).checked;
+  /* «بلا ميداليات» صفرٌ مُعلَن — فتُصفَّر الحقول ولا تُترك لما فيها */
+  const g=none?0:(+$('resG').value||0), s2=none?0:(+$('resS').value||0),
+        b=none?0:(+$('resB').value||0);
+  /* المشاركون: الفراغ فراغٌ لا صفر — لم يُعدّوا بعد (§24) */
+  const men=S($('resM').value)===''?null:(+$('resM').value||0);
+  const women=S($('resF').value)===''?null:(+$('resF').value||0);
   if(!name){ $('resMsg').textContent='اكتب اسم البطولة.';
     $('resMsg').className='upmsg bad'; $('resName').focus(); return; }
   /* بطولة بلا ميداليات مشاركة صحيحة — تُسجَّل بصفر */
@@ -12259,11 +12407,13 @@ async function saveResult(){
   if(resEditK){
     const arr=results[spCur][y].championships;
     const i=arr.findIndex(x=>S(x.k)===resEditK);
-    const row={k:resEditK,name:name,gold:g,silver:s2,bronze:b,
+    const row={k:resEditK,calK:resCalK,name:name,gold:g,silver:s2,bronze:b,
+      men:men,women:women,noMedals:none,
       scope:scope,date:date,place:place,added:true};
     if(i>=0) arr[i]=row; else arr.push(row);
   } else {
-    results[spCur][y].championships.push({name:name,gold:g,silver:s2,bronze:b,
+    results[spCur][y].championships.push({calK:resCalK,name:name,
+      gold:g,silver:s2,bronze:b,men:men,women:women,noMedals:none,
       scope:scope,date:date,place:place,added:true});
   }
   spSeason=y; spScope=scope; renderSport();
@@ -12271,7 +12421,8 @@ async function saveResult(){
     const r=await __fmacApi(API,{method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify({u:user.code,action:'result',
-        result:{k:resEditK,sport:spCur,season:y,name:name,gold:g,silver:s2,bronze:b,
+        result:{k:resEditK,calK:resCalK,sport:spCur,season:y,name:name,
+                gold:g,silver:s2,bronze:b,men:men,women:women,noMedals:none,
                 scope:scope,date:date,place:place}})});
     const j=await r.json();
     if(j&&j.ok){ $('resDlg').hidden=true; toast('سُجِّلت نتيجة '+name+' ✓');
@@ -14681,6 +14832,7 @@ document.addEventListener('click',e=>{
     const go=()=>{ location.href=location.pathname; };
     if(window.__fmacLogout){ window.__fmacLogout().then(go,go); } else { go(); }
     return; }
+  if(e.target.id==='resNone'){ resNoneSync(); return; }
   if(e.target.id==='btnUpload'){ openUpload(); return; }
   if(e.target.closest('#btnTheme')){ cycleTheme(); return; }
   if(e.target.closest('#btnLangTop')){
@@ -14778,6 +14930,10 @@ document.addEventListener('click',e=>{
   const spy=e.target.closest('[data-spy]');
   if(spy){ spSeason=spy.dataset.spy; renderSport(); return; }
   if(e.target.closest('#spAdd')){ openResult(); return; }
+  const rnn=e.target.closest('[data-resnone]');
+  if(rnn){ markNoMedals(rnn.dataset.resnone); return; }
+  const rcl=e.target.closest('[data-rescal]');
+  if(rcl){ openResult('', rcl.dataset.rescal); return; }
   const red=e.target.closest('[data-resedit]');
   if(red){ openResult(red.dataset.resedit); return; }
   const rdr=e.target.closest('[data-resdrop]');
@@ -15678,6 +15834,10 @@ document.addEventListener('input',e=>{
     if(cell){ cell.className='num '+(r.actual<r.planned?'down':(r.actual>r.planned?'up':''));
       cell.textContent = r.actual===r.planned?'—':(r.actual<r.planned?'↓ ':'↑ ')+Math.abs(r.planned-r.actual)+' د'; }
   }
+});
+/* المجموع يُحسب مع كلّ حرف — لا عند الحفظ وحده */
+document.addEventListener('input',e=>{
+  if(e.target && (e.target.id==='resM'||e.target.id==='resF')) resPart();
 });
 document.addEventListener('keydown',e=>{
   if(!LV || $('live').hidden) return;

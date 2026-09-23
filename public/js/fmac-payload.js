@@ -380,6 +380,11 @@ export function results(rows) {
       /* k: مفتاح الوثيقة — بدونه لا تعديل ولا حذف، والصفّ يصير أبديّاً */
       k: S(r.k),
       name: nm, gold: NUM(r.gold), silver: NUM(r.silver), bronze: NUM(r.bronze),
+      /* calK: رابط البطولة بكشف الموسم — به تخرج من قائمة الانتظار */
+      calK: S(r.calK), noMedals: r.noMedals === true,
+      /* المشاركون: null لا صفر — لم يُعدّوا بعد، والصفر رقمٌ مُعلَن (§24) */
+      men: (r.men === null || r.men === undefined || r.men === '') ? null : NUM(r.men),
+      women: (r.women === null || r.women === undefined || r.women === '') ? null : NUM(r.women),
       scope: S(r.scope) || 'محلي', date: S(r.date), place: S(r.place), added: true,
     });
   }
