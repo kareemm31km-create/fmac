@@ -11064,6 +11064,28 @@ function sumCh(list){
   list.forEach(x=>{ t.gold+=x.gold||0; t.silver+=x.silver||0; t.bronze+=x.bronze||0; });
   t.all=t.gold+t.silver+t.bronze; return t;
 }
+/* هجاءات الألعاب كما تُكتب فعلاً — والاسم المعتمد ما في ألعاب النادي.
+   لا يُقارَن اسمُ لعبةٍ بآخر إلا بعد المرور من هنا. */
+const SPORT_ALIAS={
+  'الجيوجيتسو':'الجوجيتسو','جيوجيتسو':'الجوجيتسو','جوجيتسو':'الجوجيتسو',
+  'الجوجتسو':'الجوجيتسو','جوجتسو':'الجوجيتسو',
+  'الكراتيه':'الكاراتيه','كاراتيه':'الكاراتيه','كراتيه':'الكاراتيه','الكاراتية':'الكاراتيه',
+  'المصارعه':'المصارعة','مصارعه':'المصارعة','مصارعة':'المصارعة',
+  'التايكواندو':'التايكوندو','تايكواندو':'التايكوندو','تايكوندو':'التايكوندو',
+  'القوس و السهم':'القوس والسهم','قوس وسهم':'القوس والسهم','قوس و سهم':'القوس والسهم',
+  'الرماية':'القوس والسهم',
+  'جودو':'الجودو','مبارزة':'المبارزة','المبارزه':'المبارزة','ملاكمة':'الملاكمة',
+  'الملاكمه':'الملاكمة','سباحة':'السباحة','السباحه':'السباحة',
+  'ترياثلون':'الترياثلون','ترايثلون':'الترياثلون','الترايثلون':'الترياثلون'
+};
+/* اسم اللعبة المعتمد — للمقارنة وحدها، لا للعرض */
+function sportKey(v){
+  const t=S(v).replace(/\s+/g,' ').trim();
+  if(SPORT_ALIAS[t]) return SPORT_ALIAS[t];
+  const bare=t.replace(/\s+/g,'');
+  const hit=Object.keys(SPORT_ALIAS).find(k=>k.replace(/\s+/g,'')===bare);
+  return hit ? SPORT_ALIAS[hit] : t;
+}
 /* الموسم يُكتب بيدٍ في الكشف: أرقامٌ عربيّة أو شرطةٌ طويلة أو مسافات.
    نُسوّيه قبل المقارنة، وإلّا سقطت المطابقة صامتةً. */
 function normSeason(v){
@@ -11093,10 +11115,10 @@ function spData(sp,y){
     if(S(x.calK)) done[S(x.calK)]=1;
     done['nm:'+norm(x.name)]=1;
   });
-  const wantY=normSeason(y), wantSp=norm(sp);
+  const wantY=normSeason(y), wantSp=sportKey(sp);
   const pending=(calendar||[]).filter(function(c){
     if(!c || !c.name) return false;
-    if(norm(c.sport)!==wantSp) return false;
+    if(sportKey(c.sport)!==wantSp) return false;
     if(normSeason(c.season)!==wantY) return false;
     if(c.status!=='مؤكدة' && c.status!=='انتهت') return false;
     return !done[S(c.k)] && !done['nm:'+norm(c.name)];
@@ -12682,8 +12704,12 @@ function openCal(k){
   $('calSeasons').innerHTML=calSeasons().map(y=>'<option value="'+esc(y)+'">').join('');
   $('calSeason').value = c.season || calSeason() || '';
   const sp=$('calSport');
+  /* ألعاب النادي لا ألعاب الخطط المرفوعة: تلك تحمل هجاء من رفعها،
+     فيُولَد اسمٌ ثانٍ للعبة لا يطابق صفحتها أبداً. */
+  const spList=ALL_TEN();
+  const cur=sportKey(c.sport);
   sp.innerHTML='<option value="">— بلا لعبة —</option>'+
-    ALL_SPORTS().map(x=>'<option'+(x===c.sport?' selected':'')+'>'+esc(x)+'</option>').join('');
+    spList.map(x=>'<option'+(sportKey(x)===cur?' selected':'')+'>'+esc(x)+'</option>').join('');
   $('calName').value=c.name||'';
   $('calScope').value=c.scope||'محلي';
   const feds=[...new Set((calendar||[]).map(x=>x.fed).filter(Boolean))].sort();
