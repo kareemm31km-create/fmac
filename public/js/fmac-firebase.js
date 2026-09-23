@@ -206,7 +206,7 @@ const NEST = {
   cancel: 'cancel', attendance: 'attend', reply: 'reply', stage: 'stage',
   session: 'session', note: 'note', ack: 'ack', closeweek: 'week',
   result: 'result', shield: 'shield', camp: 'camp',
-  result: 'result', resultDrop: 'result',
+  resultDrop: 'result',
   natl: 'player', natlDrop: 'player',
   user: 'userRow', userDrop: 'userRow',
   agenda: 'agenda', visit: 'visit', cal: 'cal', calDrop: 'cal',

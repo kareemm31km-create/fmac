@@ -3479,7 +3479,8 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
 
 /* أفضل خمس بطولات */
 .evtop{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
-.evc{display:grid;grid-template-columns:26px minmax(0,1fr) auto auto;gap:10px;align-items:center;
+/* خمسة أعمدة: الأخير لأزرار التصحيح — كان أربعةً فنزلت سطراً ثانياً */
+.evc{display:grid;grid-template-columns:26px minmax(0,1fr) auto auto auto;gap:10px;align-items:center;
   padding:11px 13px;border-radius:13px;background:var(--card-2);position:relative;overflow:hidden}
 .evc .rk{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:12px;
   font-weight:800;color:var(--brand);background:color-mix(in srgb,var(--brand) 13%,transparent)}
@@ -11915,26 +11916,46 @@ function openResult(k){
   setTimeout(()=>$('resName').focus(),40);
 }
 /* حذف نتيجة — بتأكيدٍ باسمها، فالحذف لا يُستردّ */
+/* يبحث عن الصفّ في مواسم اللعبة كلّها لا في المعروض وحده،
+   ويُرجع المصفوفة نفسها من المخزن لا نسخةً منها. */
+function findResult(k){
+  const byY=results[spCur]||{};
+  for(const y of Object.keys(byY)){
+    const arr=(byY[y]||{}).championships;
+    if(!Array.isArray(arr)) continue;
+    const i=arr.findIndex(x=>S(x.k)===k);
+    if(i>=0) return {arr:arr, i:i, row:arr[i], season:y};
+  }
+  return null;
+}
 async function dropResult(k){
   k=S(k); if(!k) return;
-  const arr=((results[spCur]||{})[spSeason]||{}).championships||[];
-  const row=arr.find(x=>S(x.k)===k);
-  const nm=row?row.name:'هذه البطولة';
-  if(!confirm('حذف «'+nm+'» من '+spCur+' — '+spSeason+'؟\nلا يمكن التراجع.')) return;
+  const hit=findResult(k);
+  const nm=hit?hit.row.name:'هذه البطولة';
+  if(!confirm('حذف «'+nm+'» من '+spCur+'؟\nلا يمكن التراجع.')) return;
   if(API){
+    let j=null;
     try{
       const r=await __fmacApi(API,{method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'},
         body:JSON.stringify({u:user.code,action:'resultDrop',result:{k:k}})});
-      const j=await r.json();
-      if(!j||!j.ok){ toast('تعذَّر الحذف — '+((j&&j.error)||'')); return; }
-    }catch(e){ toast('لا يوجد اتصال — لم يُحذف.'); return; }
+      j=await r.json();
+    }catch(e){
+      console.error('resultDrop', e);
+      toast('لا يوجد اتصال — لم يُحذف.'); return;
+    }
+    if(!j||!j.ok){
+      console.error('resultDrop', j);
+      toast('تعذَّر الحذف — '+((j&&j.error)||'ردّ غير متوقَّع')); return;
+    }
   }
-  const i=arr.findIndex(x=>S(x.k)===k);
-  if(i>=0) arr.splice(i,1);
-  renderSport();
+  /* نجح الخادم. نشطب محليّاً — وإن لم نجد الصفّ نُعيد الحمولة،
+     فالواجهة لا تُظهر ما حُذف من قاعدة البيانات. */
+  if(hit) hit.arr.splice(hit.i,1);
   toast('حُذفت «'+nm+'» ✓');
   auditPush('نتيجة','حذف نتيجة — '+nm+' — '+spCur);
+  if(!hit && API){ try{ await tryCode(user.code); }catch(e){} }
+  renderSport();
 }
 /* أزرار التصحيح — لما أُدخل من الموقع وحده. وما جاء من ملفّ الموسم
    لا مفتاح له، فيُصحَّح من ملفّه لا من هنا. */
