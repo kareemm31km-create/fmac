@@ -11064,6 +11064,16 @@ function sumCh(list){
   list.forEach(x=>{ t.gold+=x.gold||0; t.silver+=x.silver||0; t.bronze+=x.bronze||0; });
   t.all=t.gold+t.silver+t.bronze; return t;
 }
+/* الموسم يُكتب بيدٍ في الكشف: أرقامٌ عربيّة أو شرطةٌ طويلة أو مسافات.
+   نُسوّيه قبل المقارنة، وإلّا سقطت المطابقة صامتةً. */
+function normSeason(v){
+  return S(v)
+    .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+    .replace(/[\u2010-\u2015\u2212\u2043\uFE58\uFE63\uFF0D]/g, '-')
+    .replace(/\s+/g, '')
+    .replace(/[^0-9-]/g, '');
+}
 /* أسماء البطولات تُكتب بفراغاتٍ مختلفة — نقارنها مُسوّاة */
 const norm = v => S(v).replace(/\s+/g,' ').trim();
 function spData(sp,y){
@@ -11083,10 +11093,13 @@ function spData(sp,y){
     if(S(x.calK)) done[S(x.calK)]=1;
     done['nm:'+norm(x.name)]=1;
   });
+  const wantY=normSeason(y), wantSp=norm(sp);
   const pending=(calendar||[]).filter(function(c){
-    return c && c.sport===sp && c.season===y &&
-      (c.status==='مؤكدة' || c.status==='انتهت') &&
-      !done[S(c.k)] && !done['nm:'+norm(c.name)];
+    if(!c || !c.name) return false;
+    if(norm(c.sport)!==wantSp) return false;
+    if(normSeason(c.season)!==wantY) return false;
+    if(c.status!=='مؤكدة' && c.status!=='انتهت') return false;
+    return !done[S(c.k)] && !done['nm:'+norm(c.name)];
   }).sort(function(a2,b2){ return S(a2.date).localeCompare(S(b2.date)); });
   /* الخروج المبكر بعد المعلَّقات لا قبلها: لعبةٌ لها بطولةٌ مؤكَّدة في
      الكشف ولا نتائج بعد كانت تُعرَض فارغةً، فلا تظهر قائمة الانتظار. */
