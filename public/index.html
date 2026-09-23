@@ -3610,6 +3610,19 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
 .evmore{color:var(--brand);font-weight:600}
 .evmore.on{background:color-mix(in srgb,var(--brand) 12%,transparent)}
 
+/* أزرار تصحيح النتيجة — خافتة حتى تُقصد، وحمراء للحذف وحده (§الأحمر للحرِج) */
+.resacts{display:inline-flex;gap:4px;align-items:center;margin-inline-start:6px}
+.rsb{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+  background:transparent;border:1px solid transparent;color:var(--stone);
+  cursor:pointer;padding:0;opacity:.55;
+  transition:opacity var(--motion-fast) var(--ease),color var(--motion-fast) var(--ease),
+    border-color var(--motion-fast) var(--ease)}
+.evc:hover .rsb,.evtbl tr:hover .rsb,.rsb:focus-visible{opacity:1}
+.rsb:hover{color:var(--brand);border-color:var(--hairline)}
+.rsb.del:hover{color:var(--critical);border-color:var(--critical)}
+.rsb .di{width:14px;height:14px}
+.evtbl td:last-child{width:1%;white-space:nowrap}
+
 /* ===== كرت لاعبي المنتخب: هويّة العلم لا كرتٌ عامّ =====
    شريط العلم على الحافّة، ووهجٌ أخضر خافت، والعدد بالأحمر.
    كلّه برموزٍ ومزجٍ فيعمل في الوضعين. */
@@ -4443,7 +4456,7 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
 
 <div class="modal" id="resDlg" hidden>
   <div class="box">
-    <h3>تسجيل نتيجة بطولة</h3>
+    <h3 id="resDlgT">تسجيل نتيجة بطولة</h3>
     <p class="hint">اللعبة: <b id="resSport"></b> — تُضاف إلى نتائج الموسم فوراً.</p>
     <div class="vgrid">
       <span><label class="fl2">الموسم</label><select id="resYear" class="inp"></select></span>
@@ -5650,7 +5663,7 @@ function led(txt,cls){
   if(changed){ void d.offsetWidth; d.className=next+' beat'; }
 }
 /* شريط أحمر عريض حين لا يُحفَظ شيء فعلاً — لا يجوز أن يفشل الحفظ بصمت */
-const NEED_BUILD = 11;
+const NEED_BUILD = 12;
 function warnBar(html){
   let el=$('warnBar');
   if(!html){ if(el) el.remove(); return; }
@@ -11727,6 +11740,7 @@ function spResultsHtml(years){
             (x.place||x.date?'<span>'+esc([x.date,x.place].filter(Boolean).join(' · '))+'</span>':'')+
             '</span><span class="tot">'+a2+'</span>'+
             '<span class="mds">'+mchip('g',x.gold)+mchip('s',x.silver)+mchip('b',x.bronze)+'</span>'+
+            resActs(x)+
             '<span class="pbx"><i style="width:'+(a2/mx*100).toFixed(1)+'%"></i></span></div>';
         }).join('')+'</div>':'')+
       (restN.length?'<div class="evsrch">'+
@@ -11739,13 +11753,14 @@ function spResultsHtml(years){
           '</div>':'')+
       (restN.length&&evAll?
         '<div class="scroll"><table class="gtbl evtbl"><thead><tr><th>البطولة</th><th>ذهب</th>'+
-        '<th>فضة</th><th>برونز</th><th>المجموع</th></tr></thead><tbody>'+
+        '<th>فضة</th><th>برونز</th><th>المجموع</th><th></th></tr></thead><tbody>'+
         restN.filter(function(x){ return !evQuery ||
             String(x.name).indexOf(evQuery)>=0 || String(x.place||'').indexOf(evQuery)>=0; })
           .map(function(x){ const a2=x.gold+x.silver+x.bronze;
           return '<tr><td>'+esc(x.name)+(x.place?'<span class="td2">'+esc(x.place)+'</span>':'')+
             '</td><td class="num2">'+x.gold+'</td><td class="num2">'+x.silver+'</td>'+
-            '<td class="num2">'+x.bronze+'</td><td class="num2 tt">'+a2+'</td></tr>'; }).join('')+
+            '<td class="num2">'+x.bronze+'</td><td class="num2 tt">'+a2+'</td>'+
+            '<td>'+resActs(x)+'</td></tr>'; }).join('')+
         '</tbody></table></div>':'')+
       '</section>';
 
@@ -11869,7 +11884,8 @@ function spPlansHtml(){
   return h;
 }
 /* ——— إدخال نتيجة بطولة ——— */
-function openResult(){
+let resEditK='';   /* مفتاح البطولة قيد التعديل — فارغ يعني إضافة */
+function openResult(k){
   const years=spSeasonList(spCur);
   const yopts=[...new Set(years.concat([curSeason(), nextSeasonLabel()]))]
     .filter(Boolean).sort();
@@ -11880,9 +11896,54 @@ function openResult(){
   ['resName','resG','resS','resB','resPlace','resDate'].forEach(id=>{
     const e=$(id); if(e) e.value=''; });
   $('resScope').value=spScope||'محلي';
+  /* تعديل: نملأ الحقول من الصفّ ونحتفظ بمفتاحه */
+  resEditK = S(k);
+  const row = resEditK ? ((spData(spCur,spSeason)||{}).championships||[])
+    .find(x=>S(x.k)===resEditK) : null;
+  if(row){
+    $('resName').value=row.name||''; $('resG').value=row.gold||0;
+    $('resS').value=row.silver||0;   $('resB').value=row.bronze||0;
+    $('resPlace').value=row.place||''; $('resDate').value=row.date||'';
+    $('resScope').value=row.scope||'محلي';
+  }
+  const ttl=$('resDlgT');
+  if(ttl) ttl.textContent = resEditK ? 'تعديل نتيجة بطولة' : 'تسجيل نتيجة بطولة';
+  const go=$('resSave');
+  if(go) go.textContent = resEditK ? 'حفظ التعديل' : 'حفظ النتيجة';
   $('resMsg').textContent=''; $('resMsg').className='upmsg';
   $('resDlg').hidden=false;
   setTimeout(()=>$('resName').focus(),40);
+}
+/* حذف نتيجة — بتأكيدٍ باسمها، فالحذف لا يُستردّ */
+async function dropResult(k){
+  k=S(k); if(!k) return;
+  const arr=((results[spCur]||{})[spSeason]||{}).championships||[];
+  const row=arr.find(x=>S(x.k)===k);
+  const nm=row?row.name:'هذه البطولة';
+  if(!confirm('حذف «'+nm+'» من '+spCur+' — '+spSeason+'؟\nلا يمكن التراجع.')) return;
+  if(API){
+    try{
+      const r=await __fmacApi(API,{method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body:JSON.stringify({u:user.code,action:'resultDrop',result:{k:k}})});
+      const j=await r.json();
+      if(!j||!j.ok){ toast('تعذَّر الحذف — '+((j&&j.error)||'')); return; }
+    }catch(e){ toast('لا يوجد اتصال — لم يُحذف.'); return; }
+  }
+  const i=arr.findIndex(x=>S(x.k)===k);
+  if(i>=0) arr.splice(i,1);
+  renderSport();
+  toast('حُذفت «'+nm+'» ✓');
+  auditPush('نتيجة','حذف نتيجة — '+nm+' — '+spCur);
+}
+/* أزرار التصحيح — لما أُدخل من الموقع وحده. وما جاء من ملفّ الموسم
+   لا مفتاح له، فيُصحَّح من ملفّه لا من هنا. */
+function resActs(x){
+  if(!user.admin || !S(x.k)) return '';
+  return '<span class="resacts">'+
+    '<button class="rsb" data-resedit="'+esc(x.k)+'" title="تعديل">'+di('pen')+'</button>'+
+    '<button class="rsb del" data-resdrop="'+esc(x.k)+'" title="حذف">'+di('x')+'</button>'+
+    '</span>';
 }
 /* ===== الدروع — للبطولات المحلية وحدها ===== */
 function openShield(){
@@ -12174,14 +12235,22 @@ async function saveResult(){
   $('resMsg').textContent='جارٍ الحفظ…'; $('resMsg').className='upmsg';
   results[spCur]=results[spCur]||{};
   results[spCur][y]=results[spCur][y]||{championships:[]};
-  results[spCur][y].championships.push({name:name,gold:g,silver:s2,bronze:b,
-    scope:scope,date:date,place:place,added:true});
+  if(resEditK){
+    const arr=results[spCur][y].championships;
+    const i=arr.findIndex(x=>S(x.k)===resEditK);
+    const row={k:resEditK,name:name,gold:g,silver:s2,bronze:b,
+      scope:scope,date:date,place:place,added:true};
+    if(i>=0) arr[i]=row; else arr.push(row);
+  } else {
+    results[spCur][y].championships.push({name:name,gold:g,silver:s2,bronze:b,
+      scope:scope,date:date,place:place,added:true});
+  }
   spSeason=y; spScope=scope; renderSport();
   if(API){ try{
     const r=await __fmacApi(API,{method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify({u:user.code,action:'result',
-        result:{sport:spCur,season:y,name:name,gold:g,silver:s2,bronze:b,
+        result:{k:resEditK,sport:spCur,season:y,name:name,gold:g,silver:s2,bronze:b,
                 scope:scope,date:date,place:place}})});
     const j=await r.json();
     if(j&&j.ok){ $('resDlg').hidden=true; toast('سُجِّلت نتيجة '+name+' ✓');
@@ -12237,10 +12306,13 @@ function calSeasons(){
 /* الموسم المعروض: ما اخترته، وإلّا موسم الشريط العلوي إن كان له كشف، وإلّا أحدث كشف */
 function calSeason(){
   if(calSeasonSel) return calSeasonSel;
+  /* الموسم الجاري أوّلاً ولو كان كشفه فارغاً — كان يسقط إلى آخر موسمٍ
+     فيه بيانات، فيفتح على موسمٍ مضى ما دام الجاري لم يُملأ بعد. والفراغ
+     يُقال صراحةً في الجدول، وهو أصدق من عرض موسمٍ آخر بلا استئذان. */
   const cur=curSeason();
-  if(cur && (calendar||[]).some(c=>c.season===cur)) return cur;
+  if(cur) return cur;
   const ys=[...new Set((calendar||[]).map(c=>c.season).filter(Boolean))].sort();
-  return ys.length?ys[ys.length-1]:(cur||'');
+  return ys.length?ys[ys.length-1]:'';
 }
 const calDate = c => String((c&&c.date)||'').slice(0,10);
 function calRows(y){
@@ -14685,6 +14757,10 @@ document.addEventListener('click',e=>{
   const spy=e.target.closest('[data-spy]');
   if(spy){ spSeason=spy.dataset.spy; renderSport(); return; }
   if(e.target.closest('#spAdd')){ openResult(); return; }
+  const red=e.target.closest('[data-resedit]');
+  if(red){ openResult(red.dataset.resedit); return; }
+  const rdr=e.target.closest('[data-resdrop]');
+  if(rdr){ dropResult(rdr.dataset.resdrop); return; }
   if(e.target.closest('#spShAdd')){ openShield(); return; }
   if(e.target.closest('#spCmpAdd')){ openCamp(); return; }
   if(e.target.closest('#cmpSave')){ saveCamp(); return; }

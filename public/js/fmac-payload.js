@@ -377,6 +377,8 @@ export function results(rows) {
     if (!out[sp]) out[sp] = {};
     if (!out[sp][y]) out[sp][y] = { championships: [] };
     out[sp][y].championships.push({
+      /* k: مفتاح الوثيقة — بدونه لا تعديل ولا حذف، والصفّ يصير أبديّاً */
+      k: S(r.k),
       name: nm, gold: NUM(r.gold), silver: NUM(r.silver), bronze: NUM(r.bronze),
       scope: S(r.scope) || 'محلي', date: S(r.date), place: S(r.place), added: true,
     });
