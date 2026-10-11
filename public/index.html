@@ -2537,9 +2537,11 @@ body.en .wordmark span{letter-spacing:.02em}
 /* قبل جهوز البيانات لا يُعرض هيكل فارغ: لا موسم «—» ولا بطاقة بلا أرقام.
    السطح مخفيّ حتى ينتهي الإقلاع، ثم يظهر دفعةً واحدة. وبوّابة الخطأ
    خارج هذا السطح فتبقى ظاهرة إن فشل الجلب. */
-body:not(.ready) .topnav,body:not(.ready) .wrap,body:not(.ready) .side{
+/* #side لا .side: شاشة الدخول تستعمل الصنف نفسه للوحة الهيرو،
+   فكانت البوّابة تُخفيها وهي ليست من الواجهة التي تنتظر الإقلاع. */
+body:not(.ready) .topnav,body:not(.ready) .wrap,body:not(.ready) #side{
   opacity:0;visibility:hidden;pointer-events:none}
-body.ready .topnav,body.ready .wrap,body.ready .side{
+body.ready .topnav,body.ready .wrap,body.ready #side{
   opacity:1;visibility:visible;transition:opacity .28s var(--ease,ease)}
 body.ready:not(.booted) .topnav{animation:fadein .45s both}
 body:not(.booted) .hero{animation:rise .6s .06s both}
