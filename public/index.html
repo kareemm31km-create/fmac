@@ -286,7 +286,9 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .stglg{display:flex;flex-direction:column;gap:9px;flex:1;min-width:190px}
 .sg1{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink)}
 .sg1 i{width:9px;height:9px;border-radius:999px;flex:none}
-.sg1 b{margin-inline-start:auto;font-weight:800;color:var(--ink-deep);
+.sg1 u{margin-inline-start:auto;text-decoration:none;font-size:12px;
+  color:var(--stone);font-variant-numeric:tabular-nums;min-width:34px;text-align:end}
+.sg1 b{font-weight:800;color:var(--ink-deep);min-width:26px;text-align:end;
   font-variant-numeric:tabular-nums}
 .feed{display:flex;flex-direction:column;gap:7px;margin-top:10px}
 .fdr{display:flex;align-items:center;gap:11px;width:100%;text-align:start;cursor:pointer;
@@ -3988,6 +3990,16 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
 .mleg{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin-top:10px}
 .mleg span{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--steel)}
 .mleg i{width:8px;height:8px;border-radius:999px;background:var(--c);display:block}
+/* مفتاح مجزّأ: الخيارات كلّها ظاهرة، والمختار يُملأ لا يُؤشَّر عليه */
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:999px;
+  background:var(--chip-bg);border:1px solid var(--chip-edge)}
+.seg button{border:0;background:transparent;color:var(--chip-ink);cursor:pointer;
+  font:inherit;font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;
+  min-width:30px;transition:background var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease)}
+.seg button:hover{color:var(--ink-deep)}
+.seg button[aria-selected="true"]{background:var(--ink-button);color:var(--on-ink)}
+
 .rngsel{background:var(--surface-soft);border:1px solid var(--hairline);border-radius:8px;
   color:var(--ink);font:inherit;font-size:13px;padding:7px 10px;cursor:pointer}
 
@@ -5087,11 +5099,12 @@ aside.side#side::before,
       <div class="drow">
                 <section class="panel" id="trendHome">
           <div class="ch"><h3 id="trendTitle">تطوّر الأداء عبر الأسابيع</h3>
-            <span class="hact"><select class="rngsel" id="trendRange">
-              <option value="4">4 أسابيع</option>
-              <option value="8">8 أسابيع</option>
-              <option value="12" selected>12 أسبوعاً</option>
-              <option value="0">كل الأسابيع</option></select></span></div>
+            <span class="hact"><span class="seg" id="trendRange" role="tablist">
+              <button role="tab" data-rng="4">4</button>
+              <button role="tab" data-rng="8">8</button>
+              <button role="tab" data-rng="12" aria-selected="true">12</button>
+              <button role="tab" data-rng="0">الكل</button>
+            </span></span></div>
           <div class="lede" id="trendLede"></div>
           <div class="mlwrap">
             <svg class="mlchart" id="wkChart" viewBox="0 0 560 300"
@@ -13680,9 +13693,12 @@ function renderStages(){
       '<circle class="tr" cx="60" cy="60" r="'+R+'"/>'+arcs+'</svg>'+
       '<span class="v"><b>'+(pct===null?'—':pct+'%')+'</b>'+
         '<i>'+(pct===null?'لا خطط منتظَرة':'الخطط المعتمدة')+'</i></span></div>'+
+    /* النسبة بجانب العدد: «كم» و«كم من الكلّ» — والثانية تُقرأ من بعيد.
+       ولا نسبةَ بلا مقام (§24). */
     '<div class="stglg">'+rows.map(function(r){
+      const sh = b.total ? Math.round(r[1]/b.total*100)+'%' : '—';
       return '<span class="sg1"><i style="background:'+r[2]+'"></i>'+
-        '<span>'+esc(r[0])+'</span><b>'+r[1]+'</b></span>'; }).join('')+'</div>';
+        '<span>'+esc(r[0])+'</span><u>'+sh+'</u><b>'+r[1]+'</b></span>'; }).join('')+'</div>';
 }
 
 /* تحية باسم المستخدم وتاريخ اليوم فوق الشعار — من الساعة والاسم، بلا طلب خارجي */
@@ -14934,7 +14950,9 @@ function renderHome(){
     const e=$(id); if(e) e.hidden=true; });
   ['homeSports','homeCoaches'].forEach(function(id){
     const e=$(id); if(e&&e.closest('.panel')) e.closest('.panel').hidden=true; });
-  { const rs=$('trendRange'); if(rs) rs.value=String(trendRange); }
+  { const rs=$('trendRange');
+    if(rs) rs.querySelectorAll('[data-rng]').forEach(function(b){
+      b.setAttribute('aria-selected', String(+b.dataset.rng===trendRange)); }); }
   drawTrendMulti('wkChart');
   requestAnimationFrame(()=>{ revealAll($('adminDash')); });
   return;
@@ -15086,6 +15104,13 @@ document.addEventListener('click',e=>{
     return; }
   if(e.target.id==='resNone'){ resNoneSync(); return; }
   if(e.target.id==='btnUpload'){ openUpload(); return; }
+  /* المفتاح المجزّأ أزرارٌ لا منسدلة: النقر لا التغيير */
+  const rng=e.target.closest('#trendRange [data-rng]');
+  if(rng){ trendRange=+rng.dataset.rng||0;
+    rng.parentElement.querySelectorAll('[data-rng]').forEach(function(b){
+      b.setAttribute('aria-selected', String(b===rng)); });
+    try{ drawTrendMulti('wkChart'); }catch(err){}
+    return; }
   if(e.target.closest('#btnTheme')){ cycleTheme(); return; }
   if(e.target.closest('#btnLangTop')){
     setLang(LANG==='en'?'ar':'en'); return; }
