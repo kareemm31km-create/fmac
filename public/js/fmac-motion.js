@@ -110,6 +110,58 @@ export function count(root) {
   });
 }
 
+/* ── انتقال الأقسام ───────────────────────────────────────
+   كان التبديل فوريّاً: يُخفى قسمٌ ويظهر آخر في الإطار نفسه، فلا يدري
+   العين من أين جاء الجديد. حركةٌ قصيرة تربط الحالتين.
+   ولا نُحرّك الخارج: إخفاؤه يسبق الرسم في منطق الواجهة، وتأخيرُه
+   يعني تأخير ما بعده. */
+export function view(el) {
+  if (RM.matches || !has('gsap') || !el) return;
+  window.gsap.fromTo(el,
+    { opacity: 0, y: 8 },
+    { opacity: 1, y: 0, duration: 0.26, ease: 'power2.out', clearProps: 'all' });
+}
+
+/* ── الرسوم تُرسم أمام العين ───────────────────────────────
+   الخطّ يُمدّ من أوّله، والقوس يُلفّ من بدايته. والرقم في الوسط
+   يعدّ معها — فتُقرأ الحركة كجملةٍ واحدة لا كثلاث. */
+export function draw(root) {
+  if (RM.matches || !has('gsap')) return;
+  const scope = root && root.nodeType === 1 ? root : document;
+  const g = window.gsap;
+
+  /* خطوط المنحنى: طولها يُقاس ثمّ يُمدّ */
+  scope.querySelectorAll('.mlchart .ln2, .lchart .ln2').forEach((p, i) => {
+    let len = 0;
+    try { len = p.getTotalLength(); } catch (e) { return; }
+    if (!len) return;
+    g.fromTo(p,
+      { strokeDasharray: len, strokeDashoffset: len },
+      { strokeDashoffset: 0, duration: 1, delay: i * 0.08,
+        ease: 'power2.inOut', clearProps: 'strokeDasharray,strokeDashoffset' });
+  });
+  /* نقاط المنحنى تظهر بعد خطّها */
+  scope.querySelectorAll('.mlchart .pt2').forEach((c, i) => {
+    g.fromTo(c, { opacity: 0, scale: 0.4, transformOrigin: 'center' },
+      { opacity: 1, scale: 1, duration: 0.3, delay: 0.5 + i * 0.02, ease: 'back.out(2)' });
+  });
+
+  /* أقواس الحلقة: كلٌّ يُلفّ من بدايته، واحداً بعد واحد */
+  scope.querySelectorAll('.stgring svg').forEach((svg) => {
+    const arcs = svg.querySelectorAll('circle.sg');
+    arcs.forEach((a, i) => {
+      const da = a.getAttribute('stroke-dasharray');
+      if (!da) return;
+      const seg = parseFloat(da.split(' ')[0]) || 0;
+      const rest = parseFloat(da.split(' ')[1]) || 0;
+      if (!seg) return;
+      g.fromTo(a, { attr: { 'stroke-dasharray': '0 ' + (seg + rest) } },
+        { attr: { 'stroke-dasharray': seg + ' ' + rest },
+          duration: 0.7, delay: i * 0.1, ease: 'power2.out' });
+    });
+  });
+}
+
 /* ── الإقلاع ─────────────────────────────────────────────── */
 export function init() {
   startScroll();
@@ -117,5 +169,5 @@ export function init() {
 }
 RM.addEventListener('change', () => { if (RM.matches) stopScroll(); });
 
-window.__fmacMotion = { init, count, rescan, stopScroll };
+window.__fmacMotion = { init, count, rescan, stopScroll, view, draw };
 export default window.__fmacMotion;
