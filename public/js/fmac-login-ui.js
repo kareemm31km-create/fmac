@@ -103,20 +103,20 @@ export const STYLE = `
 /* left لا inset-inline-start: اللوحة بصرية ثابتة مهما كان اتجاه النصّ */
 #fmacLogin .creed{position:absolute;left:34px;top:46%;transform:translateY(-50%);
   z-index:2;display:flex;flex-direction:column;gap:9px;pointer-events:none}
-#fmacLogin .creed span{font:600 14px/1 'Segoe UI',system-ui,sans-serif;letter-spacing:.3em;
+#fmacLogin .creed span{font:600 15px/1 'Segoe UI',system-ui,sans-serif;letter-spacing:.3em;
   color:color-mix(in srgb,var(--ink-deep,#F4F8FC) 15%,transparent);direction:ltr}
 #fmacLogin .slog{padding-inline-end:170px}
 #fmacLogin .kick{display:flex;flex-direction:row-reverse;align-items:center;gap:14px;
-  font:600 11.5px/1 'Segoe UI',system-ui,sans-serif;letter-spacing:.4em;color:var(--ink,#DCE8F2);
+  font:600 11px/1 'Segoe UI',system-ui,sans-serif;letter-spacing:.4em;color:var(--ink,#DCE8F2);
   direction:ltr;margin-bottom:14px}
 #fmacLogin .kick i{flex:1;max-width:90px;height:1.5px;background:var(--brand,#3B9DFF);display:block}
 #fmacLogin .slog h2{margin:0;font-size:clamp(21px,2.6vw,34px);font-weight:800;line-height:1.32;
   letter-spacing:-.4px;color:var(--ink-deep,#F4F8FC)}
 #fmacLogin .slog h2 em{font-style:normal;color:var(--brand,#3B9DFF)}
-#fmacLogin .vals{margin-top:14px!important;font:600 10px/1 'Segoe UI',system-ui,sans-serif;
+#fmacLogin .vals{margin-top:14px!important;font:600 11px/1 'Segoe UI',system-ui,sans-serif;
   letter-spacing:.3em;color:var(--steel,#93A7BA);direction:ltr}
 #fmacLogin .vals i{font-style:normal;color:var(--brand,#3B9DFF);margin:0 10px}
-#fmacLogin .slog p{margin:12px 0 0;font:500 12.5px/1.9 'Segoe UI',system-ui,sans-serif;
+#fmacLogin .slog p{margin:12px 0 0;font:500 13px/1.9 'Segoe UI',system-ui,sans-serif;
   letter-spacing:.22em;color:var(--steel,#93A7BA);direction:ltr;text-align:start}
 /* direction:ltr — الصفّ بصري كما في التصميم: الجودو أوّله من اليسار */
 #fmacLogin .sports{display:flex;flex-wrap:nowrap;gap:0;margin-top:24px;
@@ -125,38 +125,38 @@ export const STYLE = `
   align-items:center;gap:6px;padding:6px 2px;border-radius:12px;text-decoration:none}
 #fmacLogin .sports img{width:24px;height:24px;object-fit:contain;opacity:.6;
   filter:brightness(0) invert(1)}
-#fmacLogin .sports span{font-size:9.5px;line-height:1.35;color:var(--steel,#93A7BA);text-align:center;
+#fmacLogin .sports span{font-size:11px;line-height:1.35;color:var(--steel,#93A7BA);text-align:center;
   direction:rtl}
 #fmacLogin .foot{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-end;
   justify-content:space-between;margin-top:22px;border-top:1px solid color-mix(in srgb,var(--ink-deep,#F4F8FC) 6%,transparent);padding-top:14px}
 #fmacLogin .foot .f1{font-size:13px;color:var(--charcoal,#A9B8C8)}
-#fmacLogin .foot .f2{font:500 10.5px/1.6 'Segoe UI',system-ui,sans-serif;letter-spacing:.2em;
+#fmacLogin .foot .f2{font:500 11px/1.6 'Segoe UI',system-ui,sans-serif;letter-spacing:.2em;
   color:var(--field-ph,#64788B);direction:ltr}
 #fmacLogin .foot .est{text-align:end;direction:ltr}
 #fmacLogin .foot .est b{display:block;font:700 13px/1 'Segoe UI',system-ui,sans-serif;
   letter-spacing:.34em;color:var(--charcoal,#A9B8C8)}
-#fmacLogin .foot .est i{font-style:normal;font-size:9.5px;letter-spacing:.28em;color:var(--field-ph,#64788B)}
+#fmacLogin .foot .est i{font-style:normal;font-size:11px;letter-spacing:.28em;color:var(--field-ph,#64788B)}
 
 #fmacLogin .pane{flex:1 1 48%;display:flex;align-items:center;justify-content:center;
   padding:34px 28px;position:relative}
 /* right لا inset-inline-end: موضعه أعلى يمين الشاشة في اللغتين */
 #fmacLogin .langbtn{position:absolute;top:28px;right:32px;background:color-mix(in srgb,var(--ink-deep,#F4F8FC) 3%,transparent);
-  color:var(--ink-deep,#F4F8FC);border:1px solid color-mix(in srgb,var(--ink-deep,#F4F8FC) 11%,transparent);border-radius:99px;padding:9px 16px;
+  color:var(--ink-deep,#F4F8FC);border:1px solid color-mix(in srgb,var(--ink-deep,#F4F8FC) 11%,transparent);border-radius:999px;padding:9px 16px;
   font:500 13px inherit;cursor:pointer;display:flex;align-items:center;gap:8px}
 #fmacLogin .langbtn:hover{background:color-mix(in srgb,var(--ink-deep,#F4F8FC) 7%,transparent)}
 #fmacLogin .box{width:min(94vw,440px);background:var(--surface,#0D1A29);
-  border:1px solid var(--hairline,#20364C);border-radius:22px;padding:30px 30px 26px;
+  border:1px solid var(--hairline,#20364C);border-radius:16px;padding:30px 30px 26px;
   box-shadow:0 24px 60px #00000066}
 #fmacLogin .tabs{display:flex;gap:0;border-bottom:1px solid var(--hairline,#20364C);margin:-8px -8px 22px}
 #fmacLogin .tabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;
-  color:var(--steel,#93A7BA);font:600 14px inherit;padding:13px 6px;cursor:pointer}
+  color:var(--steel,#93A7BA);font:600 15px inherit;padding:13px 6px;cursor:pointer}
 #fmacLogin .tabs button[aria-selected="true"]{color:var(--on-brand,#fff);border-bottom-color:var(--brand,#3B9DFF);
   background:linear-gradient(180deg,color-mix(in srgb,var(--brand,#3B9DFF) 8%,transparent),transparent)}
-#fmacLogin h1{margin:0 0 6px;font-size:22px;font-weight:800}
+#fmacLogin h1{margin:0 0 6px;font-size:24px;font-weight:800}
 #fmacLogin .lead{margin:0 0 20px;font-size:13px;color:var(--steel,#93A7BA);line-height:1.8}
 #fmacLogin .fld{position:relative;margin-top:12px}
 #fmacLogin .fld input,#fmacLogin .fld select,#fmacLogin .fld textarea{
-  width:100%;background:var(--field-bg,#0A1725);color:var(--ink-deep,#F4F8FC);border:1px solid var(--field-edge,#263D53);border-radius:14px;
+  width:100%;background:var(--field-bg,#0A1725);color:var(--ink-deep,#F4F8FC);border:1px solid var(--field-edge,#263D53);border-radius:12px;
   padding:14px 46px 14px 16px;font:14px inherit;font-family:inherit}
 #fmacLogin[dir="rtl"] .fld input,#fmacLogin[dir="rtl"] .fld select{padding:14px 46px 14px 44px}
 #fmacLogin .fld textarea{padding:14px 16px;min-height:74px;resize:vertical}
@@ -169,21 +169,21 @@ export const STYLE = `
   background:none;border:0;color:var(--field-ph,#64788B);cursor:pointer;padding:6px;line-height:0}
 #fmacLogin .fld.mail input,#fmacLogin .fld.pass input{direction:ltr;text-align:start}
 #fmacLogin .row{display:flex;align-items:center;justify-content:space-between;gap:12px;
-  margin-top:14px;font-size:12.5px}
+  margin-top:14px;font-size:13px}
 #fmacLogin .row label{display:flex;align-items:center;gap:8px;color:var(--charcoal,#A9B8C8);cursor:pointer}
 #fmacLogin .row input[type=checkbox]{width:16px;height:16px;accent-color:var(--brand,#3B9DFF);margin:0}
 #fmacLogin .row a{color:var(--brand,#3B9DFF);text-decoration:none;cursor:pointer}
 #fmacLogin .go{width:100%;margin-top:20px;background:linear-gradient(180deg,var(--cyan,#36C5F0),var(--brand-dark,#2583F7));
-  color:var(--on-brand,#fff);border:0;border-radius:14px;padding:14px;font:700 15px inherit;cursor:pointer;
+  color:var(--on-brand,#fff);border:0;border-radius:12px;padding:14px;font:700 15px inherit;cursor:pointer;
   display:flex;align-items:center;justify-content:center;gap:10px}
 #fmacLogin .go:hover{filter:brightness(1.06)}
 #fmacLogin .go:disabled{opacity:.6;cursor:default;filter:none}
-#fmacLogin .msg{margin-top:14px;font-size:12.5px;color:var(--critical,#EF4D5A);min-height:18px;line-height:1.7}
+#fmacLogin .msg{margin-top:14px;font-size:13px;color:var(--critical,#EF4D5A);min-height:18px;line-height:1.7}
 #fmacLogin .msg.ok{color:var(--success,#21C77A)}
-#fmacLogin .alt{margin-top:18px;text-align:center;font-size:12.5px;color:var(--steel,#93A7BA)}
+#fmacLogin .alt{margin-top:18px;text-align:center;font-size:13px;color:var(--steel,#93A7BA)}
 #fmacLogin .alt a{color:var(--brand,#3B9DFF);text-decoration:underline;cursor:pointer;margin-inline-start:4px}
 #fmacLogin code.uid{display:block;user-select:all;margin-top:8px;padding:8px 10px;
-  background:var(--field-bg,#0A1725);border-radius:10px;font-size:12px;color:var(--ink-deep,#F4F8FC);word-break:break-all;
+  background:var(--field-bg,#0A1725);border-radius:12px;font-size:13px;color:var(--ink-deep,#F4F8FC);word-break:break-all;
   direction:ltr}
 @media (max-width:900px){
   #fmacLogin{flex-direction:column}

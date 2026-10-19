@@ -11,43 +11,43 @@ const esc = (s) => S(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
 const STYLE = `
 .mo-wrap{display:flex;flex-direction:column;gap:16px}
 .mo-card{background:var(--surface,var(--surface));border:1px solid var(--line,var(--hairline));
-  border-radius:18px;padding:18px}
+  border-radius:16px;padding:18px}
 .mo-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
-.mo-title{font-size:16px;font-weight:700;margin:0}
-.mo-sub{color:var(--steel,var(--steel));font-size:12.5px;margin:4px 0 0}
+.mo-title{font-size:17px;font-weight:700;margin:0}
+.mo-sub{color:var(--steel,var(--steel));font-size:13px;margin:4px 0 0}
 .mo-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .mo-btn{background:var(--brand,var(--brand));color:var(--on-brand);border:0;border-radius:12px;
-  padding:10px 18px;font:700 13.5px inherit;cursor:pointer}
+  padding:10px 18px;font:700 13px inherit;cursor:pointer}
 .mo-btn.ghost{background:var(--surface-soft,var(--surface-soft));color:var(--ink-deep);
   border:1px solid var(--hairline);font-weight:400}
 .mo-btn:disabled{opacity:.5;cursor:default}
-.mo-pill{font-size:11.5px;padding:3px 10px;border-radius:99px;
+.mo-pill{font-size:11px;padding:3px 10px;border-radius:999px;
   background:var(--surface-soft,var(--surface-soft));border:1px solid var(--hairline);white-space:nowrap}
 .mo-pill.ok{color:var(--success);border-color:color-mix(in srgb,var(--success) 33%,transparent);background:color-mix(in srgb,var(--success) 9%,transparent)}
 .mo-pill.late{color:var(--attention);border-color:color-mix(in srgb,var(--attention) 33%,transparent);background:color-mix(in srgb,var(--attention) 9%,transparent)}
 .mo-pill.bad{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 33%,transparent);background:color-mix(in srgb,var(--critical) 9%,transparent)}
-button.mo-pill{cursor:pointer;font:inherit;font-size:11.5px}
+button.mo-pill{cursor:pointer;font:inherit;font-size:11px}
 .mo-pill.on{color:var(--brand-soft);border-color:var(--brand);background:rgba(59,157,255,.14)}
 .mo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .mo-item{background:var(--surface-soft,var(--surface-soft));border:1px solid var(--hairline);
-  border-radius:14px;padding:14px;cursor:pointer;transition:border-color .15s}
+  border-radius:12px;padding:14px;cursor:pointer;transition:border-color 0.15s}
 .mo-item:hover{border-color:var(--brand,var(--brand))}
 .mo-score{font-size:30px;font-weight:800;line-height:1;direction:ltr;
   font-variant-numeric:tabular-nums}
 .mo-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
 .mo-tbl th,.mo-tbl td{text-align:right;padding:9px 8px;border-bottom:1px solid var(--hairline-soft);
   vertical-align:top}
-.mo-tbl th{color:var(--steel,var(--steel));font-size:11.5px;font-weight:600}
+.mo-tbl th{color:var(--steel,var(--steel));font-size:11px;font-weight:600}
 .mo-tbl td.n{direction:ltr;text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap}
-.mo-bar{height:5px;border-radius:99px;background:var(--hairline);overflow:hidden;margin-top:6px}
+.mo-bar{height:5px;border-radius:999px;background:var(--hairline);overflow:hidden;margin-top:6px}
 .mo-bar i{display:block;height:100%}
-.mo-ev{color:var(--steel,var(--steel));font-size:12px;margin-top:3px;line-height:1.6}
-.mo-req{color:var(--charcoal);font-size:12px;margin-top:3px}
-.mo-drop{border:1.5px dashed var(--hairline);border-radius:14px;padding:22px;text-align:center;
+.mo-ev{color:var(--steel,var(--steel));font-size:13px;margin-top:3px;line-height:1.6}
+.mo-req{color:var(--charcoal);font-size:13px;margin-top:3px}
+.mo-drop{border:1.5px dashed var(--hairline);border-radius:12px;padding:22px;text-align:center;
   color:var(--steel,var(--steel));font-size:13px}
 .mo-drop.on{border-color:var(--brand,var(--brand));color:var(--ink-deep)}
 .mo-msg{font-size:13px;min-height:20px;margin-top:10px}
-.mo-empty{color:var(--steel,var(--steel));font-size:13.5px;text-align:center;padding:24px}
+.mo-empty{color:var(--steel,var(--steel));font-size:13px;text-align:center;padding:24px}
 `;
 
 const COLOR = (s) => s === null ? 'var(--steel)'
