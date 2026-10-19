@@ -4232,6 +4232,49 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
 /* ======================================================================
    Liquid Glass — الطبقة العائمة وحدها
    ====================================================================== */
+/* ── الشريط يطفو: حافّةٌ بينه وبين الإطار تقول «هذا فوق ذاك».
+      والحشوة صارت هامشاً، فالزجاج يُرى من أطرافه لا يُقصّ. ── */
+.topnav{border-radius:16px;margin:10px 14px 0;top:10px}
+body.hasside .topnav{padding-inline-start:var(--s-lg);
+  margin-inline-start:calc(246px + 14px)}
+@media (max-width:1100px){
+  body.hasside .topnav{margin-inline-start:14px}
+}
+
+/* ── اختيار القسم: كبسولةٌ ممتلئة لا شريطٌ على الحافّة.
+      Apple تُعلّم المختار بجسمٍ يحتويه، لا بعلامةٍ بجانبه. ── */
+#sideNav button[aria-current="true"]::before{display:none}
+#sideNav button[aria-current="true"]{
+  background:color-mix(in srgb,var(--brand) 16%,transparent);
+  border-radius:12px;color:var(--ink-deep);font-weight:700;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--brand) 30%,transparent)}
+#sideNav button[aria-current="true"] svg,
+#sideNav button[aria-current="true"] .ico{color:var(--brand)}
+
+/* ── الأزرار زجاجٌ كذلك: هي من طبقة التحكّم لا من المحتوى.
+      واللمسة تُحَسّ — ينخفض تحت الإصبع ويرتفع تحت المؤشّر. ── */
+.icobtn,.topnav .pill{
+  background:linear-gradient(160deg,var(--lg-tint),var(--lg-tint-2) 60%,transparent);
+  -webkit-backdrop-filter:blur(14px) saturate(var(--lg-sat));
+          backdrop-filter:blur(14px) saturate(var(--lg-sat));
+  border-color:var(--lg-rim-soft)}
+.icobtn:hover,.topnav .pill:hover{
+  background:linear-gradient(160deg,var(--lg-rim),var(--lg-tint) 60%,transparent);
+  border-color:color-mix(in srgb,var(--brand) 34%,transparent)}
+@media (prefers-reduced-motion:no-preference){
+  .icobtn:active,.topnav .pill:active{transform:scale(.94)}
+}
+
+/* ── حجاب النافذة: تعتيمٌ وطمسٌ يُبعد ما خلفها عن البال ── */
+.modal{-webkit-backdrop-filter:blur(18px) saturate(1.2);
+       backdrop-filter:blur(18px) saturate(1.2)}
+
+@media (prefers-reduced-transparency:reduce){
+  .icobtn,.topnav .pill{background:var(--surface-soft);backdrop-filter:none;
+    -webkit-backdrop-filter:none;border-color:var(--hairline)}
+  .modal{backdrop-filter:none;-webkit-backdrop-filter:none}
+}
+
 /* الطبقة العائمة تأخذ الزجاج بالاسم لا بالصنف — فلا تُعدَّل الواجهة */
 .topnav,
 aside.side#side,
