@@ -5680,6 +5680,11 @@ window.__fmacApi = function(url, opts){
 <script type="module" src="./js/fmac-fitness-ui.js"></script>
 <script type="module" src="./js/fmac-schools-ui.js"></script>
 <script type="module" src="./js/fmac-router.js"></script>
+<!-- طبقة الحركة: Lenis للتمرير وGSAP لعدّ الأرقام. مستضافتان
+     محلّيّاً كبقيّة الموقع — يعمل في الصالة بلا شبكة. -->
+<script src="./vendor/gsap.js" defer></script>
+<script src="./vendor/lenis.js" defer></script>
+<script type="module" src="./js/fmac-motion.js"></script>
 <script>
 /* ================= FMAC tracker — roles + Google Sheet sync ================= */
 window.addEventListener('error',function(ev){
@@ -6282,6 +6287,8 @@ function buildView(){
   curSport=SPORTS[0]||''; cur=view.length?view[0].id:''; curDay=0;
 }
 function start(){
+  /* طبقة الحركة بعد الإقلاع: التمرير وعدّ الأرقام */
+  try{ window.__fmacMotion && window.__fmacMotion.init(); }catch(e){}
   /* السِمة حُسمت في <head>؛ هنا تُرسم أيقونة المفتاح ويُبدَّل الشعار */
   try{ applyTheme(themePref(), false); }catch(e){}
   $('who').innerHTML=avatar({name:user.name,photo:user.photo},28)+
@@ -14944,6 +14951,8 @@ function renderHome(){
      عرض الصفحة، فلم يظهر قطّ. */
   renderPulse();
   renderNatBanner(); renderPerf(); renderVisStrip(); renderCalPanel();
+  /* الأرقام الجديدة تُعدّ كذلك، والأسطح الجديدة تُعفى من التمرير العامّ */
+  try{ const M=window.__fmacMotion; if(M){ M.count($('homeView')); M.rescan(); } }catch(e){}
   try{ renderTopFilters(); renderLivePill(); renderPageHead(); }catch(e){}
   const lg=$('legacyDash'); if(lg) lg.hidden=true;
   ['cmpPanel','heatPanel','rvqPanel','repPanel','sportsPanel'].forEach(function(id){
