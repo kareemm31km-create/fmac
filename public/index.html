@@ -3747,7 +3747,11 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
   border-color:color-mix(in srgb,var(--brand) 50%,transparent)}
 .rvpill .d{width:7px;height:7px;border-radius:999px;background:var(--brand);flex:none;
   box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 20%,transparent)}
-.rvpill .x{color:var(--brand)}
+/* سهمٌ مرسوم لا محرف: ▸ ليس في Tajawal فيسقط إلى خطٍّ احتياطيّ
+   بوزنٍ غريب. ويُقلَب مع الاتجاه — يشير حيث يمضي القارئ. */
+.rvpill .x{color:var(--brand);display:inline-flex;align-items:center}
+.rvpill .x .di{width:15px;height:15px}
+[dir="rtl"] .rvpill .x{transform:scaleX(-1)}
 /* 44 لا 40 — أصغر هدفٍ تشترطه Apple للإصبع */
 .icobtn{position:relative;width:44px;height:44px;border-radius:12px;display:grid;
   place-items:center;flex:none;
@@ -13545,7 +13549,7 @@ function renderLivePill(){
   p.hidden = !on;
   if(!on) return;
   p.innerHTML='<span class="d"></span>متابعة الحصة الفورية'+
-    '<span class="x">▸</span>';
+    '<span class="x">'+di('chev')+'</span>';
 }
 /* فتح قائمة واحدة وإغلاق ما عداها */
 function openMenu(id){
