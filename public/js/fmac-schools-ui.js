@@ -70,7 +70,7 @@ const STYLE = `
 .sv-l{display:block;font-size:13px;color:var(--charcoal);margin:12px 0 5px}
 .sv-in{width:100%;background:var(--field-bg);color:var(--ink-deep);border:1px solid var(--field-edge);
   border-radius:var(--r-control,12px);padding:10px 12px;font:14px inherit}
-.sv-in:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(59,157,255,.13)}
+.sv-in:focus{outline:none;border-color:var(--brand);box-shadow:var(--ring)}
 .sv-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
 .sv-chips button{background:var(--chip-bg);border:1px solid var(--chip-edge);color:var(--chip-ink);
   border-radius:999px;padding:6px 13px;font:inherit;font-size:13px;cursor:pointer}
