@@ -2090,6 +2090,18 @@ body.hasside .wrap{padding-inline-start:calc(246px + var(--s-xxl));max-width:152
 .pcl{font-size:13px;color:var(--steel);letter-spacing:.2px}
 .pcv{font-size:30px;font-weight:800;line-height:1.15;color:var(--c)}
 .pcs{font-size:13px;color:var(--stone)}
+/* صفّ المؤشّرات: أربعةٌ في سطر، ولكلٍّ اتجاهه تحت رقمه */
+.kgrid.pulse4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;
+  margin-bottom:16px}
+@media (max-width:1240px){.kgrid.pulse4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.kgrid.pulse4{grid-template-columns:minmax(0,1fr)}}
+.pc{position:relative;overflow:hidden}
+.pcr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pcd{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pcd.up{color:var(--success)} .pcd.dn{color:var(--critical)} .pcd.flat{color:var(--stone)}
+/* الخطّ خلف الرقم لا فوقه: يُلمَح ولا يُقرأ */
+.pcsp{position:absolute;inset-inline:0;bottom:0;height:40px;opacity:.5;pointer-events:none}
+.pcsp svg{width:100%;height:100%;display:block}
 .waitline{display:flex;align-items:center;gap:10px;width:100%;text-align:start;font:inherit;
   font-size:15px;color:var(--ink);cursor:pointer;margin-bottom:var(--s-xl);
   background:color-mix(in srgb,var(--ai) 9%,var(--surface));
@@ -5030,6 +5042,9 @@ aside.side#side::before,
            يميناً، فيُقرأ أوّلاً في العربية. -->
       <div class="filters" id="dashFilters" hidden></div>
 
+      <!-- ١ — أين نحن الآن: أربعة أرقامٍ تُقرأ من بعيد، ومعها اتجاهها -->
+      <div class="kgrid pulse4" id="pulse"></div>
+
       <!-- ٢ — المشاركات القادمة: شريط شهور وبطاقات، يحتاج العرض -->
             <section class="panel" id="calPanel">
         <div class="sc-head"><span class="ci" id="calIco"></span>
@@ -5059,8 +5074,7 @@ aside.side#side::before,
 
       <!-- ٨ الأداء العام · ٩ زيارات المدارس · ٩ الميداليات —
            ثلاثة في صفّ: لا حلقة وحيدة بجانبها فراغ. -->
-      <div class="drow three">
-        <div class="kgrid k4" id="kgrid"></div>
+      <div class="drow">
         <div id="schoolHost"></div>
                 <section class="panel" id="medPanel">
           <div class="ch"><h3 id="medTitle">الميداليات</h3><span class="ci" id="medIco"></span></div>
@@ -11076,12 +11090,28 @@ function drawWeekChart(){
    أربعة أرقام · سطر ما ينتظرك · سجلّ ما يجري في الموقع · الألعاب والمدربون */
 
 /* الرقم مع دلالته — يفتح موضعه بالضغط */
-function pulseCard(k,lbl,val,sub,col,go){
+/* الفرق عن القياس السابق — سهمٌ ونسبة. و«—» حين لا سابقَ يُقاس
+   عليه: الفراغ ليس صفراً (§24). */
+function pcDelta(series){
+  if(!Array.isArray(series)) return '';
+  const v=series.filter(x=>typeof x==='number');
+  if(v.length<2) return '';
+  const now=v[v.length-1], was=v[v.length-2];
+  if(!was) return '';
+  const d=Math.round((now-was)/was*100);
+  if(!d) return '<span class="pcd flat">— ثابت</span>';
+  return '<span class="pcd '+(d>0?'up':'dn')+'">'+(d>0?'▲ ':'▼ ')+Math.abs(d)+'%</span>';
+}
+function pulseCard(k,lbl,val,sub,col,go,series,hist){
+  const line=Array.isArray(hist)?hist:series;
+  const sp=Array.isArray(line)&&line.filter(x=>typeof x==='number').length>1
+    ? '<span class="pcsp">'+sparkSvg(line.filter(x=>typeof x==='number'))+'</span>' : '';
   return '<button class="pc'+(go?' clik':'')+'" style="--c:'+col+'"'+
     (go?' data-pgo="'+esc(go)+'"':'')+'>'+
     '<span class="pcl">'+esc(lbl)+'</span>'+
     '<span class="pcv" dir="ltr">'+esc(String(val))+'</span>'+
-    '<span class="pcs">'+esc(sub)+'</span></button>';
+    '<span class="pcr">'+pcDelta(series)+'<span class="pcs">'+esc(sub)+'</span></span>'+
+    sp+'</button>';
 }
 function renderPulse(){
   const h=$('pulse'); if(!h) return;
@@ -11094,10 +11124,16 @@ function renderPulse(){
                     : n===2 ? 'مدربان لم يسلّما'
                     : n<=10 ? n+' مدربين لم يسلّموا'
                             : n+' مدرباً لم يسلّم';
+  /* تاريخ النادي الأسبوعيّ — منه يُرسم الاتجاه ويُحسب الفرق */
+  const hw=(typeof histWeeks==='function'?histWeeks():[]).slice(-12);
+  const execSeries=hw.map(r=>typeof r.score==='number'?r.score:null)
+    .filter(x=>typeof x==='number');
   h.innerHTML=[
-    pulseCard('exec','نسبة التنفيذ', M.exec+'%',
+    pulseCard('exec','نسبة التنفيذ', M.exec===null?'—':M.exec+'%',
       M.execItems? 'من '+nBand(M.execItems)+' مرصود':'لم يبدأ الرصد بعد',
-      mixColor(M.exec), 'reports'),
+      /* لا فرقَ بلا قياسٍ حاضر: «—» ومعها ▲71% تناقض. التاريخ يُرسم،
+         والفرق يُسكَت حتى يُقاس الحاضر (§24). */
+      mixColor(M.exec), 'reports', M.exec===null?null:execSeries, execSeries),
     pulseCard('rec','الخطط الواصلة', M.received+' / '+M.coaches,
       M.late? lateTxt(M.late):'وصلت كل الخطط',
       (M.coaches&&M.received===M.coaches)?'var(--success)':'var(--attention)', 'reports'),
@@ -14888,6 +14924,9 @@ function renderHome(){
      المؤشّرات · الميداليات · المنحنى · الأجندة — وما عداها في صفحته */
   dashFilters(); renderGreet(); renderKpis(); renderStages(); renderSchoolCard();
   renderMedals(); renderAgenda(); renderBell(); markClubWide();
+  /* صفّ المؤشّرات كان يُرسم من auditPush وحدها — أي بعد حدثٍ لا عند
+     عرض الصفحة، فلم يظهر قطّ. */
+  renderPulse();
   renderNatBanner(); renderPerf(); renderVisStrip(); renderCalPanel();
   try{ renderTopFilters(); renderLivePill(); renderPageHead(); }catch(e){}
   const lg=$('legacyDash'); if(lg) lg.hidden=true;
