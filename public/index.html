@@ -4228,6 +4228,102 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
 
 /* القوائم المنسدلة والنوافذ */
 .seapanel,.bellpanel,.qapanel,.fmenu,.coachpop{box-shadow:var(--shadow-pop)}
+
+/* ======================================================================
+   Liquid Glass — الطبقة العائمة وحدها
+   ====================================================================== */
+/* الطبقة العائمة تأخذ الزجاج بالاسم لا بالصنف — فلا تُعدَّل الواجهة */
+.topnav,
+aside.side#side,
+.seapanel,.bellpanel,.qapanel,.fmenu,.coachpop,
+.modal .sheet,.modal .box,
+.rvpill,
+.lv-pick{ }
+:root{
+  --lg-tint: rgba(255,255,255,.055);
+  --lg-tint-2: rgba(255,255,255,.015);
+  --lg-rim: rgba(255,255,255,.34);
+  --lg-rim-soft: rgba(255,255,255,.07);
+  --lg-blur: 22px;
+  --lg-sat: 1.7;
+}
+:root[data-theme="light"]{
+  --lg-tint: rgba(255,255,255,.62);
+  --lg-tint-2: rgba(255,255,255,.34);
+  --lg-rim: rgba(255,255,255,.9);
+  --lg-rim-soft: rgba(15,38,62,.08);
+  --lg-blur: 20px;
+  --lg-sat: 1.5;
+}
+
+/* بلا position هنا: الشريط sticky والقائمة fixed والقوائم absolute،
+   وفرضُ relative عليها يُنزلها من مواضعها ويكسر التخطيط. */
+.topnav,
+aside.side#side,
+.seapanel,.bellpanel,.qapanel,.fmenu,.coachpop,
+.modal .sheet,.modal .box,
+.rvpill,
+.lv-pick,
+.glass{
+  background:linear-gradient(160deg,var(--lg-tint),var(--lg-tint-2) 58%,transparent);
+  -webkit-backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat));
+          backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat));
+  border:1px solid var(--lg-rim-soft);
+  isolation:isolate;
+}
+/* البريق: حافّةٌ عُليا لامعة ثمّ تخفت — ضوءٌ يمسّ الحرف */
+.topnav::before,
+aside.side#side::before,
+.seapanel::before,.bellpanel::before,.qapanel::before,.fmenu::before,.coachpop::before,
+.modal .sheet::before,.modal .box::before,
+.rvpill::before,
+.lv-pick::before,
+.glass::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;
+  padding:1px;
+  background:linear-gradient(145deg,var(--lg-rim),transparent 42%,transparent 62%,var(--lg-rim-soft));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+          mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+}
+/* الانكسار: حزامٌ عند الحافّة يثني ما تحته — هنا يصير «سائلاً» */
+@supports (backdrop-filter:url(#lgLens)){
+  .seapanel::after,.bellpanel::after,.qapanel::after,.fmenu::after,.coachpop::after,
+  .modal .sheet::after,.modal .box::after,
+  .rvpill::after,
+  .glass::after{
+    content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+    -webkit-backdrop-filter:url(#lgLens);backdrop-filter:url(#lgLens);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+            mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;
+    padding:10px;
+  }
+}
+/* الساكنون وحدهم يحتاجون محوراً يتعلّق به الأثر */
+.modal .sheet,.modal .box,.rvpill,.lv-pick,.glass{position:relative}
+
+.topnav > *,aside.side#side > *,
+.seapanel > *,.bellpanel > *,.qapanel > *,.fmenu > *,.coachpop > *,
+.modal .sheet > *,.modal .box > *,
+.glass > *{position:relative;z-index:2}
+
+/* بلا دعمٍ للطمس: سطحٌ معتم — الزجاج بلا ما خلفه ضبابٌ لا زجاج */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .topnav,aside.side#side,.seapanel,.bellpanel,.qapanel,.fmenu,.coachpop,
+  .modal .sheet,.modal .box,.glass{background:var(--surface);border-color:var(--hairline)}
+}
+/* ومن طلب تقليل الشفافيّة يُعطى سطحاً يقرؤه */
+@media (prefers-reduced-transparency:reduce){
+  .topnav,aside.side#side,.seapanel,.bellpanel,.qapanel,.fmenu,.coachpop,
+  .modal .sheet,.modal .box,.rvpill,.lv-pick,.glass{
+    background:var(--surface)!important;backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;border-color:var(--hairline)}
+  .topnav::before,aside.side#side::before,.seapanel::before,.bellpanel::before,
+  .qapanel::before,.fmenu::before,.coachpop::before,.modal .sheet::before,
+  .modal .box::before,.rvpill::before,.lv-pick::before,.glass::before,
+  .glass::after,.seapanel::after,.bellpanel::after,.modal .sheet::after{display:none}
+}
 @media (prefers-reduced-motion:no-preference){
   /* تبديل المظهر: الألوان تتمازج لحظةً بدل أن تنقلب دفعةً واحدة.
      تُفرض أثناء التبديل وحده — لا انتقال دائم على كلّ عنصر. */
@@ -4341,6 +4437,18 @@ input::placeholder,textarea::placeholder{color:var(--field-ph)}
 </style>
 </head>
 <body>
+<!-- عدسة الزجاج السائل: خريطة إزاحةٍ تثني ما خلف الحافّة.
+     القناتان R وG تحملان الإزاحة أفقيّاً ورأسيّاً؛ الوسط محايد
+     (128,128) فلا يُزاح، والحوافّ تدفع إلى الداخل فتنكسر الصورة. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="lgLens" x="0%" y="0%" width="100%" height="100%"
+          color-interpolation-filters="sRGB">
+    <feImage result="map" preserveAspectRatio="none"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cdefs%3E%3ClinearGradient id='x' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23ff8080'/%3E%3Cstop offset='.18' stop-color='%23808080'/%3E%3Cstop offset='.82' stop-color='%23808080'/%3E%3Cstop offset='1' stop-color='%23008080'/%3E%3C/linearGradient%3E%3ClinearGradient id='y' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2380ff80' stop-opacity='.55'/%3E%3Cstop offset='.18' stop-color='%23808080' stop-opacity='0'/%3E%3Cstop offset='.82' stop-color='%23808080' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='%23800080' stop-opacity='.55'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='200' height='200' fill='url(%23x)'/%3E%3Crect width='200' height='200' fill='url(%23y)'/%3E%3C/svg%3E"/>
+    <feDisplacementMap in="SourceGraphic" in2="map" scale="22"
+      xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
 <noscript><div class="bootmsg"><b>الصفحة محتاجة JavaScript.</b>
   افتح الملف في متصفح كامل (Safari أو Chrome) — العرض السريع للملفات في الآيباد/الآيفون
   والمعاينة داخل واتساب أو البريد لا تشغّل JavaScript، فتظهر الصفحة فاضية.</div></noscript>
