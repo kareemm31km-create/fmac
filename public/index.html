@@ -3749,6 +3749,14 @@ body{font-size:15px;line-height:1.75;color:var(--ink)}
   box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 20%,transparent)}
 /* سهمٌ مرسوم لا محرف: ▸ ليس في Tajawal فيسقط إلى خطٍّ احتياطيّ
    بوزنٍ غريب. ويُقلَب مع الاتجاه — يشير حيث يمضي القارئ. */
+/* الحبّة زرٌّ ذو لون لا كروم محايد: تحتفظ بتلوينها وتأخذ المادّة
+   وحدها. والزجاج المحايد كان يسلبها لونها، وحلقتُه اللامعة تبدو
+   عند طرفها المستدير دائرةً ثانية بجوار النقطة. */
+.rvpill{-webkit-backdrop-filter:blur(14px) saturate(var(--lg-sat));
+        backdrop-filter:blur(14px) saturate(var(--lg-sat))}
+@media (prefers-reduced-transparency:reduce){
+  .rvpill{backdrop-filter:none;-webkit-backdrop-filter:none}
+}
 .rvpill .x{color:var(--brand);display:inline-flex;align-items:center}
 .rvpill .x .di{width:15px;height:15px}
 [dir="rtl"] .rvpill .x{transform:scaleX(-1)}
@@ -4309,7 +4317,6 @@ aside.side#side,
 aside.side#side,
 .seapanel,.bellpanel,.qapanel,.fmenu,.coachpop,
 .modal .sheet,.modal .box,
-.rvpill,
 .lv-pick,
 .glass{
   background:linear-gradient(160deg,var(--lg-tint),var(--lg-tint-2) 58%,transparent);
@@ -4323,7 +4330,6 @@ aside.side#side,
 aside.side#side::before,
 .seapanel::before,.bellpanel::before,.qapanel::before,.fmenu::before,.coachpop::before,
 .modal .sheet::before,.modal .box::before,
-.rvpill::before,
 .lv-pick::before,
 .glass::before{
   content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;
@@ -4337,8 +4343,7 @@ aside.side#side::before,
 @supports (backdrop-filter:url(#lgLens)){
   .seapanel::after,.bellpanel::after,.qapanel::after,.fmenu::after,.coachpop::after,
   .modal .sheet::after,.modal .box::after,
-  .rvpill::after,
-  .glass::after{
+    .glass::after{
     content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
     -webkit-backdrop-filter:url(#lgLens);backdrop-filter:url(#lgLens);
     -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
@@ -4348,7 +4353,7 @@ aside.side#side::before,
   }
 }
 /* الساكنون وحدهم يحتاجون محوراً يتعلّق به الأثر */
-.modal .sheet,.modal .box,.rvpill,.lv-pick,.glass{position:relative}
+.modal .sheet,.modal .box,.lv-pick,.glass{position:relative}
 
 .topnav > *,aside.side#side > *,
 .seapanel > *,.bellpanel > *,.qapanel > *,.fmenu > *,.coachpop > *,
@@ -4363,12 +4368,12 @@ aside.side#side::before,
 /* ومن طلب تقليل الشفافيّة يُعطى سطحاً يقرؤه */
 @media (prefers-reduced-transparency:reduce){
   .topnav,aside.side#side,.seapanel,.bellpanel,.qapanel,.fmenu,.coachpop,
-  .modal .sheet,.modal .box,.rvpill,.lv-pick,.glass{
+  .modal .sheet,.modal .box,.lv-pick,.glass{
     background:var(--surface)!important;backdrop-filter:none!important;
     -webkit-backdrop-filter:none!important;border-color:var(--hairline)}
   .topnav::before,aside.side#side::before,.seapanel::before,.bellpanel::before,
   .qapanel::before,.fmenu::before,.coachpop::before,.modal .sheet::before,
-  .modal .box::before,.rvpill::before,.lv-pick::before,.glass::before,
+  .modal .box::before,.lv-pick::before,.glass::before,
   .glass::after,.seapanel::after,.bellpanel::after,.modal .sheet::after{display:none}
 }
 @media (prefers-reduced-motion:no-preference){
