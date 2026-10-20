@@ -23,13 +23,14 @@ html,body{margin:0;height:100%;background:#121110;
 /* معاينةٌ بلا مصادقة: تُبنى الشاشةُ ويُعطَّل كلُّ نداءٍ خارجيّ.
    لفحص الشكل وحدَه — لا تُسجّل دخولاً ولا تكتب شيئاً. */
 const L = await import('./js/fmac-login-ui.js?v=' + Date.now());
-const w = L.build('signin', {
-  signin: async () => ({ ok: false, error: 'معاينة — لا دخول فعليّ' }),
-  request: async () => ({ ok: true }),
-  reset: async () => ({ ok: true }),
-  change: async () => ({ ok: true }),
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+L.build('auth', {
+  relang: () => { location.reload(); },
+  async signIn() { await wait(900); return { ok: false, msg: 'معاينة — لا دخول فعليّ.' }; },
+  async reset() { await wait(500); return { ok: true, msg: 'معاينة — لم تُرسل رسالة.' }; },
+  async request() { await wait(900); return { ok: true }; },
+  async change() { await wait(600); return { ok: false, msg: 'معاينة — لا تغيير فعليّ.' }; },
 });
-document.body.appendChild(w);
 window.__login = L;
 </script>
 </body></html>

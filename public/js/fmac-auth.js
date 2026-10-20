@@ -47,73 +47,51 @@ const MSG = {
 };
 const say = (code) => MSG[code] || 'تعذّر الدخول. حاول مرّة أخرى.';
 
-/* السطح الحالي — واحد لا أكثر، حتى لا تتراكم الشاشات فوق بعضها */
+/* السطح الحالي — واحد لا أكثر، حتى لا تتراكم الشاشات فوق بعضها.
+   الإزالةُ تمرّ بالواجهة لأنّ لها جذر React يُفكَّك؛ ومجرّدُ remove
+   يترك الجذر معلّقاً. */
 let box = null;
-const drop = () => { if (box) { box.remove(); box = null; } };
-
-const setMsg = (w, id, text, ok) => {
-  const el = w.querySelector('#' + id);
-  if (!el) return;
-  el.className = 'msg' + (ok ? ' ok' : '');
-  el.textContent = text;
-};
+const drop = () => { if (box) { UI.destroy(); box = null; } };
 
 /* سلوك شاشة الدخول والطلب — المبنى في fmac-login-ui.js والسلوك هنا */
 function authScreen() {
   drop();
   box = UI.build('auth', {
     relang: () => authScreen(),
-    async signIn(w, t) {
-      const go = w.querySelector('#fmGo');
-      setMsg(w, 'fmErr', '');
-      go.disabled = true;
-      go.textContent = t.going;
+    /* تُرجع {ok} أو {ok:false,msg}. الانتظارُ والرسالةُ من شأن
+       الواجهة؛ وكان هذا يُعدّل الزرّ والعُقَد بيده. */
+    async signIn({ email, password, remember }) {
       try {
-        const keep = w.querySelector('#fmRem').checked;
         /* «تذكّرني» مطفأة ⇒ الجلسة تنتهي بإغلاق التبويب */
         await setPersistence(auth,
-          keep ? browserLocalPersistence : browserSessionPersistence);
-        await signInWithEmailAndPassword(auth,
-          w.querySelector('#fmEmail').value.trim(), w.querySelector('#fmPass').value);
+          remember ? browserLocalPersistence : browserSessionPersistence);
+        await signInWithEmailAndPassword(auth, email, password);
         /* onAuthStateChanged يكمل الباقي ويزيل الشاشة */
+        return { ok: true };
       } catch (e) {
-        setMsg(w, 'fmErr', say(e && e.code));
-        go.disabled = false;
-        go.innerHTML = '';
-        go.textContent = t.go;
+        return { ok: false, msg: say(e && e.code) };
       }
     },
-    async reset(w, t) {
-      const a = w.querySelector('#fmEmail').value.trim();
-      if (!a) { setMsg(w, 'fmErr', t.needEmail); return; }
+    async reset(email) {
       try {
-        await sendPasswordResetEmail(auth, a);
-        setMsg(w, 'fmErr', t.resetSent, true);
-      } catch (e) { setMsg(w, 'fmErr', say(e && e.code)); }
+        await sendPasswordResetEmail(auth, email);
+        return { ok: true, msg: UI.texts[UI.lang()].resetSent };
+      } catch (e) { return { ok: false, msg: say(e && e.code) }; }
     },
-    async request(w, t) {
-      const g = (id) => (w.querySelector('#' + id) || {}).value || '';
-      const name = g('rqName').trim(), email = g('rqEmail').trim();
-      if (!name || !email) { setMsg(w, 'rqMsg', t.needName); return; }
-      const btn = w.querySelector('#rqGo');
-      btn.disabled = true;
-      btn.textContent = t.sending;
+    async request(v) {
       try {
         /* الحقول هي ما تقبله القاعدة حرفياً — أيّ زيادة تُرفض */
         await addDoc(collection(db, COL.signups), {
-          name: name.slice(0, 60), email: email.slice(0, 120),
-          sport: g('rqSport').slice(0, 40), phone: g('rqPhone').trim().slice(0, 30),
-          note: g('rqNote').trim().slice(0, 400),
+          name: String(v.name || '').trim().slice(0, 60),
+          email: String(v.email || '').trim().slice(0, 120),
+          sport: String(v.sport || '').slice(0, 40),
+          phone: String(v.phone || '').trim().slice(0, 30),
+          note: String(v.note || '').trim().slice(0, 400),
           at: new Date().toISOString(), state: 'جديد',
         });
-        w.querySelector('#fmForm').innerHTML =
-          '<h1>' + t.reqTitle + '</h1><p class="lead">' + t.sent + '</p>' +
-          '<button class="go" id="rqBack">' + t.backIn + '</button>';
-        w.querySelector('#rqBack').addEventListener('click', () => authScreen());
+        return { ok: true };
       } catch (e) {
-        btn.disabled = false;
-        btn.textContent = t.send;
-        setMsg(w, 'rqMsg', 'تعذّر إرسال الطلب: ' + ((e && e.message) || ''));
+        return { ok: false, msg: 'تعذّر إرسال الطلب: ' + ((e && e.message) || '') };
       }
     },
   });
@@ -125,14 +103,11 @@ function changeScreen(uid, resolve, profile) {
   drop();
   box = UI.build('change', {
     relang: () => changeScreen(uid, resolve, profile),
-    async change(w, t) {
-      const a = w.querySelector('#chA').value, b = w.querySelector('#chB').value;
-      if (a.length < 8) { setMsg(w, 'chMsg', t.chShort); return; }
-      if (a === SHARED_PASSWORD) { setMsg(w, 'chMsg', t.chSame); return; }
-      if (a !== b) { setMsg(w, 'chMsg', t.chDiff); return; }
-      const btn = w.querySelector('#chGo');
-      btn.disabled = true;
-      btn.textContent = t.chSaving;
+    async change({ a, b }) {
+      const t = UI.texts[UI.lang()];
+      if (a.length < 8) return { ok: false, msg: t.chShort };
+      if (a === SHARED_PASSWORD) return { ok: false, msg: t.chSame };
+      if (a !== b) return { ok: false, msg: t.chDiff };
       try {
         await updatePassword(auth.currentUser, a);
         /* القاعدة تتيح لصاحب الحساب هذا الحقل وحده */
@@ -140,10 +115,9 @@ function changeScreen(uid, resolve, profile) {
         PROFILE = Object.assign({}, profile, { mustChange: false });
         drop();
         resolve(PROFILE);
+        return { ok: true };
       } catch (e) {
-        btn.disabled = false;
-        btn.textContent = t.chGo;
-        setMsg(w, 'chMsg', say(e && e.code) + ' ' + ((e && e.message) || ''));
+        return { ok: false, msg: say(e && e.code) + ' ' + ((e && e.message) || '') };
       }
     },
   });
@@ -167,8 +141,7 @@ export function ready() {
         snap = await getDoc(doc(db, 'users', u.uid));
       } catch (e) {
         if (!box) authScreen();
-        const el = document.getElementById('fmErr');
-        if (el) el.textContent = 'تعذّر قراءة ملفّ المستخدم.';
+        UI.setError('تعذّر قراءة ملفّ المستخدم.');
         return;
       }
       if (!snap.exists()) {
@@ -187,8 +160,7 @@ export function ready() {
             return;
           } catch (e) {
             if (!box) authScreen();
-            const el = document.getElementById('fmErr');
-            if (el) el.textContent = 'تعذّر إنشاء ملفّ الإدارة: ' + (e && e.message);
+            UI.setError('تعذّر إنشاء ملفّ الإدارة: ' + (e && e.message));
             return;
           }
         }
@@ -196,11 +168,8 @@ export function ready() {
         const badUid = u.uid;
         await signOut(auth);
         if (!box) authScreen();
-        const el = document.getElementById('fmErr');
-        if (el) {
-          el.innerHTML = 'الحساب موجود لكن بلا ملفّ في المستخدمين.<br>' +
-            'المعرّف (UID):<code class="uid">' + badUid + '</code>';
-        }
+        UI.setError({ html: 'الحساب موجود لكن بلا ملفّ في المستخدمين.<br>' +
+          'المعرّف (UID):<code class="uid">' + badUid + '</code>' });
         console.log('FMAC uid =', badUid);
         return;
       }
