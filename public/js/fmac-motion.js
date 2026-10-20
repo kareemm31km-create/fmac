@@ -91,8 +91,21 @@ function countUp(el) {
   });
 }
 
-/* ما يُعدّ: أرقام المؤشّرات ونسبة الحلقة — لا كلّ رقمٍ في الصفحة */
-const COUNTED = '.pcv, .stgring .v b, .npc b, .mk b';
+/* ما يُعدّ: الأرقامُ الكبيرة في الشاشات كلّها — لا كلُّ رقمٍ في
+   الصفحة. مسحتُ الشاشاتِ العشرَ وأخذتُ ما حجمُه 19px فأكثر. */
+const COUNTED = [
+  /* بطاقةُ الإجراء تحمل اسماً لا رقماً، وفيه سنةٌ وأسبوع —
+     فعدُّها يُظهر «أكتوبر 1839». العنوانُ ليس قياساً. */
+  '.pc:not(.pcact) .pcv',
+  '.stgring .v b',   /* نسبة الحلقة */
+  '.npc b', '.mk b', /* المنتخب والميداليّات */
+  '.acs .acsn',      /* عدّادات الإجراءات */
+  '.pfr .n',         /* صفوف الأداء */
+  '.sv-k b',         /* مؤشّرات زيارات المدارس */
+  '.kpi2 .v',        /* بطاقات المؤشّر الكبيرة */
+  '.dnc b',          /* قلب الحلقة الدائريّة */
+  '.natk2 .nq b',    /* أرقام بطاقة المنتخب */
+].join(', ');
 
 let io = null;
 export function count(root) {
@@ -162,12 +175,51 @@ export function draw(root) {
   });
 }
 
+/* ── كبسولةُ القسم المفتوح ─────────────────────────────────
+   كانت الخلفيّةُ تُرسم على الزرّ نفسه، فتختفي من واحدٍ وتظهر في
+   آخرَ في الإطار نفسه — قفزةٌ لا انتقال. صارت جسماً واحداً يتحرّك
+   بينهما، فتتبعه العين. والقائمةُ تنقلب أفقيّةً على الشاشات
+   الضيّقة، فنحرّك المحورين معاً لا محوراً واحداً. */
+let pip = null;
+export function nav(container) {
+  const nv = container || document.getElementById('sideNav');
+  if (!nv) return;
+  const on = nv.querySelector('[aria-current="true"]');
+  if (!pip || !pip.isConnected) {
+    pip = nv.querySelector('.navpip');
+    if (!pip) {
+      pip = document.createElement('span');
+      pip.className = 'navpip';
+      pip.setAttribute('aria-hidden', 'true');
+      nv.insertBefore(pip, nv.firstChild);
+    }
+  }
+  if (!on || !on.offsetParent) { pip.style.opacity = '0'; return; }
+  const r = on.getBoundingClientRect(), p = nv.getBoundingClientRect();
+  if (!r.width || !r.height) { pip.style.opacity = '0'; return; }
+  /* أوّلُ وضعٍ يُثبَّت بلا حركة، وإلّا انزلقت الكبسولةُ من الزاوية */
+  const first = pip.style.opacity !== '1';
+  if (first) pip.style.transition = 'none';
+  pip.style.width = r.width + 'px';
+  pip.style.height = r.height + 'px';
+  pip.style.transform = 'translate(' + (r.left - p.left + nv.scrollLeft) + 'px,'
+    + (r.top - p.top + nv.scrollTop) + 'px)';
+  pip.style.opacity = '1';
+  if (first) { void pip.offsetWidth; pip.style.transition = ''; }
+}
+let navTick = 0;
+addEventListener('resize', () => {
+  clearTimeout(navTick);
+  navTick = setTimeout(() => nav(), 120);
+});
+
 /* ── الإقلاع ─────────────────────────────────────────────── */
 export function init() {
   startScroll();
   count();
+  nav();
 }
 RM.addEventListener('change', () => { if (RM.matches) stopScroll(); });
 
-window.__fmacMotion = { init, count, rescan, stopScroll, view, draw };
+window.__fmacMotion = { init, count, rescan, stopScroll, view, draw, nav };
 export default window.__fmacMotion;

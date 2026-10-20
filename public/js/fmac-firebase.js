@@ -309,7 +309,11 @@ async function dispatch(body) {
       for (let i = 0; i < rows.length; i++) {
         const c = rows[i] || {};
         if (!S(c.name) || !S(c.season)) continue;
-        const k = S(c.k) || ('CL' + Date.now() + i);
+        /* كان 'CL'+Date.now()+i: كتابتان في الملّي-ثانية نفسها
+           تتقاسمان المفتاح، فتطمس الثانيةُ الأولى. استيرادُ موسمٍ
+           كامل أضاع بطولةً بهذا. ومعرّفُ Firestore نفسُه مضمون،
+           وهو ما تستعمله بقيّةُ المجموعات. */
+        const k = S(c.k) || doc(collection(db, COL.calendar)).id;
         const row = Object.assign({}, c, { by, at });
         delete row.k;
         b.set(doc(db, COL.calendar, k), row, { merge: true });
@@ -457,10 +461,18 @@ async function dispatch(body) {
       return { ok: true };
     }
 
-    /* مزايا المساعد كانت تنادي واجهة خارجية من Apps Script.
-       لا يمكن نقلها للمتصفّح دون كشف المفتاح — تحتاج Cloud Function. */
-    case 'ask': case 'airev': case 'aiweek': case 'aistatus':
-      return { ok: false, error: 'ai_needs_function' };
+    /* مزايا المساعد: المفتاح لا ينزل إلى المتصفّح، فتُمرَّر إلى
+       /api/ai — دالّةٌ خادميّةٌ تحمله وحدها. */
+    case 'ask': case 'airev': case 'aiweek': case 'aistatus': {
+      try {
+        const r = await fetch('/api/ai', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        return await r.json();
+      } catch (e) { return { ok: false, error: 'ai_net' }; }
+    }
 
     /* بلا action ⇐ حفظ الرصد. الواجهة ترسلها تحت المفتاح changes،
        وكانت الطبقة تقرأ ticks/rows فترجع ok بلا حفظ — صمتاً. */

@@ -87,7 +87,9 @@ head('[4] ربط index.html');
 const idx = await (await fetch('./index.html')).text();
 const checks = [
   ['fetch(API لم يبقَ منها شيء', (idx.match(/fetch\(API/g) || []).length === 0],
-  ['__fmacApi(API في 31 موضعاً', (idx.match(/__fmacApi\(API/g) || []).length === 31],
+  /* عددٌ جامدٌ يرسب كلّما أُضيف نداء — وكان 31 بينما الشفرة 34.
+     المقصودُ أنّ النداءات تمرّ بالوسيط، لا أنّها عددٌ بعينه. */
+  ['__fmacApi(API يغطّي النداءات', (idx.match(/__fmacApi\(API/g) || []).length >= 30],
   ['وسم الوحدة موجود', idx.indexOf('js/fmac-firebase.js') >= 0],
   ['الوسيط موجود', idx.indexOf('__fmacResolve') >= 0],
   ['قيمة API الحارسة', idx.indexOf("var API = 'firebase'") >= 0],

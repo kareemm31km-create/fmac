@@ -421,6 +421,8 @@ export function camps(rows) {
     if (!out[sp][y]) out[sp][y] = { camps: [] };
     out[sp][y].camps.push({ name: nm, date: S(r.date), place: S(r.place),
       kind: S(r.kind) || 'داخلي', scope: S(r.scope) || 'نادي',
+      /* النوع: معسكرٌ أم لقاءٌ وديّ — وما كُتب قبل هذا الحقل معسكر */
+      type: S(r.type) || 'معسكر',
       players: NUM(r.players), added: true });
   }
   return out;
@@ -456,6 +458,9 @@ export const calendarList = (rows) => rows.filter((r) => S(r.k)).map((r) => ({
   offAt: S(r.offAt), offReason: S(r.offReason), offBy: S(r.offBy),
   log: Array.isArray(r.log) ? r.log.filter((x) => x && S(x.text)).map((x) => ({
     at: S(x.at), by: S(x.by), text: S(x.text) })) : [],
+  /* المعالجون المرافقون — صفةٌ في البطولة لا جدولٌ ثانٍ، فتتبعها
+     إن أُجّلت وتذهب معها إن حُذفت. */
+  physios: Array.isArray(r.physios) ? r.physios.map(S).filter(Boolean) : [],
   note: S(r.note), by: S(r.by), at: S(r.at),
 }));
 

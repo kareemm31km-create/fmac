@@ -39,9 +39,50 @@ function resolvePath(urlPath) {
   return full;
 }
 
+/* المفتاح محلّيّاً من .env.local — ملفٌّ لا يدخل Git.
+   على Vercel يأتي من متغيّرات البيئة، فلا يُقرأ هذا الملفّ أصلاً. */
+async function loadEnv() {
+  for (const name of ['.env.local', '.env']) {
+    try {
+      const txt = await readFile(join(fileURLToPath(new URL('../', import.meta.url)), name), 'utf8');
+      /* PowerShell 5.1 يكتب BOM في أوّل الملفّ، فيلتصق باسم أوّل
+         متغيّر ويُفشل المطابقة بلا أثرٍ ظاهر. يُقشَر أوّلاً. */
+      for (const line of txt.replace(/^﻿/, '').split(/\r?\n/)) {
+        const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+        if (!m) continue;
+        const v = m[2].replace(/^["']|["']$/g, '');
+        if (!process.env[m[1]]) process.env[m[1]] = v;
+      }
+    } catch { /* لا ملفّ — لا بأس */ }
+  }
+}
+await loadEnv();
+
+/* نفس معالِج Vercel، حتى يكون ما يُختبر محلّيّاً هو ما يعمل منشوراً */
+let aiHandle = null;
+async function runAi(req, res) {
+  const chunks = [];
+  for await (const c of req) chunks.push(c);
+  let body = {};
+  try { body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch {}
+  if (!aiHandle) ({ handle: aiHandle } = await import('../api/ai.js'));
+  const out = await aiHandle(body);
+  res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store' });
+  res.end(JSON.stringify(out));
+}
+
 const server = createServer(async (req, res) => {
   const urlPath = req.url || '/';
   let file = resolvePath(urlPath);
+
+  if (urlPath.split('?')[0] === '/api/ai') {
+    try { await runAi(req, res); } catch (e) {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: false, error: 'ai_net' }));
+    }
+    return;
+  }
 
   /* مسارات نظيفة للصفحتين المستقلّتين — تطابق rewrites في vercel.json */
   const ALIAS = { '/accounts': '/_accounts.html', '/migrate': '/_migrate.html' };

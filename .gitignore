@@ -4,3 +4,6 @@ node_modules/
 Thumbs.db
 *.log
 public/_devserver.txt
+.env
+.env.*
+!.env.example
