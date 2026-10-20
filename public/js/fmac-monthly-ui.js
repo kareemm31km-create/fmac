@@ -26,8 +26,11 @@ const STYLE = `
 .mo-pill.ok{color:var(--success);border-color:color-mix(in srgb,var(--success) 33%,transparent);background:color-mix(in srgb,var(--success) 9%,transparent)}
 .mo-pill.late{color:var(--attention);border-color:color-mix(in srgb,var(--attention) 33%,transparent);background:color-mix(in srgb,var(--attention) 9%,transparent)}
 .mo-pill.bad{color:var(--critical);border-color:color-mix(in srgb,var(--critical) 33%,transparent);background:color-mix(in srgb,var(--critical) 9%,transparent)}
-button.mo-pill{cursor:pointer;font:inherit;font-size:11px}
-.mo-pill.on{color:var(--brand-soft);border-color:var(--brand);background:rgba(59,157,255,.14)}
+/* الزرُّ لا يرث حبرَ النصّ: قيمتُه الافتراضيّة buttontext — أسودُ
+   على سطحٍ غامق. يُصرَّح باللون. */
+button.mo-pill{cursor:pointer;font:inherit;font-size:11px;color:var(--ink)}
+.mo-pill.on{color:var(--brand-soft);border-color:var(--brand);
+  background:color-mix(in srgb,var(--brand) 14%,transparent)}
 .mo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .mo-item{background:var(--surface-soft,var(--surface-soft));border:1px solid var(--hairline);
   border-radius:12px;padding:14px;cursor:pointer;transition:border-color 0.15s}

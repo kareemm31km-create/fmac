@@ -3,31 +3,32 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FMAC — تفريغ البيانات</title>
 <style>
-:root{--brand:#3B9DFF;--ok:#21C77A;--warn:#F2A93B;--bad:#EF4D5A;--steel:#93A7BA}
+:root{--brand:#D08A42;--ok:#4FA86B;--warn:#D9C236;--bad:#E2594A;--steel:#978C7D}
 *{box-sizing:border-box}
-body{background:#050B14;color:#F4F8FC;font:14px/1.7 Tajawal,'Segoe UI',system-ui,sans-serif;
+body{background:#121110;color:#F7F3EC;font:14px/1.7 'Tajawal',system-ui,sans-serif;
   padding:22px;max-width:900px;margin:0 auto;direction:rtl}
 h1{font-size:20px;margin:0 0 4px}
 p.sub{color:var(--steel);font-size:12.5px;margin:0 0 6px}
-.card{background:#0D1A29;border:1px solid #20364C;border-radius:16px;padding:18px;margin:14px 0}
-.danger{border-color:#EF4D5A55;background:#1a1012}
+.card{background:#1A1816;border:1px solid #2A251F;border-radius:16px;padding:18px;margin:14px 0}
+.danger{border-color:#E2594A55;background:#1F1512}
 h3{font-size:15px;margin:0 0 10px}
 table{width:100%;border-collapse:collapse;font-size:13px}
-td,th{text-align:right;padding:7px 8px;border-bottom:1px solid #17283A}
+td,th{text-align:right;padding:7px 8px;border-bottom:1px solid #1F1B17}
 th{color:var(--steel);font-size:11.5px;font-weight:600}
 td.n{direction:ltr;text-align:left;font-variant-numeric:tabular-nums}
-button{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px 18px;
+button{background:var(--brand);color:#16120C;border:0;border-radius:10px;padding:10px 18px;
   font:700 14px inherit;cursor:pointer}
-button.ghost{background:#112235;color:#F4F8FC;border:1px solid #20364C;font-weight:400;
+button.ghost{background:#211E1B;color:#F7F3EC;border:1px solid #2A251F;font-weight:400;
   padding:6px 12px;font-size:12.5px}
 button:disabled{opacity:.45;cursor:default}
-input[type=text]{background:#112235;color:#F4F8FC;border:1px solid #20364C;border-radius:10px;
+input[type=text]{background:#211E1B;color:#F7F3EC;border:1px solid #2A251F;border-radius:10px;
   padding:9px 12px;font:14px inherit;width:190px}
 .grp{margin:10px 0 4px;color:var(--steel);font-size:12px;font-weight:700}
 .ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
 #log{font:12px/1.6 ui-monospace,monospace;max-height:300px;overflow:auto;white-space:pre-wrap}
 label{cursor:pointer}
-</style></head><body>
+</style><link rel="stylesheet" href="./css/tajawal.css">
+</head><body>
 
 <h1>تفريغ البيانات</h1>
 <p class="sub">للإدارة وحدها. الحذف نهائي ولا يمكن التراجع عنه.</p>
@@ -112,7 +113,7 @@ async function build() {
       html += '<tr><td><label><input type="checkbox" data-col="' + col +
         '" data-grp="' + g.key + '"' + dis + '> ' + label + '</label></td>' +
         '<td class="n">' + (n < 0 ? '—' : n) + '</td>' +
-        '<td class="n" style="color:#93A7BA">' + col + '</td></tr>';
+        '<td class="n" style="color:#978C7D">' + col + '</td></tr>';
     }
     html += '</table>';
   }

@@ -3,26 +3,27 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FMAC — هجرة البيانات</title>
 <style>
-:root{--brand:#3B9DFF;--ok:#21C77A;--warn:#F2A93B;--bad:#EF4D5A;--blue:#3B9DFF}
-body{background:#050B14;color:#F4F8FC;font:14px/1.7 Tajawal,'Segoe UI',system-ui,sans-serif;
+:root{--brand:#D08A42;--ok:#4FA86B;--warn:#D9C236;--bad:#E2594A;--blue:#D08A42}
+body{background:#121110;color:#F7F3EC;font:14px/1.7 'Tajawal',system-ui,sans-serif;
   padding:24px;max-width:860px;margin:0 auto;direction:rtl}
 h1{font-size:20px;margin:0 0 4px}
-p.sub{color:#93A7BA;font-size:13px;margin:0 0 20px}
-.card{background:#0D1A29;border:1px solid #20364C;border-radius:16px;padding:18px;margin:14px 0}
-button{background:var(--brand);color:#fff;border:0;border-radius:12px;padding:11px 20px;
+p.sub{color:#978C7D;font-size:13px;margin:0 0 20px}
+.card{background:#1A1816;border:1px solid #2A251F;border-radius:16px;padding:18px;margin:14px 0}
+button{background:var(--brand);color:#16120C;border:0;border-radius:12px;padding:11px 20px;
   font:700 14px inherit;cursor:pointer}
 button:disabled{opacity:.5;cursor:default}
-button.ghost{background:#112235;color:#F4F8FC;border:1px solid #20364C}
-input[type=file]{font:13px inherit;color:#A9B8C8}
+button.ghost{background:#211E1B;color:#F7F3EC;border:1px solid #2A251F}
+input[type=file]{font:13px inherit;color:#B0A698}
 table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
-th,td{text-align:right;padding:6px 8px;border-bottom:1px solid #17283A}
-th{color:#93A7BA;font-weight:600}
+th,td{text-align:right;padding:6px 8px;border-bottom:1px solid #1F1B17}
+th{color:#978C7D;font-weight:600}
 td.n{font-variant-numeric:tabular-nums;direction:ltr;text-align:left}
 .ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
 #log{font:12px/1.6 ui-monospace,monospace;max-height:320px;overflow:auto;white-space:pre-wrap}
-.bar{height:6px;background:#112235;border-radius:99px;overflow:hidden;margin:12px 0}
+.bar{height:6px;background:#211E1B;border-radius:99px;overflow:hidden;margin:12px 0}
 .bar i{display:block;height:100%;background:var(--brand);width:0;transition:width .2s}
-</style></head><body>
+</style><link rel="stylesheet" href="./css/tajawal.css">
+</head><body>
 
 <h1>هجرة البيانات إلى Firestore</h1>
 <p class="sub">يُشغَّل مرّة واحدة. يتطلّب حساب إدارة.</p>
