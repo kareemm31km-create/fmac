@@ -419,7 +419,10 @@ export function camps(rows) {
     if (!sp || !y || !nm) continue;
     if (!out[sp]) out[sp] = {};
     if (!out[sp][y]) out[sp][y] = { camps: [] };
-    out[sp][y].camps.push({ name: nm, date: S(r.date), place: S(r.place),
+    out[sp][y].camps.push({
+      /* k: مفتاح الوثيقة — بدونه لا تعديل ولا حذف (كما في النتائج) */
+      k: S(r.k),
+      name: nm, date: S(r.date), place: S(r.place),
       kind: S(r.kind) || 'داخلي', scope: S(r.scope) || 'نادي',
       /* النوع: معسكرٌ أم لقاءٌ وديّ — وما كُتب قبل هذا الحقل معسكر */
       type: S(r.type) || 'معسكر',

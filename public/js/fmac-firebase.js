@@ -196,7 +196,8 @@ async function putFile(b64, name, folder) {
 }
 
 /* ── موزّع الإجراءات — يقابل doPost ──────────────────────── */
-const ADMIN = ['result', 'resultDrop', 'shield', 'targets', 'camp', 'natl', 'natlDrop',
+const ADMIN = ['result', 'resultDrop', 'shield', 'targets', 'camp', 'campDrop',
+  'natl', 'natlDrop',
   'user', 'userDrop', 'agenda', 'visit', 'cal', 'calDrop', 'closeweek', 'note'];
 
 /* اسم المفتاح الذي تأتي تحته بيانات كل إجراء في index.html.
@@ -205,7 +206,7 @@ const ADMIN = ['result', 'resultDrop', 'shield', 'targets', 'camp', 'natl', 'nat
 const NEST = {
   cancel: 'cancel', attendance: 'attend', reply: 'reply', stage: 'stage',
   session: 'session', note: 'note', ack: 'ack', closeweek: 'week',
-  result: 'result', shield: 'shield', camp: 'camp',
+  result: 'result', shield: 'shield', camp: 'camp', campDrop: 'camp',
   resultDrop: 'result',
   natl: 'player', natlDrop: 'player',
   user: 'userRow', userDrop: 'userRow',
@@ -294,6 +295,7 @@ async function dispatch(body) {
       return put(COLS[a], key, row);
     }
     case 'resultDrop': return drop(COL.results, idOf(entOf(body, a), body));
+    case 'campDrop': return drop(COL.camps, idOf(entOf(body, a), body));
     case 'natlDrop': return drop(COL.national, idOf(entOf(body, a), body));
     case 'userDrop': return drop(COL.users, idOf(entOf(body, a), body));
     case 'calDrop': return drop(COL.calendar, idOf(entOf(body, a), body));
