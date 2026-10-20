@@ -121,7 +121,17 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .modal{position:fixed;inset:0;z-index:80;background:rgba(5,9,11,.75);display:grid;place-items:center;padding:20px}
 .modal .sheet{background:var(--surface);border:1px solid var(--hairline-soft);border-radius:var(--r-xxl);
   padding:var(--s-xxl);width:100%;max-width:520px;max-height:88vh;overflow:auto}
-.modal h3{font-size:28px;font-weight:500;margin-bottom:var(--s-xs)}
+/* .box أخَذَ الزخرفةَ من .sheet ولم يأخذ مقاسَه: بلا حشوٍ فالنصُّ
+   يلمس الحدّ، وبلا عرضٍ أقصى فيمتدّ على الشاشة العريضة، وبلا سقفٍ
+   ولا تمريرٍ فيتجاوز أسفلَ الشاشة القصيرة ويسقط زرُّ الحفظ خارجها
+   بلا سبيلٍ إليه. العقدُ نفسُه للاثنين. */
+.modal .box{padding:var(--s-xxl);width:100%;max-width:520px;max-height:88vh;overflow:auto}
+/* ٢٨ هي درجةُ العناوين الكبرى؛ وعنوانُ النافذة ليس منها. */
+.modal h3{font-size:20px;font-weight:700;margin-bottom:var(--s-xs)}
+/* كثافةُ الحقول داخل النوافذ وحدَها — .inp و.fl2 تُستعملان خارجها. */
+.modal .fl2{margin:10px 0 4px}
+.modal .inp{padding:9px 12px}
+.modal .vgrid,.modal .mgrid{gap:10px}
 .modal p.hint{margin:0 0 var(--s-lg);color:var(--steel);font-size:14px;line-height:1.6}
 .fld{display:flex;flex-direction:column;gap:6px;margin-bottom:var(--s-base)}
 .fld label{font-size:14px;font-weight:700;color:var(--charcoal)}
@@ -5302,27 +5312,27 @@ button:active,[role="button"]:active,.tab:active,.chip:active,.fchip:active,
 <div class="modal" id="cmpDlg" hidden>
   <div class="box">
     <h3 id="cmpDlgT">إضافة معسكر أو لقاء</h3>
-    <p class="hint">اللعبة: <b id="cmpSport"></b> — يُذكر إن كان تابعاً للنادي أو للمنتخب.</p>
+    <p class="hint">اللعبة: <b id="cmpSport"></b> — <span id="cmpHint"></span></p>
     <div class="vgrid">
+      <span><label class="fl2">النوع</label><select id="cmpType" class="inp">
+        <option>معسكر</option><option>لقاء ودي</option></select></span>
       <span><label class="fl2">الموسم</label><select id="cmpYear" class="inp"></select></span>
       <span><label class="fl2">تابع لـ</label><select id="cmpScope" class="inp">
         <option>نادي</option><option>منتخب</option></select></span>
     </div>
-    <label class="fl2">اسم المعسكر</label>
+    <label class="fl2" id="cmpNameL">اسم المعسكر</label>
     <input id="cmpName" class="inp" type="text" placeholder="معسكر الفجيرة الإعدادي">
     <div class="vgrid">
-      <span><label class="fl2">التاريخ</label>
-        <input id="cmpDate" class="inp" type="text" placeholder="12-17/12/2025"></span>
+      <span><label class="fl2" id="cmpDateL">التاريخ</label>
+        <input id="cmpDate" class="inp" type="text" placeholder="١٢–١٧/١٢/٢٠٢٦"></span>
       <span><label class="fl2">المكان</label>
-        <input id="cmpPlace" class="inp" type="text" placeholder="مقر النادي · إيطاليا"></span>
+        <input id="cmpPlace" class="inp" type="text" placeholder="مقرّ النادي"></span>
     </div>
     <div class="vgrid">
-      <span><label class="fl2">النوع</label><select id="cmpType" class="inp">
-        <option>معسكر</option><option>لقاء ودي</option></select></span>
-      <span><label class="fl2">داخلي / خارجي</label><select id="cmpKind" class="inp">
+      <span><label class="fl2" id="cmpKindL">داخلي / خارجي</label><select id="cmpKind" class="inp">
         <option>داخلي</option><option>خارجي</option></select></span>
       <span><label class="fl2">عدد اللاعبين</label>
-        <input id="cmpPlayers" class="inp" type="number" min="0" placeholder="0"></span>
+        <input id="cmpPlayers" class="inp" type="number" min="0" placeholder="12"></span>
     </div>
     <div class="upmsg" id="cmpMsg"></div>
     <div class="acts2">
@@ -13295,6 +13305,26 @@ async function dropNatl(k){
   toast('حُذف '+pl.name);
 }
 let cmpCur='';
+/* النموذجُ كان معسكريَّ اللسان كلَّه: «اسم المعسكر» و«معسكر الفجيرة
+   الإعدادي» ولو كان المحفوظُ لقاءً ودّيّاً. النصُّ يتبع النوع. */
+function cmpSkin(){
+  const f=(($('cmpType')||{}).value)==='لقاء ودي';
+  const out=(($('cmpKind')||{}).value)==='خارجي';
+  const set=(id,v)=>{ const e=$(id); if(e) e.textContent=v; };
+  const ph=(id,v)=>{ const e=$(id); if(e) e.placeholder=v; };
+  set('cmpDlgT',(cmpCur?'تعديل ':'إضافة ')+(f?'لقاء ودّي':'معسكر'));
+  set('cmpNameL', f?'اسم اللقاء':'اسم المعسكر');
+  ph('cmpName', f?'ودّية الفجيرة × شباب الأهلي':'معسكر الفجيرة الإعدادي');
+  /* المعسكرُ مدًى والودّيّةُ يوم */
+  set('cmpDateL', f?'التاريخ':'المدّة');
+  ph('cmpDate', f?'١٢/١٢/٢٠٢٦':'١٢–١٧/١٢/٢٠٢٦');
+  ph('cmpPlace', out?'إيطاليا':'مقرّ النادي');
+  set('cmpKindL', f?'على أرضنا / خارجها':'داخليّ / خارجيّ');
+  const h=$('cmpHint');
+  if(h) h.textContent = f
+    ? 'لقاءٌ ودّيٌّ لا تُحسب نتائجُه في الموسم — يُذكر إن كان للنادي أو للمنتخب.'
+    : 'يُذكر إن كان المعسكرُ تابعاً للنادي أو للمنتخب.';
+}
 function openCamp(k){
   cmpCur=k||'';
   const ex=cmpCur ? ((((EXTRA_CAMPS()[spCur]||{})[spSeason]||{}).camps||[])
@@ -13311,7 +13341,7 @@ function openCamp(k){
   $('cmpDate').value=ex?ex.date:'';
   $('cmpPlace').value=ex?ex.place:'';
   $('cmpPlayers').value=(ex&&ex.players)?ex.players:'';
-  { const t=$('cmpDlgT'); if(t) t.textContent=ex?'تعديل فعاليّة':'إضافة معسكر أو لقاء'; }
+  cmpSkin();
   { const d=$('cmpDrop'); if(d) d.hidden=!ex; }
   $('cmpMsg').textContent=''; $('cmpMsg').className='upmsg';
   $('cmpDlg').hidden=false;
@@ -16504,6 +16534,7 @@ document.addEventListener('input',e=>{ if(e.target.id==='sq') runSearch();
   if(rt){ rvNote[rt.dataset.rvta]=rt.value; }
 });
 document.addEventListener('change',e=>{
+  if(e.target.id==='cmpType'||e.target.id==='cmpKind'){ cmpSkin(); return; }
   if(e.target.id==='attP'||e.target.id==='attA'){ saveAttend(); return; }
   if(e.target.id==='revSort'){ rvSort=e.target.value; renderReview(); return; }
   if(e.target.id==='acSport'){ acSport=e.target.value; acShowAll=false; renderTodoPage(); return; }
