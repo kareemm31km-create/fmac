@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FMAC — معاينة شاشة الدخول</title>
+<link rel="stylesheet" href="./css/tajawal.css">
+<style>
+/* لوحةُ الدوجو كاملةً — شاشةُ الدخول تستند إليها ولا تعرّفها،
+   فبلا هذه الطبقة تسقط إلى احتياطيّاتها الزرقاء القديمة. */
+:root{
+  --canvas:#121110;--surface:#1A1816;--surface-soft:#211E1B;--card-2:#1C1A17;
+  --bg-deep:#0B0A09;
+  --ink-deep:#F7F3EC;--ink:#E2DACE;--charcoal:#B0A698;--steel:#978C7D;--stone:#9A8F80;
+  --brand:#D08A42;--brand-soft:#D08A42;--brand-dark:#B5742F;--cyan:#D08A42;--on-brand:#16120C;
+  --hairline:#312C26;--hairline-soft:#241F1A;--edge:#463F36;
+  --field-bg:#141210;--field-edge:#3A332B;--field-ph:#8A8073;
+  --success:#4FA86B;--attention:#D9C236;--critical:#E2594A;
+}
+html,body{margin:0;height:100%;background:#121110;
+  font-family:'Tajawal',system-ui,sans-serif}
+</style>
+</head><body>
+<script type="module">
+/* معاينةٌ بلا مصادقة: تُبنى الشاشةُ ويُعطَّل كلُّ نداءٍ خارجيّ.
+   لفحص الشكل وحدَه — لا تُسجّل دخولاً ولا تكتب شيئاً. */
+const L = await import('./js/fmac-login-ui.js?v=' + Date.now());
+const w = L.build('signin', {
+  signin: async () => ({ ok: false, error: 'معاينة — لا دخول فعليّ' }),
+  request: async () => ({ ok: true }),
+  reset: async () => ({ ok: true }),
+  change: async () => ({ ok: true }),
+});
+document.body.appendChild(w);
+window.__login = L;
+</script>
+</body></html>

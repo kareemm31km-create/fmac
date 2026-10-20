@@ -34,9 +34,11 @@ const T = {
     kicker: 'MORE THAN A CLUB',
     slogan1: 'من هنا تبدأ القوة…', slogan2: 'ومن هنا يُصنع الأبطال',
     sloganEn1: 'WHERE STRENGTH BEGINS…', sloganEn2: 'AND CHAMPIONS ARE MADE.',
-    foot: 'من الفجيرة .. إلى العالمية', footEn: 'FROM FUJAIRAH .. TO THE WORLD',
+    foot: 'من الفجيرة … إلى العالمية', footEn: 'FROM FUJAIRAH … TO THE WORLD',
+    /* كانت creed وvalues نسختين من ثلاث كلمات: واحدةٌ عموديّةٌ
+       شبحيّةٌ على الصورة وأخرى أفقيّةٌ تحت العنوان. الشعارُ يُقال
+       مرّةً واحدة. */
     creed: ['DISCIPLINE', 'UNITY', 'EXCELLENCE'],
-    values: ['DISCIPLINE', 'UNITY', 'EXCELLENCE'],
     needEmail: 'اكتب بريدك أوّلاً ثم اضغط الرابط.',
     resetSent: 'أُرسلت رسالة إعادة التعيين إلى بريدك.',
     needName: 'الاسم والبريد مطلوبان.',
@@ -65,9 +67,10 @@ const T = {
     kicker: 'MORE THAN A CLUB',
     slogan1: 'Where strength begins…', slogan2: 'and champions are made.',
     sloganEn1: 'من هنا تبدأ القوة…', sloganEn2: 'ومن هنا يُصنع الأبطال',
-    foot: 'From Fujairah .. to the world', footEn: 'FROM FUJAIRAH .. TO THE WORLD',
+    /* كان السطران جملةً واحدةً مرّتين — بحروفٍ صغيرةٍ ثمّ كبيرة.
+       الثاني يصير العربيّةَ، كما يفعل الشعارُ في هذا الوضع. */
+    foot: 'From Fujairah … to the world', footEn: 'من الفجيرة … إلى العالمية',
     creed: ['DISCIPLINE', 'UNITY', 'EXCELLENCE'],
-    values: ['DISCIPLINE', 'UNITY', 'EXCELLENCE'],
     needEmail: 'Type your email first, then press the link.',
     resetSent: 'A reset message was sent to your email.',
     needName: 'Name and email are required.',
@@ -80,126 +83,240 @@ const T = {
   },
 };
 
+/* شاشةُ الدخول كانت على اللوحة الزرقاء القديمة: تدرّجاتٌ
+   زرقاءُ مكتوبةٌ صراحةً وحجابٌ كحليٌّ واحتياطيّاتٌ من لوحةٍ ماتت،
+   وSegoe UI يزاحم Tajawal. وكانت ساكنةً تماماً. أُعيدت على لوحة
+   الدوجو، بسُلَّمِ الحجم نفسِه، وبحركةٍ تدخل مرّةً ثمّ تهدأ:
+   صعودٌ متدرّجٌ للأجزاء، وتنفُّسٌ بطيءٌ للصورة، ووهجٌ يسبح خلف
+   البطاقة — وكلُّها تسقط عند طلب تقليل الحركة. */
 export const STYLE = `
 #fmacLogin{position:fixed;inset:0;z-index:99999;display:flex;overflow:auto;
-  background:var(--bg-deep,#050B14);color:var(--ink-deep,#F4F8FC);font-family:Tajawal,'Segoe UI',system-ui,sans-serif}
+  background:var(--bg-deep);color:var(--ink-deep);
+  font-family:'Tajawal',system-ui,sans-serif;font-variant-numeric:tabular-nums;
+  --ease-o:cubic-bezier(.22,1,.36,1);
+  --ease-s:cubic-bezier(.34,1.3,.64,1)}
 #fmacLogin *{box-sizing:border-box}
-#fmacLogin .side{flex:1 1 52%;position:relative;display:flex;flex-direction:column;
-  justify-content:space-between;padding:34px 40px;min-height:100%;overflow:hidden;
-  background:
-    radial-gradient(120% 90% at 18% 8%, rgba(59,157,255,.20), transparent 58%),
-    radial-gradient(90% 70% at 85% 100%, rgba(54,197,240,.10), transparent 60%),
-    linear-gradient(200deg,var(--surface-soft,#112235) 0%,var(--field-bg,#0A1725) 55%,var(--bg-deep,#050B14) 100%)}
-/* الصورة إن وُجدت — وإن لم تُرفع بعد بقي التدرّج وحده ولم تظهر فجوة */
-#fmacLogin .side.hashero::before{content:'';position:absolute;inset:0;
-  background-image:url(./img/hero.jpg);background-size:cover;background-position:center;
-  opacity:.72;z-index:0}
-#fmacLogin .side::after{content:'';position:absolute;inset:0;z-index:1;
-  background:linear-gradient(90deg,rgba(7,17,31,.50) 0%,rgba(7,17,31,.22) 42%,rgba(7,17,31,.86) 100%),
-             linear-gradient(0deg,rgba(7,17,31,.82) 0%,rgba(7,17,31,.10) 46%,rgba(7,17,31,.55) 100%)}
-#fmacLogin .side > *{position:relative;z-index:2}
-/* الشعار يحمل اسم النادي والقسم معاً — النسخة الداكنة من ملفّ النادي */
-#fmacLogin .logo{height:96px;width:auto;display:block;align-self:flex-start}
-/* left لا inset-inline-start: اللوحة بصرية ثابتة مهما كان اتجاه النصّ */
-#fmacLogin .creed{position:absolute;left:34px;top:46%;transform:translateY(-50%);
-  z-index:2;display:flex;flex-direction:column;gap:9px;pointer-events:none}
-#fmacLogin .creed span{font:600 15px/1 'Segoe UI',system-ui,sans-serif;letter-spacing:.3em;
-  color:color-mix(in srgb,var(--ink-deep,#F4F8FC) 15%,transparent);direction:ltr}
-#fmacLogin .slog{padding-inline-end:170px}
-#fmacLogin .kick{display:flex;flex-direction:row-reverse;align-items:center;gap:14px;
-  font:600 11px/1 'Segoe UI',system-ui,sans-serif;letter-spacing:.4em;color:var(--ink,#DCE8F2);
-  direction:ltr;margin-bottom:14px}
-#fmacLogin .kick i{flex:1;max-width:90px;height:1.5px;background:var(--brand,#3B9DFF);display:block}
-#fmacLogin .slog h2{margin:0;font-size:clamp(21px,2.6vw,34px);font-weight:800;line-height:1.32;
-  letter-spacing:-.4px;color:var(--ink-deep,#F4F8FC)}
-#fmacLogin .slog h2 em{font-style:normal;color:var(--brand,#3B9DFF)}
-#fmacLogin .vals{margin-top:14px!important;font:600 11px/1 'Segoe UI',system-ui,sans-serif;
-  letter-spacing:.3em;color:var(--steel,#93A7BA);direction:ltr}
-#fmacLogin .vals i{font-style:normal;color:var(--brand,#3B9DFF);margin:0 10px}
-#fmacLogin .slog p{margin:12px 0 0;font:500 13px/1.9 'Segoe UI',system-ui,sans-serif;
-  letter-spacing:.22em;color:var(--steel,#93A7BA);direction:ltr;text-align:start}
-/* direction:ltr — الصفّ بصري كما في التصميم: الجودو أوّله من اليسار */
-#fmacLogin .sports{display:flex;flex-wrap:nowrap;gap:0;margin-top:24px;
-  overflow:hidden;direction:ltr}
-#fmacLogin .sports a{flex:1 1 0;min-width:0;display:flex;flex-direction:column;
-  align-items:center;gap:6px;padding:6px 2px;border-radius:12px;text-decoration:none}
-#fmacLogin .sports img{width:24px;height:24px;object-fit:contain;opacity:.6;
-  filter:brightness(0) invert(1)}
-#fmacLogin .sports span{font-size:11px;line-height:1.35;color:var(--steel,#93A7BA);text-align:center;
-  direction:rtl}
-#fmacLogin .foot{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-end;
-  justify-content:space-between;margin-top:22px;border-top:1px solid color-mix(in srgb,var(--ink-deep,#F4F8FC) 6%,transparent);padding-top:14px}
-#fmacLogin .foot .f1{font-size:13px;color:var(--charcoal,#A9B8C8)}
-#fmacLogin .foot .f2{font:500 11px/1.6 'Segoe UI',system-ui,sans-serif;letter-spacing:.2em;
-  color:var(--field-ph,#64788B);direction:ltr}
-#fmacLogin .foot .est{text-align:end;direction:ltr}
-#fmacLogin .foot .est b{display:block;font:700 13px/1 'Segoe UI',system-ui,sans-serif;
-  letter-spacing:.34em;color:var(--charcoal,#A9B8C8)}
-#fmacLogin .foot .est i{font-style:normal;font-size:11px;letter-spacing:.28em;color:var(--field-ph,#64788B)}
 
+/* ═══ اللوحة اليُمنى: الصورة والهويّة ═══ */
+#fmacLogin .side{flex:1 1 52%;position:relative;display:flex;flex-direction:column;
+  justify-content:space-between;gap:28px;padding:40px 46px;min-height:100%;overflow:hidden;
+  background:linear-gradient(200deg,var(--surface-soft) 0%,var(--canvas) 58%,var(--bg-deep) 100%)}
+
+/* الصورة تتنفّس: تكبيرٌ بطيءٌ لا يكاد يُرى، فالثباتُ التامُّ يبدو
+   صورةً معلّقةً والحركةُ الظاهرةُ تُلهي عن النموذج. */
+#fmacLogin .side.hashero::before{content:'';position:absolute;inset:-2%;
+  background-image:url(./img/hero.jpg);background-size:cover;background-position:center 42%;
+  opacity:.66;z-index:0;transform-origin:62% 46%;
+  animation:fmBreathe 26s var(--ease-o) infinite alternate both}
+@keyframes fmBreathe{from{transform:scale(1)}to{transform:scale(1.07)}}
+
+/* الحجابُ أسودٌ دافئ كلوحة الموقع — كان كحليّاً فيُفسد الدفء */
+#fmacLogin .side::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(115% 85% at 16% 6%, color-mix(in srgb,var(--brand) 16%,transparent), transparent 56%),
+    linear-gradient(90deg,rgba(18,17,16,.34) 0%,rgba(18,17,16,.16) 38%,rgba(18,17,16,.90) 100%),
+    linear-gradient(0deg,rgba(18,17,16,.92) 0%,rgba(18,17,16,.06) 48%,rgba(18,17,16,.62) 100%)}
+#fmacLogin .side > *{position:relative;z-index:2}
+
+#fmacLogin .logo{height:88px;width:auto;display:block}
+#fmacLogin .sbody{position:relative;isolation:isolate;
+  display:flex;flex-direction:column;align-items:flex-start}
+/* الشعارُ والعنوانُ يقعان على سترةٍ بيضاءَ في الصورة فيضيعان.
+   تعتيمُ الصورة كلِّها يقتلها؛ فهالةٌ داكنةٌ تحت النصّ وحدَه. */
+#fmacLogin .sbody::before{content:'';position:absolute;inset:-30px -40px;z-index:-1;
+  pointer-events:none;
+  background:radial-gradient(76% 128% at 32% 52%,rgba(18,17,16,.80),rgba(18,17,16,.46) 52%,transparent 76%)}
+
+/* القبسة: خطٌّ نحاسيٌّ يُرسَم ثمّ الكلمات */
+#fmacLogin .kick{display:inline-flex;align-items:center;gap:14px;direction:ltr;
+  font:700 12px/1 'Tajawal',system-ui,sans-serif;letter-spacing:.38em;
+  color:var(--ink);margin-bottom:18px}
+#fmacLogin .kick i{display:block;width:64px;height:2px;border-radius:2px;background:var(--brand);
+  transform-origin:left center;animation:fmRule .7s var(--ease-o) .35s both}
+@keyframes fmRule{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+#fmacLogin .side h2{margin:0;font-size:clamp(24px,2.9vw,40px);font-weight:800;line-height:1.3;
+  letter-spacing:-.5px;color:var(--ink-deep);text-shadow:0 2px 18px rgba(18,17,16,.5)}
+#fmacLogin .side h2 em{font-style:normal;color:var(--brand)}
+/* اللسانُ الآخر: أصغرُ وأخفت، فالأوّلُ هو الذي يُقرأ */
+#fmacLogin .alt2{margin:14px 0 0;font:500 16px/1.85 'Tajawal',system-ui,sans-serif;
+  color:var(--charcoal);text-shadow:0 1px 12px rgba(18,17,16,.5);
+  unicode-bidi:plaintext;text-align:start}
+/* الشعارُ مرّةً واحدةً أفقيّاً — وكان يُقال مرّتين */
+#fmacLogin .creed{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  margin:22px 0 0;font:700 12px/1 'Tajawal',system-ui,sans-serif;letter-spacing:.3em;
+  /* كان stone فبلغ ٣٫٨٩ على أفتح بكسلٍ تحته — دون العتبة */
+  color:var(--charcoal);direction:ltr}
+#fmacLogin .creed i{display:block;width:5px;height:5px;border-radius:999px;
+  background:var(--brand);flex:none}
+
+#fmacLogin .sfootwrap{display:flex;flex-direction:column;gap:18px}
+/* صفُّ الألعاب: بصريٌّ من اليسار في اللسانين */
+#fmacLogin .sports{display:flex;flex-wrap:nowrap;gap:2px;direction:ltr}
+#fmacLogin .sports a{flex:1 1 0;min-width:0;display:flex;flex-direction:column;
+  align-items:center;gap:7px;padding:10px 2px;border-radius:14px;text-decoration:none;
+  border:1px solid transparent;
+  transition:background .25s var(--ease-o),border-color .25s var(--ease-o),transform .25s var(--ease-o)}
+#fmacLogin .sports a:hover{background:rgba(247,243,236,.05);border-color:var(--hairline);
+  transform:translateY(-3px)}
+#fmacLogin .sports img{width:26px;height:26px;object-fit:contain;opacity:.62;
+  filter:brightness(0) invert(1);transition:opacity .25s var(--ease-o)}
+#fmacLogin .sports a:hover img{opacity:1}
+#fmacLogin .sports span{font-size:12px;line-height:1.35;color:var(--steel);text-align:center;
+  direction:rtl;transition:color .25s var(--ease-o)}
+#fmacLogin .sports a:hover span{color:var(--ink)}
+
+#fmacLogin .foot{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-end;
+  justify-content:space-between;border-top:1px solid rgba(247,243,236,.09);padding-top:16px}
+#fmacLogin .foot .f1{font-size:14px;color:var(--charcoal)}
+#fmacLogin .foot .f2{font:500 12px/1.6 'Tajawal',system-ui,sans-serif;letter-spacing:.18em;
+  color:var(--steel);margin-top:3px;unicode-bidi:plaintext;text-align:start}
+#fmacLogin .foot .est{text-align:end;direction:ltr;flex:none}
+#fmacLogin .foot .est b{display:block;font:800 14px/1 'Tajawal',system-ui,sans-serif;
+  letter-spacing:.34em;color:var(--charcoal)}
+#fmacLogin .foot .est i{font-style:normal;font-size:12px;letter-spacing:.26em;color:var(--steel)}
+
+/* ═══ اللوحة اليُسرى: النموذج ═══ */
 #fmacLogin .pane{flex:1 1 48%;display:flex;align-items:center;justify-content:center;
-  padding:34px 28px;position:relative}
-/* right لا inset-inline-end: موضعه أعلى يمين الشاشة في اللغتين */
-#fmacLogin .langbtn{position:absolute;top:28px;right:32px;background:color-mix(in srgb,var(--ink-deep,#F4F8FC) 3%,transparent);
-  color:var(--ink-deep,#F4F8FC);border:1px solid color-mix(in srgb,var(--ink-deep,#F4F8FC) 11%,transparent);border-radius:999px;padding:9px 16px;
-  font:500 13px inherit;cursor:pointer;display:flex;align-items:center;gap:8px}
-#fmacLogin .langbtn:hover{background:color-mix(in srgb,var(--ink-deep,#F4F8FC) 7%,transparent)}
-#fmacLogin .box{width:min(94vw,440px);background:var(--surface,#0D1A29);
-  border:1px solid var(--hairline,#20364C);border-radius:16px;padding:30px 30px 26px;
-  box-shadow:0 24px 60px #00000066}
-#fmacLogin .tabs{display:flex;gap:0;border-bottom:1px solid var(--hairline,#20364C);margin:-8px -8px 22px}
-#fmacLogin .tabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;
-  color:var(--steel,#93A7BA);font:600 15px inherit;padding:13px 6px;cursor:pointer}
-#fmacLogin .tabs button[aria-selected="true"]{color:var(--on-brand,#fff);border-bottom-color:var(--brand,#3B9DFF);
-  background:linear-gradient(180deg,color-mix(in srgb,var(--brand,#3B9DFF) 8%,transparent),transparent)}
-#fmacLogin h1{margin:0 0 6px;font-size:24px;font-weight:800}
-#fmacLogin .lead{margin:0 0 20px;font-size:13px;color:var(--steel,#93A7BA);line-height:1.8}
-#fmacLogin .fld{position:relative;margin-top:12px}
+  padding:40px 32px;position:relative;isolation:isolate}
+/* وهجان نحاسيّان يسبحان ببطء خلف البطاقة — عمقٌ لا زينة */
+#fmacLogin .pane::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(42% 38% at 24% 22%, color-mix(in srgb,var(--brand) 13%,transparent), transparent 70%),
+    radial-gradient(38% 34% at 78% 82%, color-mix(in srgb,var(--brand) 9%,transparent), transparent 72%);
+  animation:fmDrift 24s ease-in-out infinite alternate both}
+@keyframes fmDrift{from{transform:translate3d(0,0,0) scale(1)}
+  to{transform:translate3d(2.5%,-3%,0) scale(1.1)}}
+
+#fmacLogin .langbtn{position:absolute;top:26px;inset-inline-start:30px;z-index:3;
+  background:rgba(247,243,236,.04);color:var(--ink-deep);
+  border:1px solid rgba(247,243,236,.12);border-radius:999px;padding:9px 16px;
+  font:500 14px 'Tajawal',system-ui,sans-serif;cursor:pointer;
+  display:flex;align-items:center;gap:8px;
+  transition:background .2s var(--ease-o),border-color .2s var(--ease-o),transform .2s var(--ease-o)}
+#fmacLogin .langbtn:hover{background:rgba(247,243,236,.09);border-color:var(--edge);
+  transform:translateY(-1px)}
+
+#fmacLogin .box{width:min(94vw,452px);background:var(--surface);
+  border:1px solid var(--hairline);border-radius:20px;padding:34px 34px 28px;
+  box-shadow:0 30px 70px rgba(0,0,0,.52),0 2px 0 rgba(247,243,236,.04) inset}
+
+#fmacLogin .tabs{display:flex;gap:0;border-bottom:1px solid var(--hairline);margin:-10px -10px 24px}
+#fmacLogin .tabs button{position:relative;flex:1;background:none;border:0;
+  color:var(--steel);font:700 16px 'Tajawal',system-ui,sans-serif;padding:14px 6px;cursor:pointer;
+  transition:color .22s var(--ease-o)}
+#fmacLogin .tabs button:hover{color:var(--ink)}
+/* الخطُّ ينمو تحت التبويب المختار بدل أن يَظهر فجأة */
+#fmacLogin .tabs button::after{content:'';position:absolute;inset-inline:0;bottom:-1px;height:2px;
+  background:var(--brand);border-radius:2px;transform:scaleX(0);
+  transition:transform .3s var(--ease-o)}
+#fmacLogin .tabs button[aria-selected="true"]{color:var(--ink-deep)}
+#fmacLogin .tabs button[aria-selected="true"]::after{transform:scaleX(1)}
+
+#fmacLogin h1{margin:0 0 8px;font-size:28px;font-weight:800;letter-spacing:-.4px}
+#fmacLogin .lead{margin:0 0 22px;font-size:14px;color:var(--steel);line-height:1.8}
+
+#fmacLogin .fld{position:relative;margin-top:14px}
 #fmacLogin .fld input,#fmacLogin .fld select,#fmacLogin .fld textarea{
-  width:100%;background:var(--field-bg,#0A1725);color:var(--ink-deep,#F4F8FC);border:1px solid var(--field-edge,#263D53);border-radius:12px;
-  padding:14px 46px 14px 16px;font:14px inherit;font-family:inherit}
-#fmacLogin[dir="rtl"] .fld input,#fmacLogin[dir="rtl"] .fld select{padding:14px 46px 14px 44px}
-#fmacLogin .fld textarea{padding:14px 16px;min-height:74px;resize:vertical}
-#fmacLogin .fld input::placeholder,#fmacLogin .fld textarea::placeholder{color:var(--field-ph,#64788B)}
+  width:100%;background:var(--field-bg);color:var(--ink-deep);
+  border:1px solid var(--field-edge);border-radius:13px;
+  padding:14px 16px;padding-inline-start:46px;
+  font:16px 'Tajawal',system-ui,sans-serif;
+  transition:border-color .2s var(--ease-o),box-shadow .2s var(--ease-o),background .2s var(--ease-o)}
+/* العينُ تجلس عند النهاية، فحقلُ المرور يترك لها مكاناً */
+#fmacLogin .fld.pass input{padding-inline-end:46px}
+#fmacLogin .fld textarea{padding:14px 16px;min-height:76px;resize:vertical}
+#fmacLogin .fld input::placeholder,#fmacLogin .fld textarea::placeholder{color:var(--field-ph)}
 #fmacLogin .fld input:focus,#fmacLogin .fld select:focus,#fmacLogin .fld textarea:focus{
-  outline:none;border-color:var(--brand,#3B9DFF)}
+  outline:none;border-color:var(--brand);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 22%,transparent)}
 #fmacLogin .fld .ic{position:absolute;inset-inline-start:15px;top:50%;transform:translateY(-50%);
-  width:18px;height:18px;color:var(--field-ph,#64788B);pointer-events:none}
+  width:18px;height:18px;color:var(--field-ph);pointer-events:none;
+  transition:color .2s var(--ease-o)}
+#fmacLogin .fld:focus-within .ic{color:var(--brand)}
 #fmacLogin .fld .eye{position:absolute;inset-inline-end:12px;top:50%;transform:translateY(-50%);
-  background:none;border:0;color:var(--field-ph,#64788B);cursor:pointer;padding:6px;line-height:0}
+  background:none;border:0;color:var(--field-ph);cursor:pointer;padding:6px;line-height:0;
+  border-radius:8px;transition:color .2s var(--ease-o)}
+#fmacLogin .fld .eye:hover{color:var(--ink)}
 #fmacLogin .fld.mail input,#fmacLogin .fld.pass input{direction:ltr;text-align:start}
+
 #fmacLogin .row{display:flex;align-items:center;justify-content:space-between;gap:12px;
-  margin-top:14px;font-size:13px}
-#fmacLogin .row label{display:flex;align-items:center;gap:8px;color:var(--charcoal,#A9B8C8);cursor:pointer}
-#fmacLogin .row input[type=checkbox]{width:16px;height:16px;accent-color:var(--brand,#3B9DFF);margin:0}
-#fmacLogin .row a{color:var(--brand,#3B9DFF);text-decoration:none;cursor:pointer}
-#fmacLogin .go{width:100%;margin-top:20px;background:linear-gradient(180deg,var(--cyan,#36C5F0),var(--brand-dark,#2583F7));
-  color:var(--on-brand,#fff);border:0;border-radius:12px;padding:14px;font:700 15px inherit;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:10px}
-#fmacLogin .go:hover{filter:brightness(1.06)}
-#fmacLogin .go:disabled{opacity:.6;cursor:default;filter:none}
-#fmacLogin .msg{margin-top:14px;font-size:13px;color:var(--critical,#EF4D5A);min-height:18px;line-height:1.7}
-#fmacLogin .msg.ok{color:var(--success,#21C77A)}
-#fmacLogin .alt{margin-top:18px;text-align:center;font-size:13px;color:var(--steel,#93A7BA)}
-#fmacLogin .alt a{color:var(--brand,#3B9DFF);text-decoration:underline;cursor:pointer;margin-inline-start:4px}
+  margin-top:16px;font-size:14px}
+#fmacLogin .row label{display:flex;align-items:center;gap:8px;color:var(--charcoal);cursor:pointer}
+#fmacLogin .row input[type=checkbox]{width:16px;height:16px;accent-color:var(--brand);margin:0}
+#fmacLogin .row a{color:var(--brand);text-decoration:none;cursor:pointer;
+  transition:opacity .2s var(--ease-o)}
+#fmacLogin .row a:hover{opacity:.78;text-decoration:underline}
+
+#fmacLogin .go{position:relative;overflow:hidden;width:100%;margin-top:22px;
+  background:var(--brand);color:var(--on-brand);border:0;border-radius:13px;padding:15px;
+  font:800 16px 'Tajawal',system-ui,sans-serif;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:transform .2s var(--ease-s),box-shadow .25s var(--ease-o),background .2s var(--ease-o)}
+#fmacLogin .go:hover{background:var(--brand-dark);transform:translateY(-2px);
+  box-shadow:0 12px 26px color-mix(in srgb,var(--brand) 32%,transparent)}
+#fmacLogin .go:active{transform:translateY(0)}
+#fmacLogin .go svg{transition:transform .25s var(--ease-o)}
+#fmacLogin[dir="rtl"] .go svg{transform:scaleX(-1)}
+#fmacLogin .go:hover svg{transform:translateX(4px)}
+#fmacLogin[dir="rtl"] .go:hover svg{transform:scaleX(-1) translateX(4px)}
+#fmacLogin .go:disabled{opacity:.62;cursor:default;transform:none;box-shadow:none;
+  background:var(--brand)}
+/* أثناء الانتظار: بريقٌ يعبر الزرّ فيُعلَم أنّه يعمل */
+#fmacLogin .go:disabled::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.26),transparent);
+  animation:fmSheen 1.25s linear infinite}
+@keyframes fmSheen{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+
+#fmacLogin .msg{margin-top:15px;font-size:14px;color:var(--critical);min-height:18px;line-height:1.7}
+#fmacLogin .msg:not(:empty){animation:fmShakeIn .4s var(--ease-o) both}
+@keyframes fmShakeIn{0%{opacity:0;transform:translateX(0)}
+  35%{opacity:1;transform:translateX(-4px)}65%{transform:translateX(3px)}100%{transform:none}}
+#fmacLogin .msg.ok{color:var(--success)}
+#fmacLogin .msg.ok:not(:empty){animation:fmRise .4s var(--ease-o) both}
+
+#fmacLogin .alt{margin-top:20px;text-align:center;font-size:14px;color:var(--steel)}
+#fmacLogin .alt a{color:var(--brand);text-decoration:underline;cursor:pointer;margin-inline-start:4px}
 #fmacLogin code.uid{display:block;user-select:all;margin-top:8px;padding:8px 10px;
-  background:var(--field-bg,#0A1725);border-radius:12px;font-size:13px;color:var(--ink-deep,#F4F8FC);word-break:break-all;
-  direction:ltr}
+  background:var(--field-bg);border-radius:12px;font-size:14px;color:var(--ink-deep);
+  word-break:break-all;direction:ltr}
+
+/* ═══ الدخول: كلُّ جزءٍ يصعد في دوره ═══ */
+@keyframes fmRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fmCard{from{opacity:0;transform:translateY(22px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes fmFade{from{opacity:0}to{opacity:1}}
+#fmacLogin .logo  {animation:fmRise .7s var(--ease-o) .10s both}
+#fmacLogin .kick  {animation:fmRise .7s var(--ease-o) .22s both}
+#fmacLogin .side h2{animation:fmRise .8s var(--ease-o) .32s both}
+#fmacLogin .alt2  {animation:fmRise .8s var(--ease-o) .42s both}
+#fmacLogin .creed {animation:fmRise .8s var(--ease-o) .50s both}
+#fmacLogin .sports{animation:fmRise .8s var(--ease-o) .58s both}
+#fmacLogin .foot  {animation:fmRise .8s var(--ease-o) .66s both}
+#fmacLogin .box   {animation:fmCard .75s var(--ease-o) .18s both}
+#fmacLogin .langbtn{animation:fmFade .6s var(--ease-o) .55s both}
+#fmacLogin .side.hashero::before{animation:fmBreathe 26s var(--ease-o) infinite alternate both,
+  fmFade 1.1s ease-out both}
+
+/* الحركةُ اختيارٌ لا فرض: من طلب السكون نالَه كاملاً */
+@media (prefers-reduced-motion: reduce){
+  #fmacLogin *,#fmacLogin *::before,#fmacLogin *::after{
+    animation:none!important;transition:none!important}
+}
+
 @media (max-width:900px){
   #fmacLogin{flex-direction:column}
-  #fmacLogin .side{flex:0 0 auto;min-height:auto;padding:22px 20px 26px}
-  #fmacLogin .creed{display:none}
-  #fmacLogin .slog{padding-inline-end:0}
-  #fmacLogin .logo{height:60px}
-  /* العمود لا يضيق تحت أعرض ابن له، فنسمح للصفّ بالالتفاف صراحةً */
+  #fmacLogin .side{flex:0 0 auto;min-height:auto;padding:24px 20px 28px;gap:20px}
+  #fmacLogin .logo{height:62px}
   #fmacLogin .side > div{min-width:0}
-  #fmacLogin .sports{flex-wrap:wrap;margin-top:18px}
+  #fmacLogin .side h2{font-size:24px}
+  #fmacLogin .alt2{font-size:14px}
+  #fmacLogin .sports{flex-wrap:wrap}
   #fmacLogin .sports a{flex:0 0 20%;padding:8px 2px}
-  /* اللوحة صفّ في العرض الواسع، فلو بقيت صفّاً جلس زرّ اللغة بجانب البطاقة */
-  #fmacLogin .pane{flex-direction:column;align-items:stretch;padding:22px 16px 40px}
-  #fmacLogin .box{margin:0 auto}
+  #fmacLogin .sports span{font-size:12px}
+  #fmacLogin .pane{flex-direction:column;align-items:stretch;padding:24px 16px 40px}
+  #fmacLogin .box{margin:0 auto;padding:26px 22px 22px}
+  #fmacLogin h1{font-size:20px}
   #fmacLogin .langbtn{position:static;align-self:flex-start;margin:0 0 16px}
-  #fmacLogin .box{padding:24px 20px 20px}
 }
 `;
 
@@ -239,20 +356,24 @@ const setLang = (v) => { try { localStorage.setItem(LANG_KEY, v); } catch (e) { 
 /* لوحة النادي — ثابتة في كل الحالات */
 function sidePanel(t) {
   return '<aside class="side">' +
-    '<img class="logo" src="./img/fmac-logo.png" ' +
-    'alt="نادي الفجيرة للفنون القتالية — قسم الإعداد الفني">' +
-    '<div class="creed">' + t.creed.map((c) => '<span>' + c + '</span>').join('') + '</div>' +
-    '<div><div class="slog">' +
-    '<span class="kick">' + esc(t.kicker) + '<i></i></span>' +
-    '<h2>' + esc(t.slogan1) + '<br><em>' + esc(t.slogan2) + '</em></h2>' +
-    '<p>' + esc(t.sloganEn1) + '<br>' + esc(t.sloganEn2) + '</p>' +
-    '<p class="vals">' + t.values.map(esc).join('<i>|</i>') + '</p></div>' +
-    '<div class="sports">' + SPORTS.map(([ar, slug]) =>
-      '<a title="' + esc(ar) + '"><img src="./img/sports/' + slug + '.png" alt="' +
-      esc(ar) + '"><span>' + esc(ar) + '</span></a>').join('') + '</div>' +
-    '<div class="foot"><div><div class="f1">' + esc(t.foot) + '</div>' +
-    '<div class="f2">' + esc(t.footEn) + '</div></div>' +
-    '<div class="est"><b>FMAC</b><i>EST. 2017</i></div></div></div></aside>';
+    '<div class="shead">' +
+      '<img class="logo" src="./img/fmac-logo.png" ' +
+      'alt="نادي الفجيرة للفنون القتالية — قسم الإعداد الفني">' +
+    '</div>' +
+    '<div class="sbody">' +
+      '<span class="kick"><i></i>' + esc(t.kicker) + '</span>' +
+      '<h2>' + esc(t.slogan1) + '<br><em>' + esc(t.slogan2) + '</em></h2>' +
+      '<p class="alt2">' + esc(t.sloganEn1) + '<br>' + esc(t.sloganEn2) + '</p>' +
+      '<p class="creed">' + t.creed.map(esc).join('<i></i>') + '</p>' +
+    '</div>' +
+    '<div class="sfootwrap">' +
+      '<div class="sports">' + SPORTS.map(([ar, slug]) =>
+        '<a title="' + esc(ar) + '"><img src="./img/sports/' + slug + '.png" alt="' +
+        esc(ar) + '"><span>' + esc(ar) + '</span></a>').join('') + '</div>' +
+      '<div class="foot"><div class="fl"><div class="f1">' + esc(t.foot) + '</div>' +
+      '<div class="f2">' + esc(t.footEn) + '</div></div>' +
+      '<div class="est"><b>FMAC</b><i>EST. 2017</i></div></div>' +
+    '</div></aside>';
 }
 
 const field = (cls, icon, inner) =>
