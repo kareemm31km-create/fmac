@@ -125,7 +125,21 @@ button{font-family:inherit;color:inherit;cursor:pointer}
    يلمس الحدّ، وبلا عرضٍ أقصى فيمتدّ على الشاشة العريضة، وبلا سقفٍ
    ولا تمريرٍ فيتجاوز أسفلَ الشاشة القصيرة ويسقط زرُّ الحفظ خارجها
    بلا سبيلٍ إليه. العقدُ نفسُه للاثنين. */
-.modal .box{padding:var(--s-xxl);width:100%;max-width:520px;max-height:88vh;overflow:auto}
+.modal .box{padding:var(--s-xxl) var(--s-xxl) 0;width:100%;max-width:520px;
+  max-height:88vh;overflow:auto}
+/* التمريرُ وحدَه لا يكفي: زرُّ الحفظ يهرب إلى أسفلِ المحتوى. في
+   كشف البطولات المحتوى ٨٧٨ بكسلاً والنافذةُ ٦١٦، فالحفظُ خارج
+   المرأى في الحالات الستّ كلِّها — و«مؤجّلة» و«ملغاة» تُضيفان
+   مئةً أخرى. صفُّ الأفعال يلتصق بالأسفل والحقولُ تمرُّ تحته.
+   يَشمل النوافذَ الثماني جميعاً؛ كلُّها تنتهي بـacts2. */
+.modal .box > .acts2{
+  position:sticky;bottom:0;z-index:3;
+  margin:16px calc(var(--s-xxl) * -1) 0;
+  padding:14px var(--s-xxl) var(--s-xxl);
+  background:var(--surface);
+  border-top:1px solid var(--hairline-soft)}
+/* سجلُّ التغييرات ينمو سطراً بكلّ تعديل، بلا سقف */
+#calLog{max-height:124px;overflow:auto}
 /* ٢٨ هي درجةُ العناوين الكبرى؛ وعنوانُ النافذة ليس منها. */
 .modal h3{font-size:20px;font-weight:700;margin-bottom:var(--s-xs)}
 /* كثافةُ الحقول داخل النوافذ وحدَها — .inp و.fl2 تُستعملان خارجها. */
