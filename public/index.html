@@ -380,11 +380,27 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .natk2 .nsc{position:absolute;inset:0;
   background:linear-gradient(270deg,rgba(18,17,16,.96) 0%,rgba(18,17,16,.82) 44%,
              rgba(18,17,16,.20) 100%)}
-/* الشرائح: مائلة، ومتدرّجة الشفافية، وأيقوناتها بلون المنتج */
-/* left لا inset-inline-start: الشرائح جزء من الصورة لا من النصّ */
+/* الشرائح: مائلة، ومتدرّجة الشفافية، وأيقوناتها بلون المنتج.
+   left لا inset-inline-start: الشرائح جزء من الصورة لا من النصّ —
+   لكنّ الصورة نفسها تُقلب مع اللسان أدناه، وإلّا ركبها النصّ. */
 .natk2 .nslat{position:absolute;inset-block:0;left:0;width:52%;
   display:flex;gap:10px;align-items:center;justify-content:flex-start;
   transform:skewX(-12deg);padding-left:14px;pointer-events:none}
+
+/* ── اللسان اللاتينيّ: الزينة تُقلب ──
+   الحجابُ يُعتِم اليمين والشرائحُ على اليسار. في العربيّة يجري
+   النصُّ يميناً فيستقرّ على العتمة. وفي الإنجليزيّة يبدأ يساراً
+   حيث الشرائحُ وأفتحُ موضعٍ في الصورة، فيتراكبان ويذوب النصّ —
+   كما في اللقطة: الشعارُ فوق أسماء الألعاب. تُنقل الشرائحُ ويُقلب
+   الحجابُ، فيبقى النصُّ على العتمة في اللسانين. */
+html[dir="ltr"] .natk2 .nslat{left:auto;right:0;
+  justify-content:flex-end;transform:skewX(12deg);
+  padding-left:0;padding-right:14px}
+html[dir="ltr"] .natk2 .nslat i > *{transform:skewX(-12deg)}
+html[dir="ltr"] .natk2 .nsc{
+  background:linear-gradient(90deg,rgba(18,17,16,.96) 0%,rgba(18,17,16,.82) 44%,
+             rgba(18,17,16,.20) 100%)}
+html[dir="ltr"] .natk2 .nbg{background-position:right 52%}
 .natk2 .nslat i{flex:0 1 92px;min-width:64px;height:78%;border-radius:16px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
   /* الشريحة عند الحافّة اليسرى حيث الحجاب أضعفه (.30)، فلا يكفيها
@@ -8506,7 +8522,13 @@ const DICT={
 'اكتب الموسم أولاً — مثال 2026-2027.':'Write the season first — for example 2026-2027.',
 'لم أفهم أي سطر. راجع الترتيب المذكور أعلاه.':
   'I could not read any line. Check the order described above.',
-'تعذَّر الاستيراد — راجع الاتصال.':'Import failed — check the connection.'
+'تعذَّر الاستيراد — راجع الاتصال.':'Import failed — check the connection.',
+/* تسرّبت إلى الواجهة الإنجليزية — رآها القياس ظاهرةً بالعربية */
+'لا خطط مرفوعة بعد':'No plans submitted yet',
+'اكتب كلمة للبحث في كل بنود خططك.':'Type a word to search across all your plan items.',
+/* الشعارُ جملةٌ واحدةٌ بفاصلٍ، والقاموس يحمل شطريها منفصلين فلا
+   يطابقهما؛ تُضاف الصيغةُ كما تُكتب. */
+'رياضة وطنية … مستقبل واعد':'National sport … a promising future'
 };
 
 const RULES=[
@@ -8515,6 +8537,10 @@ const RULES=[
   [/^(صباح الخير|طاب يومك|مساء الخير)، ([^—]+)$/,function(m,a,b){
     return ({'صباح الخير':'Good morning','طاب يومك':'Good afternoon',
       'مساء الخير':'Good evening'})[a]+', '+b; }],
+  /* عددُ البطولات يُصاغ بـar() فيتغيّر تمييزُه مع العدد — «بطولة
+     واحدة» و«بطولتين» و«بطولات». يُبتلع التمييزُ ولا يُترجم. */
+  [/^تُعرض (\d+) من (\d+)[^—]*— البقيّة في التقويم الكامل\.$/,
+    'Showing $1 of $2 — the rest are in the full calendar.'],
   [/^(\d+) من (\d+) · (\d+) مدرباً لم يسلّم$/,'$1 of $2 · $3 coaches have not submitted'],
   [/^(\d+) من (\d+) · (.+) تنتظر اعتمادك$/,'$1 of $2 · $3 awaiting your approval'],
   [/^(\d+) مدرباً لم يسلّم بعد$/,'$1 coaches have not submitted yet'],
