@@ -270,8 +270,11 @@ function Change({ t, on, reduce }) {
     </div>`;
 }
 
-/* ───────── اللوحة البصريّة ───────── */
-function Side({ t, sports, reduce }) {
+/* ───────── خلفيّةُ المشهد ─────────
+   كانت الصورةُ محبوسةً في نصفٍ والنموذجُ في النصف الآخر: لوحتان
+   متجاورتان لا مشهدٌ واحد. الصورةُ تملأ السطحَ كلَّه، والمحتوى
+   يجلس فوقها في محورٍ واحد. */
+function Scene({ reduce }) {
   const [hero, setHero] = useState(false);
   useEffect(() => {
     const im = new Image();
@@ -279,62 +282,44 @@ function Side({ t, sports, reduce }) {
     im.src = './img/hero.jpg';
     return () => { im.onload = null; };
   }, []);
-
-  const rise = (i) => ({
-    initial: reduce ? { opacity: 0 } : { opacity: 0, y: 18 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: reduce ? 0.2 : 0.7, delay: reduce ? 0 : 0.1 + i * 0.09, ease: EASE },
-  });
-
-  /* الشريطُ يسير: عشرُ ألعابٍ في صفٍّ ثابتٍ تتزاحم حتّى لا تُقرأ */
-  const row = sports.concat(sports);
-
   return html`
-    <aside className="side">
-      <div className=${'shot' + (hero ? ' on' : '')}>
+    <${React.Fragment}>
+      <div className=${'shot' + (hero ? ' on' : '')} aria-hidden="true">
         <${motion.div} className="shotimg"
           initial=${{ scale: 1 }}
           animate=${reduce ? { scale: 1 } : { scale: [1, 1.07, 1] }}
           transition=${reduce ? {} : { duration: 42, repeat: Infinity, ease: 'easeInOut' }}/>
       </div>
-      <div className="scrim"/>
+      <div className="scrim" aria-hidden="true"/>
+    </${React.Fragment}>`;
+}
 
-      <${motion.div} className="shead" ...${rise(0)}>
-        <img className="logo" src="./img/fmac-logo.png"
-          alt="نادي الفجيرة للفنون القتالية — قسم الإعداد الفني"/>
+/* ───────── قاعدةُ المشهد: الشعارُ والألعابُ والتذييل ───────── */
+function Base({ t, sports, reduce, rise }) {
+  /* الشريطُ يسير: عشرُ ألعابٍ في صفٍّ ثابتٍ تتزاحم حتّى لا تُقرأ */
+  const row = sports.concat(sports);
+  return html`
+    <footer className="base">
+      <${motion.p} className="creed" ...${rise(5)}>
+        ${t.creed.map((c, i) => html`<${React.Fragment} key=${c}>
+          ${i ? html`<i/>` : null}<b>${c}</b></${React.Fragment}>`)}
       <//>
-
-      <div className="sbody">
-        <${motion.span} className="kick" ...${rise(1)}>
-          <${motion.i} initial=${{ scaleX: 0 }} animate=${{ scaleX: 1 }}
-            transition=${{ duration: reduce ? 0 : 0.7, delay: reduce ? 0 : 0.34, ease: EASE }}/>
-          ${t.kicker}
+      <${motion.div} className="marq" ...${rise(6)}>
+        <${motion.div} className="marqrow"
+          animate=${reduce ? {} : { x: ['0%', '-50%'] }}
+          transition=${reduce ? {} : { duration: 46, repeat: Infinity, ease: 'linear' }}>
+          ${row.map(([ar, slug], i) => html`
+            <span className="sp" key=${i} title=${ar}>
+              <img src=${'./img/sports/' + slug + '.png'} alt="" aria-hidden="true"/>
+              <b>${ar}</b>
+            </span>`)}
         <//>
-        <${motion.h2} ...${rise(2)}>${t.slogan1}<br/><em>${t.slogan2}</em><//>
-        <${motion.p} className="creed" ...${rise(3)}>
-          ${t.creed.map((c, i) => html`<${React.Fragment} key=${c}>
-            ${i ? html`<i/>` : null}<b>${c}</b></${React.Fragment}>`)}
-        <//>
-      </div>
-
-      <${motion.div} className="sfoot" ...${rise(4)}>
-        <div className="marq">
-          <${motion.div} className="marqrow"
-            animate=${reduce ? {} : { x: ['0%', '-50%'] }}
-            transition=${reduce ? {} : { duration: 46, repeat: Infinity, ease: 'linear' }}>
-            ${row.map(([ar, slug], i) => html`
-              <span className="sp" key=${i} title=${ar}>
-                <img src=${'./img/sports/' + slug + '.png'} alt="" aria-hidden="true"/>
-                <b>${ar}</b>
-              </span>`)}
-          <//>
-        </div>
-        <div className="foot">
-          <div className="f1">${t.foot}</div>
-          <div className="est"><b>FMAC</b><i>EST. 2017</i></div>
-        </div>
       <//>
-    </aside>`;
+      <${motion.div} className="foot" ...${rise(7)}>
+        <div className="f1">${t.foot}</div>
+        <div className="est"><b>FMAC</b><i>EST. 2017</i></div>
+      <//>
+    </footer>`;
 }
 
 /* ───────── الجذر ───────── */
@@ -363,14 +348,34 @@ function App({ mode, t, on, sports, extErr }) {
 
   const handlers = Object.assign({}, on, { tab: setTab });
 
+  const rise = (i) => ({
+    initial: reduce ? { opacity: 0 } : { opacity: 0, y: 18 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: reduce ? 0.2 : 0.7, delay: reduce ? 0 : 0.08 + i * 0.08, ease: EASE },
+  });
+
   return html`
-    <main className="pane" ref=${paneRef}>
-      <${motion.button} className="langbtn" onClick=${on.relang}
-        initial=${{ opacity: 0 }} animate=${{ opacity: 1 }}
-        transition=${{ delay: reduce ? 0 : 0.5, duration: 0.5 }}
-        whileHover=${reduce ? {} : { y: -1 }}>
-        <${IcGlobe}/><span>${t.lang}</span>
+    <div className="stage" ref=${paneRef}>
+      <${Scene} reduce=${reduce}/>
+
+      <header className="top">
+        <${motion.button} className="langbtn" onClick=${on.relang}
+          initial=${{ opacity: 0 }} animate=${{ opacity: 1 }}
+          transition=${{ delay: reduce ? 0 : 0.5, duration: 0.5 }}
+          whileHover=${reduce ? {} : { y: -1 }}>
+          <${IcGlobe}/><span>${t.lang}</span>
+        <//>
+        <${motion.img} className="logo" src="./img/fmac-logo.png"
+          alt="نادي الفجيرة للفنون القتالية — قسم الإعداد الفني" ...${rise(0)}/>
+      </header>
+
+      <main className="core">
+      <${motion.span} className="kick" ...${rise(1)}>
+        <${motion.i} initial=${{ scaleX: 0 }} animate=${{ scaleX: 1 }}
+          transition=${{ duration: reduce ? 0 : 0.7, delay: reduce ? 0 : 0.3, ease: EASE }}/>
+        ${t.kicker}
       <//>
+      <${motion.h2} ...${rise(2)}>${t.slogan1}<br/><em>${t.slogan2}</em><//>
 
       <${motion.div} className="box"
         initial=${reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.985 }}
@@ -405,8 +410,10 @@ function App({ mode, t, on, sports, extErr }) {
           <//>
         </${AnimatePresence}>
       <//>
-    </main>
-    <${Side} t=${t} sports=${sports} reduce=${reduce}/>`;
+      </main>
+
+      <${Base} t=${t} sports=${sports} reduce=${reduce} rise=${rise}/>
+    </div>`;
 }
 
 /* ───────── التركيب ───────── */
