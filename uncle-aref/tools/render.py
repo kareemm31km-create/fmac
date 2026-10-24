@@ -5,6 +5,7 @@ If a recording is missing the 'est' value is used and the video is marked as a p
 """
 import argparse, json, math, random, subprocess, wave
 import numpy as np
+from scipy import signal
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 from common import W, H, FPS, BG, BUILD, OUT, AUDIO, FONTS, ROOT, load_cut, upscale, os
 from backgrounds import INK
@@ -298,22 +299,47 @@ def rig_img(name, mouth, blink, scale):
     return cached(("rig", name, mouth, blink, scale), make)
 
 
+def dapple():
+    """Soft leaf-shadow light texture (seen through the window), scrolled slowly."""
+    def make():
+        rnd = np.random.default_rng(4)
+        m = Image.new("L", (W + 800, H), 0)
+        d = ImageDraw.Draw(m)
+        for _ in range(140):
+            x, y, rr = rnd.uniform(0, W + 800), rnd.uniform(0, H * .75), rnd.uniform(40, 140)
+            d.ellipse((x - rr, y - rr * .7, x + rr, y + rr * .7), fill=int(rnd.uniform(120, 255)))
+        m = m.filter(ImageFilter.GaussianBlur(45))
+        lay = Image.new("RGBA", m.size, (255, 236, 196, 0))
+        lay.putalpha(m.point(lambda v: int(v * .16)))
+        return lay
+    return cached("dapple", make)
+
+
 def render_image(shot, t, t_abs, tl):
-    """A single drawing on a background. Calm motion only: breathing + slow camera."""
-    frame = image_bg(shot.get("bg", "paper"))
-    active, cur, _ = state_at(shot, t_abs)
-    # Face stays exactly as drawn (no lip-sync, no blinks): emotion comes from which
-    # drawing/shot is on screen, and the only motion is the slow camera move.
+    """A single drawing on a background. Faces stay exactly as drawn: only the camera moves,
+    with the background drifting slower than the character (parallax) for depth."""
+    active, _, _ = state_at(shot, t_abs)
+    p = ease(t / shot["dur"])
+    z0, z1 = shot.get("zoom", [1.0, 1.03])
+    z = z0 + (z1 - z0) * p
+    fx, fy = shot.get("focus", [.5, .45])
+    bg = image_bg(shot.get("bg", "paper"))
+    if shot.get("bg") == "pov":
+        dp = dapple()
+        off = int(80 + 60 * t)
+        bg.alpha_composite(dp.crop((off, 0, off + W, H)))
+    bg = camera(bg, 1 + (z - 1) * .45, fx, fy, dx=-14 * p)
+    char = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     im = cached(("still", shot["img"], shot["scale"]), lambda: upscale(load_cut(shot["img"]), shot["scale"]))
     x, y = shot["pos"]
-    frame.paste(im, (int(x), int(y)), im)
+    char.paste(im, (int(x), int(y)), im)
     if shot.get("fg") == "dash":
-        frame.alpha_composite(pov_fg())
+        char.alpha_composite(pov_fg())
+    char = camera(char, z, fx, fy)
+    bg.alpha_composite(char)
     if shot.get("bg") == "memory":
-        frame.alpha_composite(memory_grade())
-    z0, z1 = shot.get("zoom", [1.0, 1.03])
-    frame = camera(frame, z0 + (z1 - z0) * ease(t / shot["dur"]), *shot.get("focus", [.5, .45]))
-    return frame, active
+        bg.alpha_composite(memory_grade())
+    return bg, active
 
 
 def render_detail2(shot, t, t_abs, tl):
@@ -335,19 +361,73 @@ def render_detail2(shot, t, t_abs, tl):
 RENDER = {"dog_cu": render_dog, "end_card": render_end, "image": render_image, "detail": render_detail2}
 
 
+def film_finish():
+    """Late-90s look: warm soft vignette + a few frames of fine grain to cycle."""
+    def make():
+        v = Image.new("L", (W, H), 0)
+        ImageDraw.Draw(v).ellipse((-300, -260, W + 300, H + 260), fill=255)
+        v = v.filter(ImageFilter.GaussianBlur(220))
+        vig = Image.new("RGBA", (W, H), (30, 18, 8, 0))
+        vig.putalpha(v.point(lambda p: int((255 - p) * .42)))
+        rnd = np.random.default_rng(9)
+        grains = []
+        for _ in range(6):
+            g = rnd.normal(128, 40, (H // 2, W // 2)).clip(0, 255).astype(np.uint8)
+            gi = Image.fromarray(g).resize((W, H), Image.BILINEAR)
+            lay = Image.new("RGBA", (W, H), (255, 255, 255, 0))
+            lay.putalpha(gi.point(lambda p: max(0, p - 150) // 6))
+            grains.append(lay)
+        return vig, grains
+    return cached("film", make)
+
+
+def title_img():
+    def make():
+        im = Image.new("RGBA", (W, 300), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        d.rounded_rectangle((210, 40, 870, 250), 30, fill=(251, 248, 240, 225))
+        d.text((540, 118), "عم عارف", font=ImageFont.truetype(F800, 96), fill=(28, 36, 52), anchor="mm",
+               direction="rtl", language="ar")
+        d.rounded_rectangle((330, 168, 520, 180), 6, fill=(232, 126, 40))
+        d.text((540, 214), "الحلقة ١ • المشوار الأول", font=ImageFont.truetype(F700, 44), fill=(90, 70, 55),
+               anchor="mm", direction="rtl", language="ar")
+        return im
+    return cached("title", make)
+
+
+def raw_frame(sh, t, t_abs, ti):
+    f, active = RENDER[sh["type"]](sh, t, t_abs, ti)
+    return (f if f.mode == "RGBA" else f.convert("RGBA")), active
+
+
+DISSOLVE = 0.35
+
+
 def frame_at(shots, total, ti, preview_tag):
     t_abs = ti / FPS
-    sh = next(s for s in shots if s["start"] <= t_abs < s["start"] + s["dur"] + 1e-9) if t_abs < total else shots[-1]
+    idx = next((i for i, s in enumerate(shots) if s["start"] <= t_abs < s["start"] + s["dur"] + 1e-9), len(shots) - 1)
+    sh = shots[idx]
     t = t_abs - sh["start"]
-    f, active = RENDER[sh["type"]](sh, t, t_abs, ti)
-    if f.mode != "RGBA":
-        f = f.convert("RGBA")
+    f, active = raw_frame(sh, t, t_abs, ti)
+    # soft dissolve into and out of the remembered passengers / yesterday cutaway
+    prev = shots[idx - 1] if idx else None
+    if prev and t < DISSOLVE and (sh.get("bg") == "memory") != (prev.get("bg") == "memory"):
+        pf, _ = raw_frame(prev, prev["dur"] - 1 / FPS, sh["start"] - 1 / FPS, ti)
+        f = Image.blend(pf, f, ease(t / DISSOLVE))
     if active is not None and active.get("text"):
         draw_subtitle(f, active["text"])
+    if sh["id"] == "SH03":  # episode title over the roof area, then out of the way
+        a = min(ease((t - .3) / .5), 1 - ease((t - 2.6) / .5))
+        if a > 0:
+            ti_ = title_img().copy()
+            ti_.putalpha(ti_.getchannel("A").point(lambda p: int(p * a)))
+            f.alpha_composite(ti_, (0, 130))
+    vig, grains = film_finish()
+    f.alpha_composite(vig)
+    f.alpha_composite(grains[ti % len(grains)])
     if preview_tag:
         f.alpha_composite(cached("tag", lambda: tag_img()), (36, 60))
-    # fades: in from black, out to black, soft dip into the end card
-    fade = min(1, t_abs / .35, (total - t_abs) / .6)
+    fade = min(1, t_abs / .35, (total - t_abs) / .8)
     if sh["type"] == "end_card":
         fade = min(fade, .25 + .75 * ease(t / .45))
     if fade < 1:
@@ -385,12 +465,13 @@ def mix(shots, lines, total, path):
     end = next(s for s in shots if s["type"] == "end_card")
     fo = np.clip((total - np.arange(n) / SR) / max(.1, total - end["start"]), 0, 1)
     out += b * duck * fo
-    gains = {"door_open": .8, "door_close": .9, "cassette_click": .75, "bobble": .22}
+    gains = {"door_open": .45, "door_close": .5, "cassette_click": .5, "bobble": .18}
     for s in shots:
         for name, at in s.get("sfx", []):
             x = read_wav(os.path.join(sfxd, name + ".wav")) * gains.get(name, .7)
             i = int((s["start"] + at) * SR)
             out[i:i + len(x)] += x[:max(0, n - i)]
+    out += music_track(shots, lines, total, n)
     for L in lines:
         if L["audio"] is not None:
             i = int(L["start"] * SR)
@@ -401,6 +482,40 @@ def mix(shots, lines, total, path):
     with wave.open(path, "wb") as w:
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR)
         w.writeframes(st.tobytes())
+
+
+def music_track(shots, lines, total, n):
+    """The cassette in the dash: soft under the talk, muffled from outside, up after the click."""
+    from music import cassette
+    md = os.path.join(AUDIO, "music")
+    user = os.path.join(md, "cassette_user.wav")
+    if os.path.exists(user):  # a licensed recording the user supplied: age it the same way
+        m = cassette(read_wav(user))
+    else:
+        m = read_wav(os.path.join(md, "cassette_tarab.wav"))
+    m = np.tile(m, int(np.ceil(n / len(m))))[:n]
+    t = np.arange(n) / SR
+    g = np.full(n, .16, np.float32)
+    for L in lines:  # duck under every line (estimated or recorded)
+        i, j = int((L["start"] - .15) * SR), int((L["start"] + L["dur"] + .2) * SR)
+        g[max(0, i):j] = .085
+    outside = np.zeros(n, np.float32)
+    for s in shots:
+        if s.get("img") == "new5_taxi_front" or s["type"] == "end_card":
+            outside[int(s["start"] * SR):int((s["start"] + s["dur"]) * SR)] = 1
+    click = next(s for s in shots if any(x[0] == "cassette_click" for x in s.get("sfx", [])))
+    tc = click["start"] + next(x[1] for x in click.get("sfx", []) if x[0] == "cassette_click")
+    g[t >= tc] = .42  # he turns it up: the first story begins
+    k = np.ones(int(.25 * SR)) / int(.25 * SR)
+    g = np.convolve(g, k, mode="same")
+    outside = np.convolve(outside, k, mode="same")
+    muff = signal.sosfilt(signal.butter(2, 1100, "low", fs=SR, output="sos"), m)
+    end = next(s for s in shots if s["type"] == "end_card")
+    outside = np.where(t >= end["start"], 0, outside)  # end card: clean and full
+    mm = m * (1 - outside) + muff * .7 * outside
+    fo = np.clip((total - t) / 1.6, 0, 1)
+    fi = np.clip(t / .6, 0, 1)
+    return (mm * g * fo * fi).astype(np.float32)
 
 
 # ---------------------------------------------------------------- outputs
@@ -464,8 +579,8 @@ def main():
     p.stdin.close(); p.wait()
     mix(shots, lines, total, aud)
     name = "ep01_first_ride_PREVIEW.mp4" if preview else "ep01_first_ride.mp4"
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", vid, "-i", aud, "-c:v", "copy", "-c:a", "aac",
-                    "-b:a", "192k", "-shortest", "-movflags", "+faststart", os.path.join(OUT, name)], check=True)
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", vid, "-i", aud, "-c:v", "copy",
+                    "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "48000", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", os.path.join(OUT, name)], check=True)
     print("wrote", os.path.join(OUT, name))
 
 
