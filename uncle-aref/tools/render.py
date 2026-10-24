@@ -298,24 +298,13 @@ def rig_img(name, mouth, blink, scale):
 
 def render_image(shot, t, t_abs, tl):
     """A single drawing on a background. Calm motion only: breathing + slow camera."""
-    from rig import render_rig
     frame = image_bg(shot.get("bg", "paper"))
-    active, cur, mouth = state_at(shot, t_abs)
-    laugh = active is not None and active.get("kind") == "laugh"
-    if laugh:  # soft chuckle: mouth eases open/closed ~3 times a second, eyes squint
-        u = t_abs - active["start"]
-        mouth = .45 + .25 * math.sin(2 * math.pi * 3 * u) ** 2 if u < active["dur"] - .15 else 0
-    if shot.get("blink", True):
-        bl = 0.5 if laugh else blink_amount(t, shot["id"])
-    else:
-        bl = 0
-    im = render_rig(shot["img"], shot["scale"], mouth or 0, bl)
+    active, cur, _ = state_at(shot, t_abs)
+    # Face stays exactly as drawn (no lip-sync, no blinks): emotion comes from which
+    # drawing/shot is on screen, and the only motion is the slow camera move.
+    im = cached(("still", shot["img"], shot["scale"]), lambda: upscale(load_cut(shot["img"]), shot["scale"]))
     x, y = shot["pos"]
-    y += math.sin(2 * math.pi * t / 3.6) * 2.5  # breathing
-    if laugh:
-        y += abs(math.sin(2 * math.pi * 3 * (t_abs - active["start"]))) * -4
-    frame.alpha_composite(im, (int(x), int(y))) if x >= 0 and y >= 0 and x + im.width <= W and y + im.height <= H \
-        else frame.paste(im, (int(x), int(y)), im)
+    frame.paste(im, (int(x), int(y)), im)
     if shot.get("fg") == "dash":
         frame.alpha_composite(pov_fg())
     if shot.get("bg") == "memory":
