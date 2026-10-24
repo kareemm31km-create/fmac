@@ -39,10 +39,12 @@ def bg_mask_from_border(rgb, tol=28, sides="tlr", bg=None):
 
 
 def cutout(rgb, tol=28, sides="tlr", keep_largest=True, feather=1.0, all_bg=False, erode=3):
+    """Paper-background cutout with a soft, colour-decontaminated edge (no white halo)."""
+    a = np.asarray(rgb).astype(np.float32)
     bgm = bg_mask_from_border(rgb, tol, sides)
+    bgc = np.median(a[bgm], 0) if bgm.any() else a[0, 0]
     if all_bg:  # also clear enclosed paper (e.g. between steering-wheel spokes)
-        a = np.asarray(rgb).astype(np.int16)
-        bgm |= np.abs(a - a[0, 0]).sum(2) < tol
+        bgm |= np.abs(a - bgc).sum(2) < tol
     fg = ~bgm
     if keep_largest:
         lab, n = ndimage.label(fg)
@@ -51,14 +53,18 @@ def cutout(rgb, tol=28, sides="tlr", keep_largest=True, feather=1.0, all_bg=Fals
             fg = lab == (int(np.argmax(sizes)) + 1)
     if not all_bg:
         fg = ndimage.binary_fill_holes(fg)
-    alpha = Image.fromarray((fg * 255).astype(np.uint8))
-    # pull the matte in a hair to kill the paper-coloured fringe, then soften
-    alpha = alpha.filter(ImageFilter.MinFilter(erode))
-    if feather:
-        alpha = alpha.filter(ImageFilter.GaussianBlur(feather))
-    out = rgb.convert("RGBA")
-    out.putalpha(alpha)
-    bbox = alpha.getbbox()
+    # soft alpha only in a thin band around the edge, from distance to the paper colour
+    band = ndimage.binary_dilation(fg, iterations=2) & ~ndimage.binary_erosion(fg, iterations=3)
+    dist = np.abs(a - bgc).sum(2)
+    soft = np.clip((dist - 10) / 90, 0, 1)
+    alpha = np.where(band, soft, fg.astype(np.float32))
+    alpha = ndimage.gaussian_filter(alpha, .6) * (alpha > 0.02)
+    # un-mix the paper colour out of semi-transparent edge pixels
+    al = np.maximum(alpha, 1e-3)[..., None]
+    col = np.clip((a - (1 - al) * bgc) / al, 0, 255)
+    col = np.where((alpha < .999)[..., None], col, a)
+    out = Image.fromarray(np.dstack([col, alpha * 255]).astype(np.uint8), "RGBA")
+    bbox = out.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
     return out.crop(bbox), bbox
 
 

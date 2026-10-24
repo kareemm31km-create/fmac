@@ -7,19 +7,12 @@ import argparse, json, math, random, subprocess, wave
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 from common import W, H, FPS, BG, BUILD, OUT, AUDIO, FONTS, ROOT, load_cut, upscale, os
-from face import ANCH, apply_mouth, apply_blink
 from backgrounds import INK
 
-ANC = json.load(open(ANCH))
 F700 = os.path.join(FONTS, "Cairo-700.ttf")
 F800 = os.path.join(FONTS, "Cairo-800.ttf")
 VO_DIR = os.path.join(AUDIO, "vo")
 SR = 48000
-HEAD = {"neutral": "head_01_neutral", "smile": "head_02_smile", "laugh": "head_03_laugh", "curious": "head_04_curious",
-        "thinking": "head_05_thinking", "surprised": "head_06_surprised", "skeptical": "head_07_skeptical",
-        "concerned": "head_08_concerned", "story": "head_09_story", "embarrassed": "head_10_embarrassed",
-        "pleased": "head_11_pleased", "warning": "head_12_warning"}
-MOUTHS = {"default": [3, 4, 5, 8, 4, 3, 6], "teeth": [7, 4, 8, 7]}
 
 
 # ---------------------------------------------------------------- audio helpers
@@ -67,36 +60,33 @@ def build_timeline(ep):
 
 
 def lip_track(L):
-    """Per-frame mouth index for a line (None = the drawing's own closed mouth)."""
+    """Per-frame mouth openness 0..1, smooth (attack/release) so the mouth never pops."""
     n = max(1, round(L["dur"] * FPS))
-    opens = MOUTHS[L.get("mouths", "default")]
     rnd = random.Random(L["id"])
-    if L["audio"] is not None:  # drive from the recording's loudness
+    if L["audio"] is not None:  # from the recording's loudness
         a = L["audio"]
         hop = SR // FPS
         rms = np.array([np.sqrt(np.mean(a[i * hop:(i + 1) * hop] ** 2) + 1e-12) for i in range(n)])
         ref = np.percentile(rms, 95) + 1e-9
-        out = []
-        for i, r in enumerate(rms / ref):
-            if i % 2 and out:
-                out.append(out[-1]); continue
-            out.append(None if r < .12 else (rnd.choice([5, 8]) if r < .35 else (4 if r < .65 else 3)))
-        return out
-    # no recording: syllable-ish rhythm from the text (word gaps and "…" close the mouth)
-    units = []
-    for word in L["text"].replace("،", " ").split():
-        syl = max(1, round(len(word.strip("…!.:؟")) / 2.4))
-        units += ["o"] * syl + ["c"]
-        if "…" in word:
-            units += ["c", "c"]
-    per = n / max(1, len(units))
-    out = []
-    for i in range(n):
-        u = units[min(len(units) - 1, int(i / per))]
-        if u == "c":
-            out.append(None)
-        else:
-            out.append(out[-1] if (i % 2 and out) else rnd.choice(opens))
+        target = np.clip((rms / ref - .12) / .75, 0, 1) * .85
+    else:  # no recording yet: syllable rhythm estimated from the text
+        units = []
+        for word in L["text"].replace("،", " ").split():
+            syl = max(1, round(len(word.strip("…!.:؟")) / 2.6))
+            units += [rnd.uniform(.35, .7) for _ in range(syl)] + [0]
+            if "…" in word:
+                units += [0, 0]
+        per = n / max(1, len(units))
+        target = np.zeros(n)
+        for i in range(n):
+            k = i / per
+            u = units[min(len(units) - 1, int(k))]
+            target[i] = u * math.sin(math.pi * (k - int(k))) ** 0.8  # rise and fall inside each syllable
+    out, v = [], 0.0
+    for x in target:  # fast-ish open, softer close
+        v += (x - v) * (.6 if x > v else .45)
+        out.append(float(v))
+    out[-1] = 0.0
     return out
 
 
@@ -175,7 +165,7 @@ def state_at(shot, t_abs):
             active = L
         if L["start"] <= t_abs:
             last = L
-    mouth = None
+    mouth = 0.0
     if active and active.get("lipsync", True) and active.get("text"):
         tr = cached(("lip", active["id"], active["dur"]), lambda: lip_track(active))
         mouth = tr[min(len(tr) - 1, int((t_abs - active["start"]) * FPS))]
@@ -207,121 +197,16 @@ def pov_fg():
     return cached("pov_fg", make)
 
 
-def head_img(name, mouth, blink, scale):
-    def make():
-        h = load_cut(name)
-        a = ANC[name]
-        h = apply_mouth(h, a, mouth)
-        h = apply_blink(h, a, blink)
-        return upscale(h, scale)
-    return cached(("head", name, mouth, blink, scale), make)
-
-
-def render_pov(shot, t, t_abs, tl):
-    frame = pov_static().copy()
-    active, cur, mouth = state_at(shot, t_abs)
-    expr = HEAD[(cur or {}).get("head", "smile")]
-    laugh = active is not None and active.get("kind") == "laugh"
-    bl = 0 if laugh else blink_amount(t, shot["id"])
-    scale = 3.9
-    im = head_img(expr, mouth, bl, scale)
-    breathe = math.sin(2 * math.pi * t / 3.4) * 4
-    bob = math.sin(2 * math.pi * 6 * t) * 7 if laugh else 0
-    talk = 2 * math.sin(2 * math.pi * 1.7 * t) if active else 0
-    x = 560 - im.width / 2
-    y = 1650 - im.height + breathe + bob + talk
-    frame.alpha_composite(im, (int(x), int(y)))
-    frame.alpha_composite(pov_fg())
-    z0, z1 = shot.get("zoom", [1.0, 1.03])
-    frame = camera(frame, z0 + (z1 - z0) * ease(t / shot["dur"]), .5, .42)
-    return frame, active
-
-
 def street_layer(blur):
     return cached(("street", blur), lambda: Image.open(os.path.join(BG, "street.png")).convert("RGB").filter(
         ImageFilter.GaussianBlur(blur)).convert("RGBA"))
-
-
-def windshield_frame():
-    def make():
-        f = Image.new("RGBA", (W, H))
-        st = street_layer(6)
-        f.paste(st.crop((260, 120, 260 + W, 120 + H)), (0, 0))
-        d = ImageDraw.Draw(f)
-        # roof + roof sign
-        d.rounded_rectangle((-40, 300, W + 40, 470), 50, fill=(246, 246, 242), outline=INK, width=6)
-        d.rectangle((330, 190, 750, 300), fill=(250, 250, 248), outline=INK, width=6)
-        d.rectangle((310, 286, 770, 312), fill=(30, 30, 32), outline=INK, width=4)
-        d.text((540, 246), "TAXI", font=ImageFont.truetype(F800, 84), fill=(25, 25, 28), anchor="mm")
-        # hood (black), highlight streaks, chrome emblem
-        d.polygon([(-20, 1460), (W + 20, 1460), (W + 20, H), (-20, H)], fill=(30, 30, 33))
-        d.line((-20, 1462, W + 20, 1462), fill=INK, width=6)
-        for k, (a, b) in enumerate([(120, 520), (620, 980)]):
-            d.line((a, 1560 + k * 40, b, 1530 + k * 40), fill=(70, 70, 76), width=10)
-        d.line((540, 1480, 540, H), fill=(22, 22, 24), width=6)
-        return f
-    return cached("ws_frame", make)
-
-
-def pose_window(pose, mouth, blink, box, scale):
-    def make():
-        p = load_cut(pose)
-        a = ANC[pose]
-        p = apply_mouth(p, a, mouth)
-        p = apply_blink(p, a, blink)
-        return upscale(p.crop(box), scale)
-    return cached(("pose", pose, mouth, blink, tuple(box), scale), make)
-
-
-def render_windshield(shot, t, t_abs, tl):
-    frame = windshield_frame().copy()
-    active, cur, mouth = state_at(shot, t_abs)
-    if mouth is None:
-        mouth = 1 if active else None  # base drawing has an open mouth; close it between syllables
-    pose = shot["pose"]
-    x0 = {"pose07_driving": 98, "pose08_parked_story": 92}[pose]
-    box = (x0, 8, x0 + 250, 250)
-    im = pose_window(pose, mouth, blink_amount(t, shot["id"]), box, W / 250)
-    frame.alpha_composite(im, (0, 430))
-    zs = (1.0, 1.06) if shot.get("settle") else (1.02, 1.0)
-    z = zs[0] + (zs[1] - zs[0]) * ease(t / shot["dur"])
-    dy = -18 * ease(t / 0.9) if shot.get("settle") else 0
-    return camera(frame, z, .5, .45, dy=dy), active
-
-
-def render_window_ext(shot, t, t_abs, tl):
-    st = street_layer(4)
-    frame = Image.new("RGBA", (W, H))
-    frame.paste(st.crop((180 + int(t * 6), 0, 180 + int(t * 6) + W, H)), (0, 0))
-    active, cur, mouth = state_at(shot, t_abs)
-    p = load_cut("pose09_window")
-    sc = 4.3
-    im = cached(("p9", mouth, blink_amount(t, shot["id"])),
-                lambda: upscale(apply_blink(apply_mouth(p, ANC["pose09_window"], mouth), ANC["pose09_window"],
-                                            blink_amount(t, shot["id"])), sc))
-    frame.alpha_composite(im, (540 - int(207 * sc), H + 40 - im.height)) if False else frame.paste(im, (540 - int(207 * sc), H + 40 - im.height), im)
-    return camera(frame, 1.0 + .03 * ease(t / shot["dur"]), .5, .4), active
-
-
-def render_detail(shot, t, t_abs, tl):
-    def make():
-        cab = load_cut("cabin").convert("RGB")
-        c = cab.crop(tuple(shot["crop"]))
-        s = W / c.width
-        c = upscale(c, s)
-        f = Image.new("RGBA", (W, H), (20, 20, 22, 255))
-        f.paste(c, (0, (H - c.height) // 2))
-        return f
-    base = cached(("detail", shot["id"]), make)
-    active, _, _ = state_at(shot, t_abs)
-    return camera(base, 1 + (shot.get("push", 1.05) - 1) * ease(t / shot["dur"]), .5, .5), active
 
 
 def dog_frames():
     def make():
         out = {}
         for k in ("up", "mid", "down"):
-            d = upscale(load_cut(f"dog_{k}"), 5.6)
+            d = upscale(load_cut(f"dog_{k}"), 4.2)
             a = np.asarray(d.getchannel("A"))
             rows = np.where(a[-12:].max(0) > 128)[0]
             out[k] = (d, (rows.min() + rows.max()) / 2)  # base centre x
@@ -341,7 +226,7 @@ def render_dog(shot, t, t_abs, tl):
         swing = -abs(swing)  # nod = head dips down, like agreeing
     k = "up" if swing > .35 else ("down" if swing < -.35 else "mid")
     d, bx = dog_frames()[k]
-    frame.alpha_composite(d, (int(560 - bx), 1640 - d.height))
+    frame.alpha_composite(d, (int(560 - bx), 1600 - d.height))
     active, _, _ = state_at(shot, t_abs)
     return camera(frame, 1.0 + .05 * ease(t / shot["dur"]), .55, .7), active
 
@@ -412,33 +297,51 @@ def rig_img(name, mouth, blink, scale):
 
 
 def render_image(shot, t, t_abs, tl):
-    """A single drawing placed on a background; lip-sync/blink when the drawing has anchors."""
+    """A single drawing on a background. Calm motion only: breathing + slow camera."""
+    from rig import render_rig
     frame = image_bg(shot.get("bg", "paper"))
     active, cur, mouth = state_at(shot, t_abs)
     laugh = active is not None and active.get("kind") == "laugh"
-    if laugh:
-        mouth = [3, 4][int(t * FPS / 3) % 2]
-    bl = 0.5 if laugh else (blink_amount(t, shot["id"]) if shot.get("blink", True) else 0)
-    im = rig_img(shot["img"], mouth, bl, shot["scale"])
+    if laugh:  # soft chuckle: mouth eases open/closed ~3 times a second, eyes squint
+        u = t_abs - active["start"]
+        mouth = .45 + .25 * math.sin(2 * math.pi * 3 * u) ** 2 if u < active["dur"] - .15 else 0
+    if shot.get("blink", True):
+        bl = 0.5 if laugh else blink_amount(t, shot["id"])
+    else:
+        bl = 0
+    im = render_rig(shot["img"], shot["scale"], mouth or 0, bl)
     x, y = shot["pos"]
-    sway = shot.get("sway", 0)
-    if sway:
-        im = im.rotate(math.sin(2 * math.pi * t / 2.6) * sway, resample=Image.BICUBIC,
-                       center=(im.width / 2, im.height), expand=False)
-    y += math.sin(2 * math.pi * t / 3.4) * 3 + (math.sin(2 * math.pi * 6 * t) * 6 if laugh else 0)
-    frame.paste(im, (int(x), int(y)), im)
+    y += math.sin(2 * math.pi * t / 3.6) * 2.5  # breathing
+    if laugh:
+        y += abs(math.sin(2 * math.pi * 3 * (t_abs - active["start"]))) * -4
+    frame.alpha_composite(im, (int(x), int(y))) if x >= 0 and y >= 0 and x + im.width <= W and y + im.height <= H \
+        else frame.paste(im, (int(x), int(y)), im)
     if shot.get("fg") == "dash":
         frame.alpha_composite(pov_fg())
     if shot.get("bg") == "memory":
         frame.alpha_composite(memory_grade())
-    z0, z1 = shot.get("zoom", [1.0, 1.04])
+    z0, z1 = shot.get("zoom", [1.0, 1.03])
     frame = camera(frame, z0 + (z1 - z0) * ease(t / shot["dur"]), *shot.get("focus", [.5, .45]))
     return frame, active
 
 
-RENDER = {"pov": render_pov, "windshield": render_windshield, "window_ext": render_window_ext,
-          "detail": render_detail, "dog_cu": render_dog, "end_card": render_end,
-          "image": render_image}
+def render_detail2(shot, t, t_abs, tl):
+    """Interior detail cropped from a high-res drawing (street shows through its windows)."""
+    def make():
+        src = load_cut(shot["src"])
+        x0, y0, x1, y1 = shot["crop"]
+        c = src.crop((x0, y0, x1, y1))
+        s = W / c.width
+        c = upscale(c, s)
+        f = image_bg("street")
+        f.alpha_composite(c, (0, max(0, (H - c.height) // 2))) if c.height <= H else f.paste(c, (0, (H - c.height) // 2), c)
+        return f
+    base = cached(("detail2", shot["id"]), make)
+    active, _, _ = state_at(shot, t_abs)
+    return camera(base, 1 + (shot.get("push", 1.04) - 1) * ease(t / shot["dur"]), .5, .5), active
+
+
+RENDER = {"dog_cu": render_dog, "end_card": render_end, "image": render_image, "detail": render_detail2}
 
 
 def frame_at(shots, total, ti, preview_tag):
