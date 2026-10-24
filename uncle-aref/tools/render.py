@@ -224,9 +224,11 @@ def render_dog(shot, t, t_abs, tl):
             swing += math.exp(-u / 0.55) * math.sin(2 * math.pi * 2.6 * u)
     if shot.get("nod"):
         swing = -abs(swing)  # nod = head dips down, like agreeing
-    k = "up" if swing > .35 else ("down" if swing < -.35 else "mid")
-    d, bx = dog_frames()[k]
-    frame.alpha_composite(d, (int(560 - bx), 1600 - d.height))
+    # one drawing only; the spring is a smooth tilt around the base (no swapping heads)
+    d, bx = dog_frames()["mid"]
+    ang = swing * 4.0
+    rot = d.rotate(ang, resample=Image.BICUBIC, center=(bx, d.height), expand=False)
+    frame.alpha_composite(rot, (int(560 - bx), 1600 - d.height))
     active, _, _ = state_at(shot, t_abs)
     return camera(frame, 1.0 + .05 * ease(t / shot["dur"]), .55, .7), active
 
