@@ -1,0 +1,57 @@
+{
+  "title": "المشوار الأول",
+  "series": "عم عارف",
+  "notes": "est = estimated line length in seconds, used ONLY while audio/vo/<id>.wav is missing. When the recording exists its real length is used (never time-stretched).",
+  "shots": [
+    {"id": "SH01", "scene": 1, "type": "dog_cu", "pre": 2.4, "post": 0.2,
+     "sfx": [["door_open", 0.35], ["door_close", 1.45], ["bobble", 1.5]], "bob_at": [1.5], "lines": []},
+
+    {"id": "SH02", "scene": 1, "type": "pov", "pre": 0.35, "post": 0.35, "lines": [
+      {"id": "L01", "text": "متقلقش… العدّاد لسه واقف.", "est": 2.5, "head": "smile", "gap": 0.35},
+      {"id": "L02", "text": "نتعرّف الأول!", "est": 1.3, "head": "smile", "gap": 0.1},
+      {"id": "L03", "text": "", "est": 1.0, "head": "laugh", "lipsync": false, "kind": "laugh", "gap": 0.0}]},
+
+    {"id": "SH03", "scene": 2, "type": "windshield", "pose": "pose08_parked_story", "pre": 0.4, "post": 0.2, "lines": [
+      {"id": "L04", "text": "أنا عارف… عم عارف.", "est": 2.3, "gap": 0.4},
+      {"id": "L05", "text": "بس الاسم ما يضحكش عليك،", "est": 1.8, "gap": 0.1},
+      {"id": "L06", "text": "مش عارف كل حاجة!", "est": 1.4, "gap": 0.3}]},
+
+    {"id": "SH04", "scene": 2, "type": "pov", "pre": 0.5, "post": 0.6, "lines": [
+      {"id": "L07", "text": "مبارح ضيّعت نضارتي نص ساعة…", "est": 2.4, "head": "neutral", "gap": 0.6},
+      {"id": "L08", "text": "وهي في جيبي.", "est": 1.2, "head": "embarrassed", "mouths": "teeth", "gap": 0.0}]},
+
+    {"id": "SH05", "scene": 3, "type": "window_ext", "pre": 0.4, "post": 0.2, "lines": [
+      {"id": "L09", "text": "بقالي سنين بسوق في الشوارع دي…", "est": 2.7, "gap": 0.3}]},
+
+    {"id": "SH06", "scene": 3, "type": "detail", "crop": [682, 10, 890, 370], "push": 1.06, "pre": 0.1, "post": 0.15, "lines": [
+      {"id": "L10", "text": "ركب معايا اللي رايح يفرح،", "est": 1.9, "gap": 0.2}]},
+
+    {"id": "SH07", "scene": 3, "type": "detail", "crop": [1000, 10, 1208, 370], "push": 1.06, "pre": 0.05, "post": 0.35, "lines": [
+      {"id": "L11", "text": "واللي راجع زعلان،", "est": 1.5, "gap": 0.0}]},
+
+    {"id": "SH08", "scene": 3, "type": "dog_cu", "pre": 0.15, "post": 0.4, "bob_at": [0.1], "sfx": [["bobble", 0.1]], "lines": [
+      {"id": "L12", "text": "واللي قال: مش هتكلم…", "est": 2.0, "gap": 0.0}]},
+
+    {"id": "SH09", "scene": 3, "type": "pov", "pre": 0.2, "post": 0.4, "lines": [
+      {"id": "L13", "text": "وحكالي حياته لحد إمبابة!", "est": 2.1, "head": "skeptical", "gap": 0.2},
+      {"id": "L14", "text": "", "est": 1.0, "head": "laugh", "lipsync": false, "kind": "laugh", "gap": 0.0}]},
+
+    {"id": "SH10", "scene": 4, "type": "pov", "zoom": [1.0, 1.08], "pre": 0.6, "post": 0.6, "lines": [
+      {"id": "L15", "text": "وكل واحد سابلي حكاية…", "est": 2.2, "head": "concerned", "gap": 0.5},
+      {"id": "L16", "text": "قلت بدل ما أفضل شايلها لوحدي،", "est": 2.3, "head": "concerned", "gap": 0.15},
+      {"id": "L17", "text": "أحكيهالك.", "est": 1.0, "head": "smile", "gap": 0.6},
+      {"id": "L18", "text": "يمكن نضحك شوية…", "est": 1.6, "head": "smile", "gap": 0.35},
+      {"id": "L19", "text": "ويمكن نفهم حاجة سوا.", "est": 1.8, "head": "neutral", "gap": 0.0}]},
+
+    {"id": "SH11", "scene": 5, "type": "windshield", "pose": "pose07_driving", "pre": 1.3, "post": 0.0, "settle": true, "lines": []},
+
+    {"id": "SH12", "scene": 5, "type": "pov", "pre": 0.3, "post": 0.5, "lines": [
+      {"id": "L20", "text": "ها… على فين؟", "est": 1.6, "head": "curious", "gap": 0.9},
+      {"id": "L21", "text": "ولا آخدك أنا على أول حكاية؟", "est": 2.2, "head": "smile", "gap": 0.0}]},
+
+    {"id": "SH13", "scene": 5, "type": "dog_cu", "pre": 1.8, "post": 0.0, "nod": true,
+     "bob_at": [0.25, 0.75], "sfx": [["cassette_click", 0.9], ["bobble", 0.25]], "lines": []},
+
+    {"id": "SH14", "scene": 6, "type": "end_card", "pre": 3.4, "post": 0.0, "lines": []}
+  ]
+}
