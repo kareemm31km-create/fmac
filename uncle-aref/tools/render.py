@@ -350,19 +350,16 @@ def end_card_base():
     def make():
         f = Image.new("RGBA", (W, H), (251, 248, 240, 255))
         d = ImageDraw.Draw(f)
-        taxi = upscale(load_cut("taxi_side"), 1000 / load_cut("taxi_side").width)
-        d.ellipse((60, 1470, 1060, 1530), fill=(232, 226, 212))
-        f.alpha_composite(taxi, (80, 1500 - taxi.height))
+        d.ellipse((40, 1560, 1040, 1660), fill=(232, 226, 212))
         return f
     return cached("end_base", make)
 
 
 def render_end(shot, t, t_abs, tl):
     f = end_card_base().copy()
-    man = cached("end_man", lambda: upscale(load_cut("pose01_wave"), 760 / load_cut("pose01_wave").height))
-    ang = math.sin(2 * math.pi * t / 1.6) * 1.2
-    m = man.rotate(ang, resample=Image.BICUBIC, center=(man.width / 2, man.height), expand=False)
-    f.alpha_composite(m, (90, 1590 - man.height))
+    taxi = cached("end_taxi", lambda: upscale(load_cut("new5_taxi_front"), 1040 / load_cut("new5_taxi_front").width))
+    rise = (1 - ease(t / .7)) * 40
+    f.alpha_composite(taxi, (20, int(1640 - taxi.height + rise)))
     d = ImageDraw.Draw(f)
     a1 = ease((t - .2) / .5)
     a2 = ease((t - .9) / .5)
@@ -379,8 +376,69 @@ def render_end(shot, t, t_abs, tl):
     return f, None
 
 
+def memory_grade():
+    """Warm faded-memory look for the passenger flash-cuts: sepia wash + soft vignette."""
+    def make():
+        g = Image.new("RGBA", (W, H), (236, 196, 140, 52))
+        v = Image.new("L", (W, H), 0)
+        ImageDraw.Draw(v).ellipse((-260, -200, W + 260, H + 200), fill=255)
+        v = v.filter(ImageFilter.GaussianBlur(160))
+        dark = Image.new("RGBA", (W, H), (40, 26, 14, 0))
+        dark.putalpha(Image.eval(v, lambda p: int((255 - p) * .55)))
+        g.alpha_composite(dark)
+        return g
+    return cached("memgrade", make)
+
+
+def image_bg(kind):
+    if kind == "pov":
+        return pov_static().copy()
+    if kind in ("street", "memory"):
+        st = street_layer(5 if kind == "memory" else 3)
+        return st.crop((240, 0, 240 + W, H)).copy()
+    return Image.new("RGBA", (W, H), (251, 248, 240, 255))
+
+
+def rig_img(name, mouth, blink, scale):
+    def make():
+        im = load_cut(name)
+        a = ANC.get(name)
+        if a:
+            if a.get("mustache"):
+                im = apply_mouth(im, a, mouth)
+            im = apply_blink(im, a, blink)
+        return upscale(im, scale)
+    return cached(("rig", name, mouth, blink, scale), make)
+
+
+def render_image(shot, t, t_abs, tl):
+    """A single drawing placed on a background; lip-sync/blink when the drawing has anchors."""
+    frame = image_bg(shot.get("bg", "paper"))
+    active, cur, mouth = state_at(shot, t_abs)
+    laugh = active is not None and active.get("kind") == "laugh"
+    if laugh:
+        mouth = [3, 4][int(t * FPS / 3) % 2]
+    bl = 0.5 if laugh else (blink_amount(t, shot["id"]) if shot.get("blink", True) else 0)
+    im = rig_img(shot["img"], mouth, bl, shot["scale"])
+    x, y = shot["pos"]
+    sway = shot.get("sway", 0)
+    if sway:
+        im = im.rotate(math.sin(2 * math.pi * t / 2.6) * sway, resample=Image.BICUBIC,
+                       center=(im.width / 2, im.height), expand=False)
+    y += math.sin(2 * math.pi * t / 3.4) * 3 + (math.sin(2 * math.pi * 6 * t) * 6 if laugh else 0)
+    frame.paste(im, (int(x), int(y)), im)
+    if shot.get("fg") == "dash":
+        frame.alpha_composite(pov_fg())
+    if shot.get("bg") == "memory":
+        frame.alpha_composite(memory_grade())
+    z0, z1 = shot.get("zoom", [1.0, 1.04])
+    frame = camera(frame, z0 + (z1 - z0) * ease(t / shot["dur"]), *shot.get("focus", [.5, .45]))
+    return frame, active
+
+
 RENDER = {"pov": render_pov, "windshield": render_windshield, "window_ext": render_window_ext,
-          "detail": render_detail, "dog_cu": render_dog, "end_card": render_end}
+          "detail": render_detail, "dog_cu": render_dog, "end_card": render_end,
+          "image": render_image}
 
 
 def frame_at(shots, total, ti, preview_tag):

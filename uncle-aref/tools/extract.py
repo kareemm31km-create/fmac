@@ -75,3 +75,21 @@ for nm, box, lab in [("pose01_wave", (95, 80, 300, 395), None), ("pose06_reassur
     c = s1.crop(box)
     img, _ = cutout(c, sides="tlr", tol=24)
     save(img, nm)
+
+# --- second reference pack (transparent PNGs, higher resolution)
+for nm in ["new1_seated_gesture", "new3_glasses", "new4_open_door", "new5_taxi_front"]:
+    im = Image.open(os.path.join(os.path.dirname(CUT), "..", "refs", nm + ".png")).convert("RGBA")
+    save(im.crop(im.getbbox()), nm)
+# passengers sheet: split the three figures on empty alpha columns
+pas = Image.open(os.path.join(os.path.dirname(CUT), "..", "refs", "new2_passengers.png")).convert("RGBA")
+col = np.asarray(pas.getchannel("A")).max(0) > 20
+runs, s = [], None
+for x, v in enumerate(col):
+    if v and s is None: s = x
+    if not v and s is not None:
+        if x - s > 60: runs.append((s, x))
+        s = None
+if s is not None: runs.append((s, len(col)))
+for nm, (x0, x1) in zip(["pax_groom", "pax_sad_lady", "pax_talker"], runs):
+    c = pas.crop((x0, 0, x1, pas.height))
+    save(c.crop(c.getbbox()), nm)

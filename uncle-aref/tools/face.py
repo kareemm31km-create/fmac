@@ -54,28 +54,66 @@ def mouth_tile(k):
 
 
 def apply_mouth(head, anch, k):
-    """Replace the mustache+mouth zone with mouth tile k, scaled to this head's mustache."""
+    """Open the mouth under this drawing's own mustache using mouth tile k (sheet 2).
+
+    The original mustache is kept; only the zone just beneath it is replaced, with the
+    tile colour-matched to the local skin so the seam doesn't show."""
     if k is None:
         return head
     tile, tm = mouth_tile(k)
     hm = anch["mustache"]
-    s = (hm[2] - hm[0]) / (tm[2] - tm[0])
+    a = np.asarray(head)
+    hw = hm[2] - hm[0]
+    s = 0.85 * hw / (tm[2] - tm[0])
     t = tile.resize((max(1, round(tile.width * s)), max(1, round(tile.height * s))), Image.LANCZOS)
-    tcx, tcy = (tm[0] + tm[2]) / 2 * s, (tm[1] + tm[3]) / 2 * s
-    hcx, hcy = (hm[0] + hm[2]) / 2, (hm[1] + hm[3]) / 2
-    ox, oy = round(hcx - tcx), round(hcy - tcy)
-    mw = (hm[2] - hm[0])
-    mh = (hm[3] - hm[1])
-    mask = Image.new("L", head.size, 0)
-    d = ImageDraw.Draw(mask)
-    d.ellipse((hcx - mw * .56, hcy - mh * .62, hcx + mw * .56, hcy + mh * 2.3), fill=255)
-    mask = mask.filter(ImageFilter.GaussianBlur(max(1.5, mw * .03)))
+    # per-column bottom edge of the real mustache
+    hair = _hair(a)
+    x0, x1 = hm[0], hm[2]
+    sub = hair[hm[1]:hm[3] + 4, x0:x1 + 1]
+    bottoms = np.array([(np.where(sub[:, i])[0].max() + hm[1]) if sub[:, i].any() else -1 for i in range(sub.shape[1])])
+    cx = (x0 + x1) / 2
+    valid = bottoms[bottoms > 0]
+    cb = int(np.median(bottoms[int(len(bottoms) * .4):int(len(bottoms) * .6) + 1].clip(min=valid.min())))
+    # align tile: its mustache bottom-centre onto ours
+    tsub = _hair(np.asarray(t))
+    tx0, tx1 = round(tm[0] * s), round(tm[2] * s)
+    # end of the FIRST hair run down the centre column (mustache), not the mouth outline below it
+    tcol = tsub[:, (tx0 + tx1) // 2 - 2:(tx0 + tx1) // 2 + 3].any(1)
+    ys = np.where(tcol)[0]
+    tb = ys[0]
+    while tb + 1 < len(tcol) and tcol[tb + 1]:
+        tb += 1
+    ox, oy = round(cx - (tx0 + tx1) / 2), round(cb - tb)
     layer = Image.new("RGBA", head.size, (0, 0, 0, 0))
     layer.paste(t, (ox, oy))
-    m = np.minimum(np.asarray(mask), np.asarray(layer.getchannel("A")))
-    m = np.minimum(m, np.asarray(head.getchannel("A")))
+    # colour-match tile skin to the target skin just below the mustache
+    la = np.asarray(layer).astype(np.float32)
+    mh = hm[3] - hm[1]
+    zy0, zy1 = cb + 2, min(a.shape[0], cb + int(mh * 1.6))
+    zone_t = la[zy0:zy1, x0:x1, :3].reshape(-1, 3)
+    zone_h = a[zy0:zy1, x0:x1, :3].reshape(-1, 3).astype(np.float32)
+    sk = lambda z: z[(z[:, 0] > 180) & (z[:, 2] < 140) & (z[:, 1] > 80)]
+    st, sh = sk(zone_t), sk(zone_h)
+    if len(st) > 20 and len(sh) > 20:
+        gain = np.median(sh, 0) / np.maximum(np.median(st, 0), 1)
+        la[..., :3] = (la[..., :3] * gain).clip(0, 255)
+    layer = Image.fromarray(la.astype(np.uint8))
+    # mask: a rounded pocket under the mustache, central ~80% of its width
+    mask = np.zeros(a.shape[:2], np.float32)
+    half = hw / 2 * 0.80
+    depth = mh * 1.35
+    for i, b in enumerate(bottoms):
+        x = x0 + i
+        u = (x - cx) / half
+        if abs(u) >= 1 or b < 0:
+            continue
+        dpt = depth * np.sqrt(1 - u * u)
+        mask[max(0, b - 1):min(a.shape[0], int(b + dpt)), x] = 1
+    mask = np.asarray(Image.fromarray((mask * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(max(1.2, hw * .018))))
+    keep = ndimage.binary_dilation(hair[:, :] & (np.arange(a.shape[0])[:, None] <= cb + 2), iterations=1)
+    m = mask.astype(np.float32) * (1 - keep) * (np.asarray(layer.getchannel("A")) / 255) * (a[..., 3] / 255)
     out = head.copy()
-    out.paste(layer, (0, 0), Image.fromarray(m.astype(np.uint8)))
+    out.paste(layer, (0, 0), Image.fromarray(m.clip(0, 255).astype(np.uint8)))
     return out
 
 
@@ -130,6 +168,13 @@ if __name__ == "__main__":
     res["pose07_driving"] = {"mustache": [205, 92, 252, 104], "eyes": [[215, 71, 226, 84], [241, 73, 255, 87]]}
     res["pose08_parked_story"] = {"mustache": [214, 89, 256, 102], "eyes": [[224, 70, 237, 84], [249, 78, 263, 92]]}
     res["pose09_window"] = {"mustache": [180, 81, 232, 97], "eyes": [[191, 61, 205, 75], [220, 65, 235, 81]]}
+    # second pack: points placed by hand on refs/*.png, shifted by each cutout's crop offset
+    for nm, m, e in [("new1_seated_gesture", [467, 323, 670, 397], [[503, 223, 567, 290], [623, 243, 697, 317]]),
+                     ("new3_glasses", [355, 210, 508, 263], [[386, 141, 424, 191], [458, 160, 505, 210]]),
+                     ("new4_open_door", None, [[420, 160, 452, 197], [485, 180, 518, 218]])]:
+        ox, oy = Image.open(os.path.join(CUT, "..", "..", "refs", nm + ".png")).getbbox()[:2]
+        sh = lambda b: [b[0] - ox, b[1] - oy, b[2] - ox, b[3] - oy]
+        res[nm] = {"mustache": sh(m) if m else None, "eyes": [sh(x) for x in e]}
     json.dump(res, open(ANCH, "w"), indent=1)
     for n, v in res.items():
         print(n, v)
